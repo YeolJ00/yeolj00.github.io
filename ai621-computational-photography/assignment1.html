@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI621 - Assignment 1</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-center" style="max-width:1500px">
+  <img class="w3-image" src="./assets/assign1/main.png" alt="Me" width="900" height="300">
+  <div class="w3-display-middle w3-padding-large w3-border w3-wide w3-text-amber w3-center">
+    <h1 class="w3-hide-medium w3-hide-small w3-xxxlarge">AI621</h1>
+    <h5 class="w3-hide-large" style="white-space:nowrap">AI621</h5>
+    <h3 class="w3-hide-medium w3-hide-small">Assignment 1</h3>
+  </div>
+  
+  <!-- Navbar (placed at the bottom of the header image) -->
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:22px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#linearization" class="w3-bar-item w3-button">Linearization</a>
+    <a href="#bayer" class="w3-bar-item w3-button">Bayer Pattern</a>
+    <a href="#whitebalance" class="w3-bar-item w3-button">White Balancing</a>
+  </div>
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:-16px">
+    <a href="#demosaic" class="w3-bar-item w3-button">Demosaicing</a>
+    <a href="#gamma" class="w3-bar-item w3-button">Gamma Correction</a>
+    <a href="#comp" class="w3-bar-item w3-button">Compression</a>
+  </div>
+</header>
+
+<!-- Navbar on small screens -->
+<div class="w3-center w3-light-grey w3-padding-16 w3-hide-large w3-hide-medium">
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:22px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#linearization" class="w3-bar-item w3-button">Linearization</a>
+    <a href="#bayer" class="w3-bar-item w3-button">Bayer Pattern</a>
+    <a href="#whitebalance" class="w3-bar-item w3-button">White Balancing</a>
+  </div>
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:-16px">
+    <a href="#demosaic" class="w3-bar-item w3-button">Demosaicing</a>
+    <a href="#gamma" class="w3-bar-item w3-button">Brightness Adjustment and Gamma Correction</a>
+    <a href="#comp" class="w3-bar-item w3-button">Compression</a>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="w3-content w3-padding-large w3-margin-top", id="intro">
+  <h3 class="w3-hide-medium w3-hide-small">Assignment 1 - Implement a Basic Image Processing Pipeline</h3>
+  <p class="w3-serif w3-large"> 
+    We will be implementing an image processing pipeline given a RAW image file. <br>
+    The codes are written in <strong>Python</strong> >=3.8 with the help of some basic libraries. <br>
+    In order to run the code, first unzip the codes and run <br>
+    <code>
+      pip install -r requirements.txt
+    </code>
+    in the desired Python enviornment.
+  </p>
+  <!-- Code -->
+  <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+      import numpy as np <br>
+      import cv2 <br>
+      import rawpy <br>
+    </code>
+    </div>
+</div>
+
+<div class="w3-content w3-padding-large w3-margin-top">
+
+  <!-- Initials -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="initials">
+    <h3 class="w3-center">Initials</h3> <hr>
+    <p class="w3-serif w3-large">
+      Since native Python does not support loading the <code>.cr2</code> file extension, 
+      we will be using the <code>rawpy</code> and the <code>numpy</code> library to open and manipulate our image. <br>
+      <code>rawpy.imread</code> and <code>rawpy.raw_image_visible</code> returns returns the raw values of the
+      <i>banana_slug.cr2</i> RAW image file. <br>
+      We will store the values with double-precision since our operations will be conducted in the range of 0-1.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+      raw_image = rawpy.imread('data/banana_slug.cr2') <br>
+      raw_image = raw_image.raw_image_visible # values stored in uint16 <br>
+      raw_image = raw_image.astype(np.double) # convert to double <br>
+    </code>
+    </div>
+
+  </div>
+
+  <!-- Linearization -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="linearization">
+    <h3 class="w3-center">Linearization</h3> <hr>
+    <p class="w3-serif w3-large">
+      Once we have loaded the RAW image, we will first linearize the image, 
+      indicating that we will compensate the non-linear photodiode response function near over/under-saturated regions.<br>
+      Thus, we clip the values with a threshold and map the pixel values between 0-1 for further steps. 
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        CAMERA_MIN = 2047 <br>
+        CAMERA_MAX = 15000 <br>
+        clipped_image = np.clip(raw_image, a_min=CAMERA_MIN, a_max=CAMERA_MAX) <br>
+        linearized_image = (clipped_image - CAMERA_MIN) / (CAMERA_MAX - CAMERA_MIN) <br>
+         <br>
+        cv2.imwrite('1_Linearization.png', (linearized_image * 255).astype(np.uint8)) <br>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+    The linearized image is visualized by mapping values in the range of 0-1 to 8bit unsigned values 0-255. 
+    Notice that the image appears as grayscale since we did not assign any colors to this single channel image. 
+    </p>
+    <div class="w3-center">
+      <img src="./assets/assign1/1_Linearization.png" class="w3-image" width="800"> 
+    </div>
+  </div>
+
+
+  <!-- Bayer Pattern -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="bayer">
+    <h3 class="w3-center">Identifying the Correct Bayer Pattern</h3> <hr>
+    <p class="w3-serif w3-large">
+      Before assigning or adjusting the values of each pixel, we first need to the determine the Bayer pattern of the sensor.
+      This is essential for appropriately converting a single channel image into a 3-channel RGB image. 
+      Among four possible Bayer patterns, we need to determine which pattern our camera follows.
+    </p>
+    <div class="w3-center">
+      <img src="./assets/assign1/2_Bayer_Combination.png" class="w3-image" width="600">
+    </div>
+    <p class="w3-serif w3-large">
+      Note that we can always search online to find already-known camera-specific configurations.
+      Our image is taken by a Canon EOS T3 Rebel camera, which is known to have a "rggb" pattern. 
+      Let us find this out in an analytic approach by using hints from known colors. (without the help of the internet) <br><br>
+      
+      First, we infer the arrangement of the <strong>green</strong> pixels by assuming either the 
+      <i>top-left bottom-right</i> ("grbg" and "gbrg") or the <i>top-right bottom-left</i> ("rggb" and "bggr") pattern 
+      and interpolating the colors (demosaicing) for the remaining pixels. <br>
+      Once we perform demosaicing for the green channel, regions with high green value (<i>e.g.</i>, yellow slug) should have high intensities all accross the slug region. 
+      However, when assuming the <i>top-left, bottom-right</i> pattern, 
+      we observe that pixels have alternating high, low intensities and creates checkerboard artifacts after interpolation. 
+      This is due to the fact that yellow colors have contrasting intensities of red and blue (high red and low blue). 
+      Thus, we can conclude that our camera has either the "rggb" or the "bggr" pattern.
+    </p>
+    
+    <div class="w3-center">
+      <img src="./assets/assign1/2_Bayer_Pattern_Green.png" class="w3-image" width="600">
+      <figcaption>
+        Left - Demosaiced image assuming <i>top-left bottom-right</i> pattern<br>
+        Right - Demosaiced image assuming <i>top-right bottom-left</i> pattern
+      </figcaption>
+    </div>
+
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        HEIGHT, WIDTH = linearized_image.shape<br>
+        <br>
+        top_right_mask = np.zeros((HEIGHT, WIDTH), dtype=np.int_)<br>
+        top_right_mask[0:-1:2, 1:-1:2] = 1<br>
+        <br>
+        bottom_left_mask = np.zeros((HEIGHT, WIDTH), dtype=np.int_)<br>
+        bottom_left_mask[1:-1:2, 0:-1:2] = 1<br>
+        <br>
+        <br>
+        top_left_mask = np.zeros((HEIGHT, WIDTH), dtype=np.int_)<br>
+        top_left_mask[0:-1:2, 0:-1:2] = 1<br>
+        <br>
+        bottom_right_mask = np.zeros((HEIGHT, WIDTH), dtype=np.int_)<br>
+        bottom_right_mask[1:-1:2, 1:-1:2] = 1<br>
+        <br>
+        # Interpolate the green channel<br>
+        green_mask_tl_br = (top_left_mask + bottom_right_mask) * linearized_image<br>
+        green_mask_tr_bl = (top_right_mask + bottom_left_mask) * linearized_image<br>
+        kernel= np.array([[0.00, 0.25, 0.00],[0.25, 0.00, 0.25],[0.00, 0.25, 0.00]])<br>
+        grayscale_tl_br = cv2.filter2D(green_mask_tl_br, ddepth=-1, kernel=kernel) + green_mask_tl_br<br>
+        grayscale_tr_bl = cv2.filter2D(green_mask_tr_bl, ddepth=-1, kernel=kernel) + green_mask_tr_bl<br>
+        <br>
+        # Show the slug region<br>
+        banana = cv2.hconcat([grayscale_tl_br[1750:1850, 3000:3100], grayscale_tr_bl[1750:1850, 3000:3100]])<br>
+        <br>
+        cv2.imwrite('2_Bayer_Pattern_Green.png', (banana*255).astype(np.uint8))<br>
+      </code>
+    </div>
+  </div>
+
+
+  <!-- White Balance -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="bayer">
+    <h3 class="w3-center">White Balance</h3> <hr>
+    <p class="w3-serif w3-large">
+
+    </p>
+    
+    <div class="w3-center">
+      <img src="./assets/assign1/2_Gray_World_WB.png" class="w3-image" width="400">
+      <img src="./assets/assign1/2_white_World_WB.png" class="w3-image" width="400">
+      <figcaption>
+        Left - Gray world assumption white balance<br>
+        Right - White world assumption white balance
+      </figcaption>
+    </div>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        # RGGB
+        _r = linearized_image * top_left_mask
+        _g = linearized_image * green_mask
+        _b = linearized_image * bottom_right_mask
+        
+        r_mean = np.ma.array(linearized_image, mask=1-top_left_mask).mean()
+        g_mean = np.ma.array(linearized_image, mask=1-green_mask).mean()
+        b_mean = np.ma.array(linearized_image, mask=1-bottom_right_mask).mean()
+        
+        r_max, g_max, b_max = _r.max(), _g.max(), _b.max()
+        
+        # might be good to prevent division-by-zero
+        gray_world_wb = np.clip(_r * (g_mean / r_mean) + _g + _b * (g_mean / b_mean), 0, 1)
+        white_world_wb = np.clip(_r * (g_max / r_max) + _g + _b * (g_max / b_max), 0, 1)
+        
+        cv2.imwrite('3_Gray_World_WB.png', (gray_world_wb * 255).astype(np.uint8))
+        cv2.imwrite('3_White_World_WB.png', (white_world_wb * 255).astype(np.uint8))
+        
+        white_balanced_image = gray_world_wb.copy()
+        # white_balanced_image = white_world_wb.copy()
+      </code>
+    </div>
+  </div>
+  
+<!-- End page content -->
+</div>
+
+
+</body>
+</html>
