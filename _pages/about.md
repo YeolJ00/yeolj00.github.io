@@ -1,6 +1,6 @@
 ---
 permalink: /
-title: "Welcome to JooYeol's Personal Website"
+title: "Awesome"
 excerpt: "About me"
 author_profile: true
 redirect_from: 
@@ -9,7 +9,7 @@ redirect_from:
 ---
 
 Hi there. I'm JooYeol Yun. I am a Ph.D. student at <a href="http://davian.kaist.ac.kr/" style="color:#0f6bff"> <strong>Data and Visual Analytics Lab (DAVIAN)</strong></a> in Korea Advanced Institute of Science and Technology (KAIST) supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#0f6bff"> <strong>Jaegul Choo</strong></a>. <br>
-I am interested in ...
+My research interests are
 * Computational Photography
 * Image Generation and Manipulation
 * Enhancing the quality of everyday images taken by casual users. 📷🎨
