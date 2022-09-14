@@ -72,7 +72,7 @@
 
   <!-- Initials -->
   <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="initials">
-    <h3 class="w3-center">Initials</h3> <hr>
+    <h3 class="w3-center w3-wide">Initials</h3> <hr>
     <p class="w3-serif w3-large">
       Since native Python does not support loading the <code>.cr2</code> file extension, 
       we will be using the <code>rawpy</code> and the <code>numpy</code> library to open and manipulate our image. <br>
@@ -93,7 +93,7 @@
 
   <!-- Linearization -->
   <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="linearization">
-    <h3 class="w3-center">Linearization</h3> <hr>
+    <h3 class="w3-center w3-wide">Linearization</h3> <hr>
     <p class="w3-serif w3-large">
       Once we have loaded the RAW image, we will first linearize the image, 
       indicating that we will compensate the non-linear photodiode response function near over/under-saturated regions.<br>
@@ -122,7 +122,7 @@
 
   <!-- Bayer Pattern -->
   <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="bayer">
-    <h3 class="w3-center">Identifying the Correct Bayer Pattern</h3> <hr>
+    <h3 class="w3-center w3-wide">Identifying the Correct Bayer Pattern</h3> <hr>
     <p class="w3-serif w3-large">
       Before assigning or adjusting the values of each pixel, we first need to the determine the Bayer pattern of the sensor.
       This is essential for appropriately converting a single channel image into a 3-channel RGB image. 
@@ -136,10 +136,11 @@
       Our image is taken by a Canon EOS T3 Rebel camera, which is known to have a "rggb" pattern. 
       Let us find this out in an analytic approach by using hints from known colors. (without the help of the internet) <br><br>
       
-      First, we infer the arrangement of the <strong>green</strong> pixels by assuming either the 
+      We infer the arrangement of the <strong>green</strong> pixels by assuming either the 
       <i>top-left bottom-right</i> ("grbg" and "gbrg") or the <i>top-right bottom-left</i> ("rggb" and "bggr") pattern 
       and interpolating the colors (demosaicing) for the remaining pixels. <br>
-      Once we perform demosaicing for the green channel, regions with high green value (<i>e.g.</i>, yellow slug) should have high intensities all accross the slug region. 
+      Once we perform demosaicing for the green channel, 
+      regions with high green value (<i>e.g.</i>, yellow slug) should have high intensities all accross the slug region. 
       However, when assuming the <i>top-left, bottom-right</i> pattern, 
       we observe that pixels have alternating high, low intensities and creates checkerboard artifacts after interpolation. 
       This is due to the fact that yellow colors have contrasting intensities of red and blue (high red and low blue). 
@@ -148,7 +149,7 @@
     
     <div class="w3-center">
       <img src="./assets/assign1/2_Bayer_Pattern_Green.png" class="w3-image" width="600">
-      <figcaption>
+      <figcaption class="w3-serif">
         Left - Demosaiced image assuming <i>top-left bottom-right</i> pattern<br>
         Right - Demosaiced image assuming <i>top-right bottom-left</i> pattern
       </figcaption>
@@ -184,51 +185,253 @@
         cv2.imwrite('2_Bayer_Pattern_Green.png', (banana*255).astype(np.uint8))<br>
       </code>
     </div>
+
+    <p class="w3-serif w3-large">
+      We can find the location of red and blue pixels in a similar manner 
+      by assuming the "rggb" and the "bggr" pattern and demosaicing the image accordingly.
+      The slug region turns bright when assuming the "rggb" pattern, which means that the pixels lie in a "rggb" pattern. 
+      Leveraging already-known colors in the image helps us to identify camera parameters and configurations. 
+    </p>
+
   </div>
 
 
   <!-- White Balance -->
-  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="bayer">
-    <h3 class="w3-center">White Balance</h3> <hr>
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="whitebalance">
+    <h3 class="w3-center w3-wide">White Balance</h3> <hr>
     <p class="w3-serif w3-large">
-
+      Now that we know which pixel correspond to which color, we can perform color-related modifications. 
+      White balancing is commonly performed in the earlier stages to balance out unnecessary color cast. 
+      We can perform automatic white balancing under an assumption about the image. <br>
+      The <i>gray world assumption</i> assumes that the average intensity of a scene is gray. 
+      Following this assumption, we scale each channel of the image so that the average red, blue, green values are the same. <br>
+      Similarly, the <i>white world assumption</i> assumes that the maximum intensity of a scene is white. 
+      We scale each channel of the image so that the maximum red, blue, green values are a predefined white color
+      (in this case maximum green intensity).
     </p>
     
     <div class="w3-center">
-      <img src="./assets/assign1/2_Gray_World_WB.png" class="w3-image" width="400">
-      <img src="./assets/assign1/2_white_World_WB.png" class="w3-image" width="400">
-      <figcaption>
+      <img src="./assets/assign1/3_Gray_White.png" class="w3-image" width="800">
+      <figcaption class="w3-serif">
         Left - Gray world assumption white balance<br>
         Right - White world assumption white balance
       </figcaption>
     </div>
+    <div class="w3-center">
+      <img src="./assets/assign1/3_Gray_White_Color.png" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        Left - Gray world assumption white balance (Demosaiced)<br>
+        Right - White world assumption white balance (Demosaiced)
+      </figcaption>
+    </div>
+    <p class="w3-serif w3-large">
+      I choose the automatic white balanced image under the grayworld assumption 
+      since the white world assumption seems to have a redish color cast 
+    </p>
     <!-- Code -->
     <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
       <code>
-        # RGGB
-        _r = linearized_image * top_left_mask
-        _g = linearized_image * green_mask
-        _b = linearized_image * bottom_right_mask
-        
-        r_mean = np.ma.array(linearized_image, mask=1-top_left_mask).mean()
-        g_mean = np.ma.array(linearized_image, mask=1-green_mask).mean()
-        b_mean = np.ma.array(linearized_image, mask=1-bottom_right_mask).mean()
-        
-        r_max, g_max, b_max = _r.max(), _g.max(), _b.max()
-        
-        # might be good to prevent division-by-zero
-        gray_world_wb = np.clip(_r * (g_mean / r_mean) + _g + _b * (g_mean / b_mean), 0, 1)
-        white_world_wb = np.clip(_r * (g_max / r_max) + _g + _b * (g_max / b_max), 0, 1)
-        
-        cv2.imwrite('3_Gray_World_WB.png', (gray_world_wb * 255).astype(np.uint8))
-        cv2.imwrite('3_White_World_WB.png', (white_world_wb * 255).astype(np.uint8))
-        
-        white_balanced_image = gray_world_wb.copy()
-        # white_balanced_image = white_world_wb.copy()
+        # RGGB<br>
+        _r = linearized_image * top_left_mask<br>
+        _g = linearized_image * green_mask<br>
+        _b = linearized_image * bottom_right_mask<br>
+        <br>
+        r_mean = np.ma.array(linearized_image, mask=1-top_left_mask).mean()<br>
+        g_mean = np.ma.array(linearized_image, mask=1-green_mask).mean()<br>
+        b_mean = np.ma.array(linearized_image, mask=1-bottom_right_mask).mean()<br>
+        <br>
+        r_max, g_max, b_max = _r.max(), _g.max(), _b.max()<br>
+        <br>
+        # might be good to prevent division-by-zero<br>
+        gray_world_wb = np.clip(_r * (g_mean / r_mean) + _g + _b * (g_mean / b_mean), 0, 1)<br>
+        white_world_wb = np.clip(_r * (g_max / r_max) + _g + _b * (g_max / b_max), 0, 1)<br>
+        <br>
+        cv2.imwrite('3_Gray_World_WB.png', (gray_world_wb * 255).astype(np.uint8))<br>
+        cv2.imwrite('3_White_World_WB.png', (white_world_wb * 255).astype(np.uint8))<br>
+        <br>
+        white_balanced_image = gray_world_wb.copy()<br>
+        # white_balanced_image = white_world_wb.copy()<br>
       </code>
     </div>
   </div>
   
+  <!-- Demosaicing -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="demosaic">
+    <h3 class="w3-center w3-wide">Demosaicing</h3> <hr>
+    <p class="w3-serif w3-large">
+      Our image is still a single channel image without any color related information. 
+      However, we now know the Bayer pattern of the sensor and can assign colors to each pixels.
+      Thus we can interpolate the missing pixels to fill in the colors for all location and all RGB channels. <br>
+
+      Specifically, we design four filters which interpolate the colors from different locations. 
+      For example, the blue pixels only cover a quarter of the whole image. 
+      Thus, the other three pixel locations must be interpolated using three different filters. 
+      In order to do so, we first mask out all other pixels besides blue. 
+      Than, we apply the diagonal, vertical, and horizonatal kernel in order to obtain the blue values for
+      the red pixel, top-right green pixel, and bottom-left green pixel, accordingly. 
+      We sum up the results to obtain a full-resolution intensity value for all locations. 
+      the <code>opencv-python</code> library enabled the use of convolution filters. 
+    </p>
+    
+    <div class="w3-center">
+      <img src="./assets/assign1/4_Demosaicing.png" class="w3-image" width="800">
+    </div>
+
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        diag_kernel = np.array([[0.25, 0.00, 0.25],<br>
+                                [0.00, 0.00, 0.00],<br>
+                                [0.25, 0.00, 0.25]])<br>
+        <br>
+        cross_kernel= np.array([[0.00, 0.25, 0.00],<br>
+                                [0.25, 0.00, 0.25],<br>
+                                [0.00, 0.25, 0.00]])<br>
+        <br>
+        horizontal_kernel = np.array([[0, 0.0, 0.0],<br>
+                                      [0.5, 0.0, 0.5],<br>
+                                      [0.0, 0.0, 0.0]])<br>
+        <br>
+        vertical_kernel = np.array([[0.0, 0.5, 0.0],<br>
+                                    [0.0, 0.0, 0.0],<br>
+                                    [0.0, 0.5, 0.0]])<br>
+        <br>
+        # RGGB<br>
+        g_channel = green_mask * white_balanced_image<br>
+        interpolated_g = cv2.filter2D(g_channel, ddepth=-1, kernel=cross_kernel)<br>
+        <br>
+        g_channel = g_channel \<br>
+        + interpolated_g * (bottom_right_mask + top_left_mask)<br>
+        <br>
+        b_channel = bottom_right_mask * white_balanced_image<br>
+        interpolated_b_diag = cv2.filter2D(b_channel, ddepth=-1, kernel=diag_kernel)<br>
+        interpolated_b_horizontal = cv2.filter2D(b_channel, ddepth=-1, kernel=horizontal_kernel)<br>
+        interpolated_b_vertical = cv2.filter2D(b_channel, ddepth=-1, kernel=vertical_kernel)<br>
+        <br>
+        b_channel = b_channel \<br>
+        + interpolated_b_diag * (top_left_mask) \<br>
+        + interpolated_b_horizontal * (bottom_left_mask) \<br>
+        + interpolated_b_vertical * (top_right_mask)<br>
+        <br>
+        r_channel = top_left_mask * white_balanced_image<br>
+        interpolated_r_diag = cv2.filter2D(r_channel, ddepth=-1, kernel=diag_kernel)<br>
+        interpolated_r_horizontal = cv2.filter2D(r_channel, ddepth=-1, kernel=horizontal_kernel)<br>
+        interpolated_r_vertical = cv2.filter2D(r_channel, ddepth=-1, kernel=vertical_kernel)<br>
+        <br>
+        r_channel = r_channel \<br>
+        + interpolated_r_horizontal * top_right_mask \<br>
+        + interpolated_r_diag * bottom_right_mask \<br>
+        + interpolated_r_vertical * bottom_left_mask<br>
+        <br>
+        bgr_image = np.stack([b_channel, g_channel, r_channel], axis=-1)<br>
+        cv2.imwrite('4_Demosaicing.png', (bgr_image * 255).astype(np.uint8))<br>
+      </code>
+    </div>
+  </div>
+
+
+  <!-- Gamma Correction -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="gamma">
+    <h3 class="w3-center w3-wide">Brightness Adjustment and Gamma Correction</h3> <hr>
+    <p class="w3-serif w3-large">
+      We can also alter the overall brightness of the image. 
+      Unlike white balancing, this will not remove or add colors to the image since it scales the values identically. 
+      I determined the scaling ratio so that the maximum grayscale value of the image will be 1.0, which was approximately <strong>17%</strong> increase in brightness. 
+      This would prevent from pixel values to saturate. 
+    </p>
+    
+    <div class="w3-center">
+      <img src="./assets/assign1/5_Brightness_Adjustment.png" class="w3-image" width="800">
+    </div>
+
+    <p>
+      We perform gamma correction to the image so that the image would be appropriate for display. 
+      According to the provided equation, underexposed regions are linearly scaled and most regions are gamma corrected. 
+      The image is finally clearly visible. 
+    </p>
+
+    <div class="w3-center">
+      <img src="./assets/assign1/5_Gamma_Correction.png" class="w3-image" width="800">
+    </div>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        # scaling<br>
+        gray_image = 0.3 * r_channel + 0.59 * g_channel + 0.11 * b_channel<br>
+        brightened_image = bgr_image * (1.0 / gray_image.max())<br>
+        cv2.imwrite('5_Brightness_Adjustment.png', (brightened_image * 255).astype(np.uint8))<br>
+        <br>
+        # gamma correction<br>
+        linear_region = brightened_image < 0.0031308<br>
+        non_linear_region = ~linear_region<br>
+        <br>
+        gamma_corrected_image = linear_region * brightened_image * 12.92 \<br>
+                + non_linear_region * ((1.055) * np.power(brightened_image, 1/2.4) - 0.055)<br>
+        <br>
+        cv2.imwrite('5_Gamma_Correction.png', (gamma_corrected_image*255).astype(np.uint8))<br>
+      </code>
+    </div>
+  </div>
+
+
+  <!-- Compression -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="comp">
+    <h3 class="w3-center w3-wide">Compression</h3> <hr>
+    <p class="w3-serif w3-large">
+      Finally, we save the image into a 8bit file. 
+      The original <code>.cr2</code> file was 17.5 MB. 
+      The <code>.png</code> format is a lossless compression and compresses the image into 15.9 MB.
+      The <code>.jpg</code> format is a lossy compression and we can determine the quality-compression rate trade-off.
+      Images compressed with 95, 90, 80, and 70 JPEG quality has a size of 2.57 MB, 1.68 MB, 1.05 MB, and 0.83 MB, accordingly. 
+      Thus, the compression rate of JPEG quality 95 is <strong>14.7 %</strong>. <br>
+
+      Since our image is a high resolution image, <code>.jpg</code> format images seems to be generally good.
+      However, when closely examined, I was able to clearly observe JPEG artifact from JPEG quality 80. 
+      Considering that the compression ration is already high at 95 or 90, the quality-compression rate trade-off seems to be around 95.
+    </p>
+    
+    <div class="w3-center">
+      <img src="./assets/assign1/6_Compression.png" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        <code>.png</code> format with no information loss
+      </figcaption>
+
+      <img src="./assets/assign1/6_Compression_JPEG_95.jpg" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        <code>.jpg</code> format with JPEG quality of 95
+      </figcaption>
+
+      <img src="./assets/assign1/6_Compression_JPEG_90.jpg" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        <code>.jpg</code> format with JPEG quality of 90
+      </figcaption>
+
+      <img src="./assets/assign1/6_Compression_JPEG_80.jpg" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        <code>.jpg</code> format with JPEG quality of 80
+      </figcaption>
+
+      <img src="./assets/assign1/6_Compression_JPEG_70.jpg" class="w3-image" width="800">
+      <figcaption class="w3-serif">
+        <code>.jpg</code> format with JPEG quality of 70
+      </figcaption>
+    </div>
+
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        final_image = (gamma_corrected_image.copy() * 255).astype(np.uint8)<br>
+        <br>
+        cv2.imwrite('6_Compression.png', final_image)<br>
+        cv2.imwrite('6_Compression_JPEG_95.jpg', final_image, [cv2.IMWRITE_JPEG_QUALITY, 95])<br>
+        cv2.imwrite('6_Compression_JPEG_90.jpg', final_image, [cv2.IMWRITE_JPEG_QUALITY, 90])<br>
+        cv2.imwrite('6_Compression_JPEG_80.jpg', final_image, [cv2.IMWRITE_JPEG_QUALITY, 80])<br>
+        cv2.imwrite('6_Compression_JPEG_70.jpg', final_image, [cv2.IMWRITE_JPEG_QUALITY, 70])<br>
+      </code>
+    </div>
+  </div>
+
+
 <!-- End page content -->
 </div>
 
