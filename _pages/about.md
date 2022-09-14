@@ -8,15 +8,17 @@ redirect_from:
   - /about.html
 ---
 
-Hi there. I'm JooYeol Yun. I am a Ph.D. student at <a href="http://davian.kaist.ac.kr/" style="color:#89bafa"> <strong>Data and Visual Analytics Lab (DAVIAN)</strong></a> in Korea Advanced Institute of Science and Technology (KAIST) supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#89bafa"> <strong>Jaegul Choo</strong></a>. 
-I am interested in enhancing the quality of everyday images taken by casual users. 
-
+Hi there. I'm JooYeol Yun. I am a Ph.D. student at <a href="http://davian.kaist.ac.kr/" style="color:#0f6bff"> <strong>Data and Visual Analytics Lab (DAVIAN)</strong></a> in Korea Advanced Institute of Science and Technology (KAIST) supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#0f6bff"> <strong>Jaegul Choo</strong></a>. <br>
+I am interested in ...
+* Computational Photography
+* Image Generation and Manipulation
+* Enhancing the quality of everyday images taken by casual users. 📷🎨
 
 
 Education
 -----
 
-__M.S.__ in Artificail Intelligence at Korea Advanced Institue of Science and Technology (KAIST)
+__M.S.__ in Artificial Intelligence at Korea Advanced Institue of Science and Technology (KAIST)
 
 2021 - 2023
 
@@ -29,13 +31,13 @@ International Conference Publications
 ----
 * iColoriT: Towards Propagating Hints to the Right Region for Interactive Colorization via Leveraging Vision Transformer
   
-  __Jooyeol Yun*__, Sanghyeon Lee*, Minho Park*, and Jaegul Choo (*: equal contributions)
+  <strong>Jooyeol Yun*</strong>, Sanghyeon Lee*, Minho Park*, and Jaegul Choo (*: equal contributions)
 
   Winter Conference on Applications of Computer Vision [WACV](https://wacv2023.thecvf.com/), 2023, *Accepted*
 
 
 * Improving Face Recognition with Large Age Gaps by Learning to Distinguish Children
 
-  Jungsoo Lee*, __Jooyeol Yun*__, Sunghyun Park, Yonggyu Kim, and Jaegul Choo (*: equal contributions)
+  Jungsoo Lee*, <strong>Jooyeol Yun*<strong>, Sunghyun Park, Yonggyu Kim, and Jaegul Choo (*: equal contributions)
 
   British Machine Vision Conference [BMVC](https://www.bmvc2021-virtualconference.com/), 2021, *Accepted*
