@@ -29,15 +29,11 @@ __B.S.__ in Computer Science and Engineering at Korea University
 
 International Conference Publications
 ----
-* iColoriT: Towards Propagating Hints to the Right Region for Interactive Colorization via Leveraging Vision Transformer
-  
-  <strong>Jooyeol Yun*</strong>, Sanghyeon Lee*, Minho Park*, and Jaegul Choo (*: equal contributions)
-
+* iColoriT: Towards Propagating Hints to the Right Region for Interactive Colorization via Leveraging Vision Transformer <br>
+  __Jooyeol Yun\*__, Sanghyeon Lee\*, Minho Park\*, and Jaegul Choo (\*: equal contributions) <br>
   Winter Conference on Applications of Computer Vision [WACV](https://wacv2023.thecvf.com/), 2023, *Accepted*
 
 
-* Improving Face Recognition with Large Age Gaps by Learning to Distinguish Children
-
-  Jungsoo Lee*, <strong>Jooyeol Yun*<strong>, Sunghyun Park, Yonggyu Kim, and Jaegul Choo (*: equal contributions)
-
+* Improving Face Recognition with Large Age Gaps by Learning to Distinguish Children <br>
+  Jungsoo Lee\*, __Jooyeol Yun\*__, Sunghyun Park, Yonggyu Kim, and Jaegul Choo (\*: equal contributions) <br>
   British Machine Vision Conference [BMVC](https://www.bmvc2021-virtualconference.com/), 2021, *Accepted*
