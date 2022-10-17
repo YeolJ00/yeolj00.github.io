@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI621 - Assignment 2</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-center" style="max-width:1500px">
+  <img class="w3-image" src="./assets/assign2/main.jpg" alt="Me" width="900" height="300">
+  <div class="w3-display-middle w3-padding-large w3-border w3-wide w3-text-white w3-center">
+    <h1 class="w3-hide-medium w3-hide-small w3-xxxlarge">AI621</h1>
+    <h5 class="w3-hide-large" style="white-space:nowrap">AI621</h5>
+    <h3 class="w3-hide-medium w3-hide-small">Assignment 2</h3>
+  </div>
+  
+  <!-- Navbar (placed at the bottom of the header image) -->
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:22px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#laplacian" class="w3-bar-item w3-button">Laplacian Pyramid</a>
+    <a href="#filtering" class="w3-bar-item w3-button">Temporal Filtering</a>
+  </div>
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:-16px">
+    <a href="#frequencyband" class="w3-bar-item w3-button">Frequency Band of Interest</a>
+    <a href="#reconstruction" class="w3-bar-item w3-button">Image Reconstrcution</a>
+    <a href="#myvideo" class="w3-bar-item w3-button">Custom Videos</a>
+  </div>
+</header>
+
+<!-- Navbar on small screens -->
+<div class="w3-center w3-light-grey w3-padding-16 w3-hide-large w3-hide-medium">
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:22px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#laplacian" class="w3-bar-item w3-button">Laplacian Pyramid</a>
+    <a href="#filtering" class="w3-bar-item w3-button">Temporal Filtering</a>
+  </div>
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:-16px">
+    <a href="#frequencyband" class="w3-bar-item w3-button">Frequency Band of Interest</a>
+    <a href="#reconstruction" class="w3-bar-item w3-button">Image Reconstrcution</a>
+    <a href="#myvideo" class="w3-bar-item w3-button">Custom Videos</a>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="w3-content w3-padding-large w3-margin-top", id="intro">
+  <h3 class="w3-hide-medium w3-hide-small">Assignment 2 - Eulerian Video Magnification</h3>
+  <h5 class="w3-right-align w3-serif">by 20218085 윤주열</h5>
+  <p class="w3-serif w3-large"> 
+    We will be implementing a video magnification technique introduced in the paper 
+    "Eulerian Video Magnification for Revealing Subtle Changes in the World" (TOG 2012). <br>
+    The codes are written in <strong>Python</strong> >=3.8 with the help of some basic libraries. <br>
+    In order to run the code, first unzip the codes and run <br>
+    <code>
+      pip install -r requirements.txt
+    </code>
+    in the desired Python enviornment.
+  </p>
+  <!-- Code -->
+  <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+      import cv2 <br>
+      import numpy as np <br>
+      from scipy import signal <br>
+      import matplotlib.pyplot as plt <br>      
+    </code>
+    </div>
+</div>
+
+<div class="w3-content w3-padding-large w3-margin-top">
+
+  <!-- Initials -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="initials">
+    <h3 class="w3-center w3-wide">Initials</h3> <hr>
+    <p class="w3-serif w3-large">
+      We will load the video file with the help of the <code>opencv-python</code> library which allows us to read videos frame by frame. 
+      We can also obtain some video related meta information such as video frame count, frames per second, height, and width. 
+      We will store the values with double-precision since our operations will be conducted in the range of 0-1.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+video_name = 'face' 
+
+cap = cv2.VideoCapture(f'./data/{video_name}.mp4') 
+
+HEIGHT, WIDTH = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)), int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) 
+FRAME_COUNT, FPS = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)), int(cap.get(cv2.CAP_PROP_FPS)) 
+
+rgb_video = [] 
+for i in range(FRAME_COUNT): 
+    ret, frame = cap.read() 
+    if ret: 
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) 
+        rgb_video.append(frame) 
+    else: 
+        print('ill frame') 
+        break 
+cap.release() 
+</pre>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+      We will then convert the color space of the video from RGB to the YIQ color space. 
+      According to the definition of the YIQ color space in <a href="https://en.wikipedia.org/wiki/YIQ">Wikipedia</a>, 
+      we are able to convert between color spaces with a simple linear transormation. 
+    </p>
+    
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+# Float64 in range [0,1]
+rgb_video = np.array(rgb_video) / 255
+
+# RGB to YIQ transformation
+# https://en.wikipedia.org/wiki/YIQ
+
+rgb2yiq = np.array([[0.299, 0.587, 0.114],
+                    [0.596,-0.275,-0.321],
+                    [0.212,-0.523, 0.311]])
+yiq2rgb = np.array([[1.000, 0.956, 0.619],
+                    [1.000,-0.272,-0.647],
+                    [1.000,-1.106, 1.703]])
+
+yiq_video = np.dot(rgb_video, rgb2yiq.T.copy())
+</pre>
+    </code>
+    </div>
+
+  </div>
+
+  <!-- Laplacian Pyramid -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="laplacian">
+    <h3 class="w3-center w3-wide">Laplacian Pyramid</h3> <hr>
+    <p class="w3-serif w3-large">
+      Once we have loaded the video in a <code>numpy</code> array, we then construct a Laplacian pyramid of the video.
+      The Laplacian pyramid is constructed independently for each frame and consists of processes such as 
+      down sampling with a Gaussian filter and calculating the difference between the original and filtered image. 
+      This can be easily done by the <code>pyrUp</code> and <code>pyrDown</code> function from the <code>opencv-python</code> library,
+      which upsamples/downsamples an image with a Gaussian filter. 
+      Utilizing the <code>pyrUp</code>, <code>pyrDown</code> functions, 
+      we first construct a Gaussian image pyramid and obtain the Laplacian counterpart by subtracting the neighboring stages. 
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+yiq_video_gaussian_pyramid = {'g0':[], 'g1':[], 'g2':[], 'g3':[], }
+yiq_video_laplacian_pyramid = {'l0':[], 'l1':[], 'l2':[], 'l3':[], }
+
+yiq_video_gaussian_pyramid['g0'] = yiq_video.copy()
+
+for frame in yiq_video:
+  g1 = cv2.pyrDown(frame)
+  _g1 = cv2.pyrUp(g1)
+  yiq_video_gaussian_pyramid['g1'].append(g1)
+  yiq_video_laplacian_pyramid['l0'].append(frame - _g1)
+
+  g2 = cv2.pyrDown(g1)
+  _g2 = cv2.pyrUp(g2)
+  yiq_video_gaussian_pyramid['g2'].append(g2)
+  yiq_video_laplacian_pyramid['l1'].append(g1 - _g2)
+
+  g3 = cv2.pyrDown(g2)
+  _g3 = cv2.pyrUp(g3)
+  yiq_video_gaussian_pyramid['g3'].append(g3)
+  yiq_video_laplacian_pyramid['l2'].append(g2 - _g3)
+
+for k, value in yiq_video_gaussian_pyramid.items():
+  yiq_video_gaussian_pyramid[k] = np.array(value)
+
+for k, value in yiq_video_laplacian_pyramid.items():
+  yiq_video_laplacian_pyramid[k] = np.array(value)
+yiq_video_laplacian_pyramid['l3'] = yiq_video_gaussian_pyramid['g3'].copy()
+</pre>
+    </code>
+    </div>
+    <br>
+    <div class="w3-center">
+      <img src="./assets/assign2/1_Laplacian_Pyramid.png" class="w3-image" width="600"> 
+    </div>
+    <div class="w3-serif w3-large">
+      We can also verify whether we have constructed a valid Laplacian pyramid by collaplsing the pyramid into the original image. 
+      Collapsing a Laplacian pyramid is done by upsampling the last layer and adding it to the next layer in order to obtain a Gaussian pyramid.
+      The following code verifies if the collapsing the Laplacian pyramid returns the identical image. 
+    </div>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+# reconstructing the original frame
+_first_frame = (np.dot(yiq_video_gaussian_pyramid['g0'][0], yiq2rgb.T) * 255).astype(np.uint8)
+_reconstructed_first_frame = cv2.pyrUp(
+                                cv2.pyrUp(
+                                    cv2.pyrUp(yiq_video_laplacian_pyramid['l3'][0]) \
+                                        + yiq_video_laplacian_pyramid['l2'][0]) \
+                                    + yiq_video_laplacian_pyramid['l1'][0]) \
+                                + yiq_video_laplacian_pyramid['l0'][0]
+_reconstructed_first_frame = (np.dot(_reconstructed_first_frame, yiq2rgb.T) * 255).astype(np.uint8)
+cv2.imwrite('1_Reconstructed_Pyramid.png', cv2.cvtColor(_reconstructed_first_frame, cv2.COLOR_RGB2BGR))
+
+print('Reconstructed images are '
+    f'{"identical" if np.array_equal(_first_frame, _reconstructed_first_frame) else "different"}')
+</pre>
+    </code>
+    </div>
+  </div>
+
+
+  <!-- Temporal Filtering -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="filtering">
+    <h3 class="w3-center w3-wide">Temporal Filtering</h3> <hr>
+    <p class="w3-serif w3-large">
+      Now for the main event, we will apply the same bandpass filter for each pixel along the temporal axis. 
+      For ideal filters, we convert the signal into the frequency domain using the <code>np.fft</code> module. 
+      Specifically, the <code>rfft</code> function does not return the redundant half of the Fourier transform result 
+      and enables us to directly mask certain frequencies to zero. 
+      A signle index of the DFT result corresponds to <code>FPS/FRAME_COUNT</code> Hz of the origianl signal. 
+      We return the signal after passing the bandpass filter so that we can amplify this signal by a specified constant <code>AMP_VALUE</code>. 
+      For butterworth filters, we use the <code>scipy.signal</code> library for both creating and applying filters to videos, 
+      which can be easily done with a few lines. 
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+# create filter
+if video_name == 'face':
+    LOW_FREQ, HIGH_FREQ = 0.83, 1.0
+    # LOW_FREQ, HIGH_FREQ = 7.5, 7.9
+    AMP_VALUE = 100
+    sos = None
+elif video_name == 'baby':
+    LOW_FREQ, HIGH_FREQ = 0.4, 3
+    AMP_VALUE = 10
+    sos = signal.butter(1, [LOW_FREQ, HIGH_FREQ], btype='band', output='sos', fs=FPS)
+elif video_name == 'baby2':
+    LOW_FREQ, HIGH_FREQ = 2.33, 2.67
+    AMP_VALUE = 150
+    sos = None
+elif video_name == 'subway':
+    LOW_FREQ, HIGH_FREQ = 3.6, 6.2
+    AMP_VALUE = 15
+    sos = signal.butter(1, [LOW_FREQ, HIGH_FREQ], btype='band', output='sos', fs=FPS)
+elif video_name == 'watch':
+    LOW_FREQ, HIGH_FREQ = 4, 12
+    AMP_VALUE = 10
+    sos = signal.butter(1, [LOW_FREQ, HIGH_FREQ], btype='band', output='sos', fs=FPS)
+else:
+    raise NotImplementedError
+
+# visualize filter
+plt.figure(0)
+if sos is not None:
+    NYQ = 0.5 * FPS
+    w, h = signal.sosfreqz(sos, worN=2048)
+    plt.plot((NYQ / np.pi) * w, abs(h))
+else:
+    w = np.linspace(0, 15, 2048)
+    h = [1 if LOW_FREQ <= x and x <= HIGH_FREQ else 0 for x in w]
+    plt.plot(w, h)
+
+def band_pass_filter(data, low_cut, high_cut, fs):
+    low_cut, high_cut = int(low_cut * FRAME_COUNT / fs), int(high_cut * FRAME_COUNT / fs)
+    rfft = np.fft.rfft(data, axis=0)
+    rfft[:low_cut] = 0
+    rfft[high_cut+1:] = 0
+    return np.fft.irfft(rfft, n=FRAME_COUNT, axis=0).real
+
+yiq_video_laplacian_pyramid_amplified = {}
+for stage, video in sorted(yiq_video_laplacian_pyramid.items()):
+    if sos is None:
+        if stage in ['l0', 'l1']:
+            yiq_video_laplacian_pyramid_amplified[stage] = yiq_video_laplacian_pyramid[stage]
+            continue
+        yiq_video_laplacian_pyramid_amplified[stage] = yiq_video_laplacian_pyramid[stage] \
+                                    + band_pass_filter(yiq_video_laplacian_pyramid[stage], \
+                                    LOW_FREQ, HIGH_FREQ, FPS) * AMP_VALUE
+    else:
+        yiq_video_laplacian_pyramid_amplified[stage] = yiq_video_laplacian_pyramid[stage] \
+                                    + signal.sosfilt(sos, yiq_video_laplacian_pyramid[stage], axis=0)\
+                                    * AMP_VALUE
+</pre>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+      Bellow are the amplified signal and the bandpass filter used for the "face.mp4" video. 
+    </p>
+    <div class="w3-center">
+      <img src="./assets/assign2/2_Temporal_Filtering.png" class="w3-image" width="800"> 
+    </div>
+  </div>
+
+
+  <!-- White Balance -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="frequencyband">
+    <h3 class="w3-center w3-wide">Extracting the Frequency Band of Interest</h3> <hr>
+    <p class="w3-serif w3-large">
+      I was not successful at this problem, as I was not able to identify what frequencies should be amplified. 
+      For a naive start, I tried averaging along the spatial dimension to obtain a 1D-signal and analyzed the frequency of that signal. 
+      However, I was not able to find anything special near 1Hz. 
+      This seemed to be an obvious result since the frequency that <i>needs</i> to be amplified wouldn't have a high amplitude at the first place. 
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        yiq_video_averaged = np.sum(yiq_video, axis=(1,2,3))
+        yiq_video_averaged_fft = np.fft.fft(yiq_video_averaged, axis=0)
+
+        # Remove DC component
+        yiq_video_averaged_fft[(FRAME_COUNT+1)//2] = 0.
+
+        plt.figure(2)
+        f = np.linspace(0, FPS//2, FRAME_COUNT//2)
+        plt.plot(f, np.abs(yiq_video_averaged_fft)[(FRAME_COUNT + 1) // 2:], color='r')
+        plt.savefig('3_Frequency_Analysis.png')
+      </code>
+    </div>
+    <br>
+    <div class="w3-center">
+      <img src="./assets/assign2/3_Frequency_Analysis.png" class="w3-image" width="400">
+    </div>
+
+    <p class="w3-serif w3-large">
+      I think the best effort would be to use specific domain knowledge. (e.g., heartbeat is around 0.83Hz - 1.0Hz)
+    </p>
+  </div>
+  
+  <!-- Image Reconstruction -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="reconstruction">
+    <h3 class="w3-center w3-wide">Image Reconstruction</h3> <hr>
+    <p class="w3-serif w3-large">
+      Collapsing the Laplacian pyramid is the same process as seen above. 
+      The results for blood flow amplification are seen bellow. 
+      The video has some artifacts in regions out-of-interest since 
+      the original paper proposed extensive spatial filtering which our project did not consider. 
+    </p>
+    
+    <div class="w3-center">
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_face.mp4" type="video/mp4">
+      </video> 
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_baby2.mp4" type="video/mp4">
+      </video> 
+      <br>
+    </div>
+    <p class="w3-serif w3-large">
+      We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
+      We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+    </p>
+    <div class="w3-center">
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_baby.mp4" type="video/mp4">
+      </video> 
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_subway.mp4" type="video/mp4">
+      </video> 
+    </div>
+
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+print('Saving video...')
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+writer = cv2.VideoWriter(f'5_Amplified_{video_name}.mp4', fourcc, FPS, (WIDTH, HEIGHT))
+
+for i in range(FRAME_COUNT):
+  yiq_reconstructed_frame = cv2.pyrUp(
+                              cv2.pyrUp(
+                                  cv2.pyrUp(yiq_video_laplacian_pyramid_amplified['l3'][i]) \
+                                      + yiq_video_laplacian_pyramid_amplified['l2'][i]) \
+                                  + yiq_video_laplacian_pyramid_amplified['l1'][i]) \
+                              + yiq_video_laplacian_pyramid_amplified['l0'][i]
+
+  _rgb_reconstructed_frame = np.clip(np.dot(yiq_reconstructed_frame, yiq2rgb.T), 0, 1)
+  rgb_reconstructed_frame = (_rgb_reconstructed_frame * 255).astype(np.uint8)
+  frame = cv2.cvtColor(rgb_reconstructed_frame, cv2.COLOR_RGB2BGR)
+  writer.write(frame)
+
+writer.release()
+</pre>
+    </code>
+    </div>
+  </div>
+
+
+  <!-- Compression -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="myvideo">
+    <h3 class="w3-center w3-wide">Capture and Motion-Magnify Your Own Video</h3> <hr>
+    <p class="w3-serif w3-large">
+      I recorded the bunny inside my watch jump up and down with my smart phone. 
+      My aim was to magnify the bunny's motion, but I ended up finding some parameters that magnify the moire patterns, 
+      leading to the bunny being colorful.
+    </p>
+    <div class="w3-center">
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/6_Custom_Before.mp4" type="video/mp4">
+      </video> 
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/6_Custom_After.mp4" type="video/mp4">
+      </video> 
+    </div>
+
+    <p class="w3-serif w3-large">
+      I amplified the signals between 0.5Hz to 3Hz with the butterworth filter with a factor of 10. 
+    </p>
+  </div>
+
+<!-- End page content -->
+</div>
+
+
+</body>
+</html>
