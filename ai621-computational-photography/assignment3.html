@@ -409,8 +409,12 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
     </p>
 
     <p class="w3-serif w3-large">
-      We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
-      We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+      The first example is a blending example of a UFO over a city skyline. 
+      Notice that the source image (UFO) is from a dark background with low contrast. 
+      Thus, the UFO is bright and hard to detect, just like how you would see one in daylight.
+      However, the dirt road under the UFO beam covers the original background. 
+      <u>Using mixed gradient resolves this issue</u> and properly shows the city under the beam of light. 
+      However, the UFO becomes even more fainter as it looses texture.
     </p>
     <div class="w3-center">
         <img src="./assets/assign3/3_ufo_before.png" class="w3-image" width="800">
@@ -418,11 +422,20 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
         <img src="./assets/assign3/3_ufo_poisson.png" class="w3-image" width="800"> 
         
         <img src="./assets/assign3/3_ufo_mixed.png" class="w3-image" width="800"> 
+
+        <figcaption class="w3-serif">
+          Top - Image before blending /
+          Middle - Poisson blending /
+          Bottom - Mixed gradient blending
+        </figcaption>
     </div>
 
     <p class="w3-serif w3-large">
-        We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
-        We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+      Another good example of poisson blending can be seen in the next example. 
+      Poisson blending is often prone to changing colors in the background as seen in the second image.
+      Also, the doughnut ring is filled with the contents from the source and blocks the tree behind. 
+      When using mixed gradients, the tree behind the doughnut is visible. 
+      However, we can notice that too much of it is visible, <u>making the doughnut transparent</u>.
     </p>
 
     <div class="w3-center">
@@ -431,11 +444,18 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
         <img src="./assets/assign3/3_doughnut_poisson.png" class="w3-image" width="250"> 
         
         <img src="./assets/assign3/3_doughnut_mixed.png" class="w3-image" width="250"> 
+        <figcaption class="w3-serif">
+          Left - Image before blending /
+          Center - Poisson blending /
+          Right - Mixed gradient blending
+        </figcaption>
     </div>
 
     <p class="w3-serif w3-large">
-        We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
-        We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+      Another failure case of using mixed gradients. 
+      When using normal poisson blending, Mr.Bean is seamlessly pasted onto the historic photo.
+      However, when using mixed gradients, the brightness of the source image becomes inconsistent.
+      This is due to the small but relevant gradients in the target image, which tends to get amplified when taken the max gradients.
     </p>
     <div class="w3-center">
         <img src="./assets/assign3/3_bean_before.png" class="w3-image" width="250">
@@ -443,6 +463,11 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
         <img src="./assets/assign3/3_bean_poisson.png" class="w3-image" width="250"> 
         
         <img src="./assets/assign3/3_bean_mixed.png" class="w3-image" width="250"> 
+        <figcaption class="w3-serif">
+          Left - Image before blending /
+          Center - Poisson blending /
+          Right - Mixed gradient blending
+        </figcaption>
     </div>
   </div>
 
