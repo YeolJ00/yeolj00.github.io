@@ -405,10 +405,7 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
   <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="additional">
     <h3 class="w3-center w3-wide">Additional Examples and Failure Cases</h3> <hr>
     <p class="w3-serif w3-large">
-      Collapsing the Laplacian pyramid is the same process as seen above. 
-      The results for blood flow amplification are seen bellow. 
-      The video has some artifacts in regions out-of-interest since 
-      the original paper proposed extensive spatial filtering which our project did not consider. 
+        To assess the poisson blending and mixed gradient blending approaches, we provide three cases for comparison. 
     </p>
 
     <p class="w3-serif w3-large">
@@ -416,39 +413,36 @@ cv2.imwrite('3_mixed_blending.png', mix_blended_image)
       We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
     </p>
     <div class="w3-center">
-      <video width="320" height="240" controls>
-        <source src="./assets/assign2/5_Amplified_baby.mp4" type="video/mp4">
-      </video> 
-      <video width="320" height="240" controls>
-        <source src="./assets/assign2/5_Amplified_subway.mp4" type="video/mp4">
-      </video> 
+        <img src="./assets/assign3/3_ufo_before.png" class="w3-image" width="800">
+
+        <img src="./assets/assign3/3_ufo_poisson.png" class="w3-image" width="800"> 
+        
+        <img src="./assets/assign3/3_ufo_mixed.png" class="w3-image" width="800"> 
     </div>
 
-    <!-- Code -->
-    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
-    <code>
-<pre>
-print('Saving video...')
+    <p class="w3-serif w3-large">
+        We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
+        We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+    </p>
 
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-writer = cv2.VideoWriter(f'5_Amplified_{video_name}.mp4', fourcc, FPS, (WIDTH, HEIGHT))
+    <div class="w3-center">
+        <img src="./assets/assign3/3_doughnut_before.png" class="w3-image" width="250">
 
-for i in range(FRAME_COUNT):
-  yiq_reconstructed_frame = cv2.pyrUp(
-                              cv2.pyrUp(
-                                  cv2.pyrUp(yiq_video_laplacian_pyramid_amplified['l3'][i]) \
-                                      + yiq_video_laplacian_pyramid_amplified['l2'][i]) \
-                                  + yiq_video_laplacian_pyramid_amplified['l1'][i]) \
-                              + yiq_video_laplacian_pyramid_amplified['l0'][i]
+        <img src="./assets/assign3/3_doughnut_poisson.png" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign3/3_doughnut_mixed.png" class="w3-image" width="250"> 
+    </div>
 
-  _rgb_reconstructed_frame = np.clip(np.dot(yiq_reconstructed_frame, yiq2rgb.T), 0, 1)
-  rgb_reconstructed_frame = (_rgb_reconstructed_frame * 255).astype(np.uint8)
-  frame = cv2.cvtColor(rgb_reconstructed_frame, cv2.COLOR_RGB2BGR)
-  writer.write(frame)
+    <p class="w3-serif w3-large">
+        We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
+        We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign3/3_bean_before.png" class="w3-image" width="250">
 
-writer.release()
-</pre>
-    </code>
+        <img src="./assets/assign3/3_bean_poisson.png" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign3/3_bean_mixed.png" class="w3-image" width="250"> 
     </div>
   </div>
 
