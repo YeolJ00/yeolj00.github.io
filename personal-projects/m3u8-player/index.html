@@ -2,22 +2,30 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>M3U8 Player</title>
-        <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
-        <script type="text/javascript" src="https://unpkg.com/popper.js@1.12.3"></script>
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
-        <link rel="stylesheet" href="home.css">
-        <script type="text/javascript" src="main.js"></script>
+        <title>m3u8 Player</title>
+        <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+        <link type="text/css" rel="stylesheet" href="https://bootswatch.com/5/darkly/bootstrap.min.css">
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script type="text/javascript" src="main.js"></script>  
     </head>
     <body>
-        <div class="col-lg-6" id="text-box">
-            <h1 class="page-name">Steam Now!</h1>
-            <div class="input-group">
-                <input type="text" class="form-control" placeholder="Paste the m3u8 link here" id="m3u8-placeholder">
-                <span class="input-group-btn">
-                    <button class="btn btn-primary" type="button" id="play-btn">Play</button>
-                </span>
+        <!-- <div id="text-box-middle"> -->
+        <div class="container" >
+            <h1 style="margin: auto;text-align: center;color: rgb(62, 141, 220);font-size:2.5em;padding: 70px 0;">HTTP Live Streaming</h1>
+            <div class="input-group mx-auto mb-3" style="width:80%">
+                <input type="text" class="form-control" placeholder="Paste your m3u8 link here" id="m3u8-placeholder">
+                <button class="btn btn-primary" type="button" id="play-btn">Play</button>
+            </div>
+            <br>
+            <p class="text-center text-primary" id="center">or</p>
+            <br>
+            <form class="input-group mx-auto mb-3"  style="width:80%" action="authenticate.php" method="post" name="authenticate">
+                <input type="text" class="form-control" placeholder="Invitation Code" id="search-placeholder">
+                <button class="btn btn-secondary" type="button" id="login-btn">Search channels</button>
+            </form>
+            <br>
+            <div class="alert alert-dismissible alert-warning" name="alert" style="opacity:0">
+                <h6 class="alert-heading">Please Enter the Invitation Code!</h4>
             </div>
         </div>
     </body>
