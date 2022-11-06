@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI621 - Assignment 3</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-center" style="max-width:1500px">
+  <img class="w3-image" src="./assets/assign3/main.jpg" alt="Me" width="900" height="300">
+  <div class="w3-display-middle w3-padding-large w3-border w3-wide w3-text-teal w3-center">
+    <h1 class="w3-hide-medium w3-hide-small w3-xxxlarge">AI621</h1>
+    <h5 class="w3-hide-large" style="white-space:nowrap">AI621</h5>
+    <h3 class="w3-hide-medium w3-hide-small">Assignment 3</h3>
+  </div>
+  
+  <!-- Navbar (placed at the bottom of the header image) -->
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#toyproblem" class="w3-bar-item w3-button">Toy Problem</a>
+    <a href="#poissonblending" class="w3-bar-item w3-button">Poisson Blending</a>
+    <a href="#mixedblending" class="w3-bar-item w3-button">Mixed Gradient</a>
+    <a href="#additional" class="w3-bar-item w3-button">Additional Examples</a>
+  </div>
+</header>
+
+<!-- Navbar on small screens -->
+<div class="w3-center w3-light-grey w3-padding-16 w3-hide-large w3-hide-medium">
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#toyproblem" class="w3-bar-item w3-button">Toy Problem</a>
+    <a href="#poissonblending" class="w3-bar-item w3-button">Poisson Blending</a>
+    <a href="#mixedblending" class="w3-bar-item w3-button">Mixed Gradient</a>
+    <a href="#additional" class="w3-bar-item w3-button">Additional Examples</a>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="w3-content w3-padding-large w3-margin-top", id="intro">
+  <h3 class="w3-hide-medium w3-hide-small">Assignment 3 - Poisson Image Blending</h3>
+  <h5 class="w3-right-align w3-serif">by 20218085 윤주열</h5>
+  <p class="w3-serif w3-large"> 
+    We will be implementing a poisson image blending technique introduced in the paper 
+    "Poisson Image Editing" (SIGGRAPH 2003). <br>
+    The codes are written in <strong>Python</strong> >=3.8 with the help of some basic libraries. <br>
+    In order to run the code, first unzip the codes and run <br>
+    <code>
+      pip install -r requirements.txt
+    </code>
+    in the desired Python enviornment.
+  </p>
+  <!-- Code -->
+  <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+        import os<br>
+        from collections import defaultdict<br>
+        import numpy as np<br>
+        import cv2<br>
+        import scipy.sparse<br>
+        from scipy.sparse import linalg<br>
+    </code>
+    </div>
+</div>
+
+<div class="w3-content w3-padding-large w3-margin-top">
+
+  <!-- Toy Problem -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="toyproblem">
+    <h3 class="w3-center w3-wide">Toy Problem</h3> <hr>
+    <p class="w3-serif w3-large">
+      We will first practice reconstructing an image given a single pixel value and the gradient values for all pixels. 
+      In order to do so, we need to formulate this problem as a least square problem, expressed as Ax = b.
+      We will first express all the laplcian filter as a matrix A, which can be done with the following code. 
+      The size of matrix A is (H+2) &times (W+2) to express padded values.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        toy_image = cv2.cvtColor(cv2.imread(f'data/toy_problem.png'), cv2.COLOR_BGR2GRAY)<br>
+        H, W = toy_image.shape<br>
+        <br>
+        # Laplacian filter on padded image<br>
+        A_1 = scipy.sparse.lil_matrix(((H+2)*(W+2), (H+2)*(W+2)))<br>
+        A_1.setdiag(-1, -1)<br>
+        A_1.setdiag(4)<br>
+        A_1.setdiag(-1, 1)<br>
+        A_1.setdiag(-1, 1*(W+2))<br>
+        A_1.setdiag(-1, -1*(W+2))<br>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+        This condition is inaccurate at the boundary pixels, which are padded pixels, and thus we will not impose a laplacian objective on those pixels.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+        <code>
+<pre>
+A_1[:W+2] = scipy.sparse.eye(W+2, (H+2)*(W+2), k=0)
+A_1[-(W+2):] = scipy.sparse.eye(W+2, (H+2)*(W+2), k=(H+2)*(W+2) - (W+2))
+
+for i in range(1,H+1):
+    _temp = scipy.sparse.lil_matrix((1,(H+2)*(W+2)))
+    _temp[0, i*(W+2)] = 1
+    A_1[i*(W+2)] = _temp.copy()
+    _temp = scipy.sparse.lil_matrix((1,(H+2)*(W+2)))
+    _temp[0, i*(W+2) + (W+1)] = 1
+    A_1[(i*(W+2) + (W+1))] = _temp.copy()
+</pre>
+        </code>
+      </div>
+    <p class="w3-serif w3-large">
+        Now we will add a row to indicate the value of the single point at (0, 0).
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+        A_2 = scipy.sparse.lil_matrix((1,(H+2)*(W+2)))<br>
+        A_2[0,(W+2)]= 1<br>
+        A = scipy.sparse.vstack([A_1, A_2])<br>
+    </code>
+    </div>
+
+    <p class="w3-serif w3-large">
+        We will consturct the vecotr b with the corresponding laplacian values and the padded values.
+        This can be easily done with the <code>cv2.filter2D</code> method.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+        <code>
+            kernel = np.array([[ 0,-1, 0], [-1, 4,-1], [ 0,-1, 0],], dtype=np.float32)<br>
+            _padded_image = cv2.copyMakeBorder(toy_image, 1, 1, 1, 1, cv2.BORDER_DEFAULT).astype(np.float32)<br>
+            b = cv2.filter2D(toy_image, cv2.CV_32F, kernel)<br>
+            _padded_image[1:-1, 1:-1] = b.copy()<br>
+            b = np.reshape(_padded_image, ((H+2)*(W+2), 1))<br>
+            b = np.append(b, [toy_image[0,0]])<br>
+        </code>
+    </div>
+
+    <p class="w3-serif w3-large">
+        All that is left for us to do is solve the least square problem Ax=b.
+        The <code>scipy.sparse.linalg.lsqr</code> provides a solution given sparse matrices with minimum computational cost. 
+        This gives us the reconstructed images.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+        <code>
+            x = linalg.lsqr(A, b, atol=1e-10, btol=1e-10)[0]<br>
+            new_image = x.reshape(H+2,W+2)<br>
+            new_image = new_image[1:-1, 1:-1]<br>
+            <br>
+            new_image = np.clip(new_image, 0, 255).astype(np.uint8)<br>
+            cv2.imwrite('1_toy_problem.png', new_image)<br>
+        </code>
+    </div>
+
+    <div class="w3-center">
+        <img src="./assets/assign3/1_toy_problem_ori.png" class="w3-image" width="150"> 
+        -->
+        <img src="./assets/assign3/1_toy_problem.png" class="w3-image" width="150"> 
+        <figcaption class="w3-serif">
+            Left - Original image /
+            Right - Reconstructed image
+          </figcaption>
+      </div>
+
+  </div>
+
+  <!-- Poisson Blending -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="poissonblending">
+    <h3 class="w3-center w3-wide">Poisson Blending</h3> <hr>
+    <p class="w3-serif w3-large">
+        We will implement poisson blending in a similar manner, 
+        but now we only consider the pixels in the source image region rather than the entire image.
+        Before constructing the matrices A and b, the following code shows how the source and target images are preprocessed.
+        Specifically, I created a mask selection tool and a mask pasting tool to allow the user to select the region of interest. 
+        For the full details of the tools, please refer to the source codes. 
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign3/2_mask_draw.png" class="w3-image" width="200">
+
+        <img src="./assets/assign3/2_mask_draw2.png" class="w3-image" width="200">
+
+        <img src="./assets/assign3/2_mask_paste.png" class="w3-image" width="340">
+        <figcaption class="w3-serif">
+            Left - Mask selection process of source image /
+            Center - Selected region of the source image / <br>
+            Right - Target image with source image pasted on top
+          </figcaption>
+    </div>
+
+    
+    <p class="w3-serif w3-large">
+        Given a mask of the source image and the desired location in the target image, we first resize the
+        Then we obtain the boundary region using the <code>cv2.findContours</code> function and subtract the regions that overlap with the mask.
+        In this way, we can identify the source image region and the neighboring pixels.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+# Read source image
+src_image = cv2.imread(f'data/{SRC_IMAGE}.jpg') # XXX
+SRC_H, SRC_W = src_image.shape[0], src_image.shape[1]
+src_image = cv2.resize(src_image, ((SRC_W//2) * 2, (SRC_H//2) * 2))
+SRC_H, SRC_W = src_image.shape[0], src_image.shape[1]
+
+# Select mask from the source image
+if os.path.exists(f'./data/{SRC_IMAGE}-mask.png'):
+    src_masked = cv2.imread(f'./data/{SRC_IMAGE}-masked.png')
+    src_mask = cv2.imread(f'./data/{SRC_IMAGE}-mask.png')
+else:
+    mask_gui = MaskSelectionTool(src_image)
+
+    src_masked, src_mask = mask_gui.draw()
+    cv2.imwrite(f'./data/{SRC_IMAGE}-masked.png', src_masked)
+    cv2.imwrite(f'./data/{SRC_IMAGE}-mask.png', src_mask)
+src_mask = src_mask[:,:,0]
+
+# Read target image
+tgt_image = cv2.imread(f'data/{TGT_IMAGE}.jpg') # XXX
+TGT_H, TGT_W, TGT_C = tgt_image.shape[0], tgt_image.shape[1], tgt_image.shape[2]
+
+# Select where to paste the mask
+paste_gui = MaskInjectionTool(tgt_image, src_masked, resize_ratio=2)
+(click_w, click_h), canvas = paste_gui.draw()
+cv2.imwrite('2_before_blending.png', canvas)
+
+
+src_image_padded = np.zeros_like(tgt_image)
+src_image_padded[click_h - SRC_H//2: click_h + SRC_H//2,
+            click_w - SRC_W//2: click_w + SRC_W//2] = src_image
+kernel = np.array([[ 0,-1, 0],
+                    [-1, 4,-1],
+                    [ 0,-1, 0],], dtype=np.float32)
+src_gradient = cv2.filter2D(src_image_padded, cv2.CV_32F, kernel)
+
+src_mask_padded = np.zeros((TGT_H, TGT_W), dtype=np.uint8)
+src_mask_padded[click_h - SRC_H//2: click_h + SRC_H//2,
+            click_w - SRC_W//2: click_w + SRC_W//2] = src_mask
+
+
+# Omega delta region index
+_contour, _hierarchy = cv2.findContours(src_mask_padded, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+_omega_delta_map = cv2.drawContours(np.zeros_like(src_mask_padded), _contour, -1, 255, 2, cv2.LINE_4, _hierarchy)
+_omega_delta_map = cv2.subtract(_omega_delta_map, src_mask_padded)
+omega_delta_indices = np.nonzero(_omega_delta_map)
+omega_delta_indices = [(x, y) for x,y in zip(omega_delta_indices[0], omega_delta_indices[1])]
+cv2.imwrite('2_omega_delta_region.png', _omega_delta_map)
+
+# Omega region index
+omega_indices = np.nonzero(src_mask_padded)
+omega_indices = [(x, y) for x,y in zip(omega_indices[0], omega_indices[1])]
+cv2.imwrite('2_omega_region.png', src_mask_padded)
+</pre>
+    </code>
+    </div>
+    <br>
+    <div class="w3-center">
+        <img src="./assets/assign3/2_before_blending.png" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign3/2_omega_region.png" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign3/2_omega_delta_region.png" class="w3-image" width="250"> 
+
+        <figcaption class="w3-serif">
+            Left - Image before blending /
+            Center - Omega region /
+            Right - Omega delta region
+          </figcaption>
+    </div>
+
+    <div class="w3-serif w3-large">
+        Now that we have all the information required to formulate the problem into a least square problem, we construct A and b as follows. 
+        We keep track of the indices and cooridnate pairs through two dictionaries <code>index2point</code> and <code>point2index</code>.
+        We construct the matrices A and b utilizing these two dictionaries and solve for x.
+        we paste the new source image onto the target image to finish our poisson blending procedure. 
+    </div>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+N = len(omega_delta_indices) + len(omega_indices)
+
+A = scipy.sparse.lil_matrix((N, N))
+b = np.zeros(N)
+
+index2point = defaultdict(tuple)
+point2index = {}
+for i, point in enumerate(omega_indices + omega_delta_indices):
+    index2point[i] = point
+    point2index[point] = i
+
+
+print('Solving matrix...')
+blended = np.zeros((len(omega_indices), TGT_C))
+for ch in range(TGT_C):
+    for point in omega_delta_indices:
+        h, w = point[0], point[1]    
+        i = point2index[point]
+        A[i, i] = 1
+
+        b[i] = tgt_image[h, w, ch]
+
+
+    for point in omega_indices:
+        h, w = point[0], point[1]
+        i = point2index[point]
+        A[i, i] = 4
+        neighbor = [(h, w+1), (h+1, w), (h-1, w), (h, w-1)]
+        neighbor_idx = [point2index[p] for p in neighbor]
+        A[i, neighbor_idx] = -1
+
+        b[i] = src_gradient[h,w, ch]
+    
+
+    x = linalg.spsolve(A.tocsc(), b)
+    x = np.clip(x[:len(omega_indices)], 0, 255)
+    blended[:,ch] = x
+
+# insert to target image
+print('Blending the two images...')
+blended_image = tgt_image.copy()
+for i, value in enumerate(blended):
+    h, w = index2point[i]
+    blended_image[h, w] = value
+
+cv2.imwrite('2_poisson_blending.png', blended_image)
+</pre>
+    </code>
+    </div>
+
+    <div class="w3-center">
+        <img src="./assets/assign3/2_poisson_blending.png" class="w3-image" width="700">
+    </div>
+  </div>
+
+
+  <!-- Mixed gradients -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="mixedblending">
+    <h3 class="w3-center w3-wide">Mixed Gradients</h3> <hr>
+    <p class="w3-serif w3-large">
+        The origianl paper also suggests using mixed gradients, which utilizes target image gradients when they are larger than the source image gradients. 
+        We can fill in holes that are flat in the source image with the gradient of the target image. 
+        We simply change the src_gradient to a mix_gradient with the following code.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+print('Mixing gradients...')
+tgt_gradient = cv2.filter2D(tgt_image, cv2.CV_32F, kernel)
+
+mix_gradient = np.zeros_like(tgt_gradient)
+src_is_larger = np.abs(src_gradient) > np.abs(tgt_gradient)
+mix_gradient = src_is_larger * src_gradient + ~src_is_larger * tgt_gradient
+
+A = scipy.sparse.lil_matrix((N, N))
+b = np.zeros(N)
+
+# Reuse A matrix
+print('Solving matrix...')
+mix_blended = np.zeros((len(omega_indices), TGT_C))
+for ch in range(TGT_C):
+    for point in omega_delta_indices:
+        h, w = point[0], point[1]    
+        i = point2index[point]
+        A[i,i] = 1
+        b[i] = tgt_image[h, w, ch]
+
+    for point in omega_indices:
+        h, w = point[0], point[1]
+        i = point2index[point]
+        A[i, i] = 4
+        neighbor = [(h, w+1), (h+1, w), (h-1, w), (h, w-1)]
+        neighbor_idx = [point2index[p] for p in neighbor]
+        A[i, neighbor_idx] = -1
+
+        b[i] = mix_gradient[h,w, ch]
+    
+    x = linalg.spsolve(A.tocsc(), b)
+    # breakpoint()
+    x = np.clip(x[:len(omega_indices)], 0, 255)
+    mix_blended[:,ch] = x
+
+# insert to target image
+mix_blended_image = tgt_image.copy()
+for i, value in enumerate(mix_blended):
+    h, w = index2point[i]
+    mix_blended_image[h, w] = value
+
+cv2.imwrite('3_mixed_blending.png', mix_blended_image)
+</pre>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+      The effect of mixed gradients can be seen in the example bellow. 
+      The doughnut hole is filled in with the background of the target image. 
+      However, some colors are lost by giving an imperfect gradient guidance.
+    </p>
+    <div class="w3-center">
+      <img src="./assets/assign3/3_doughnut_before.png" class="w3-image" width="250">
+
+      <img src="./assets/assign3/3_doughnut_poisson.png" class="w3-image" width="250"> 
+      
+      <img src="./assets/assign3/3_ufo_mixed.png" class="w3-image" width="250"> 
+    </div>
+  </div>
+
+  <!-- Custom -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="additional">
+    <h3 class="w3-center w3-wide">Additional Examples and Failure Cases</h3> <hr>
+    <p class="w3-serif w3-large">
+      Collapsing the Laplacian pyramid is the same process as seen above. 
+      The results for blood flow amplification are seen bellow. 
+      The video has some artifacts in regions out-of-interest since 
+      the original paper proposed extensive spatial filtering which our project did not consider. 
+    </p>
+
+    <p class="w3-serif w3-large">
+      We also experiment on the motion-magnification videos provided in the original paper, namely "baby.mp4" and "subway.mp4". 
+      We can observe the motions getting amplified even though we did not perform any spatial-aware operation.
+    </p>
+    <div class="w3-center">
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_baby.mp4" type="video/mp4">
+      </video> 
+      <video width="320" height="240" controls>
+        <source src="./assets/assign2/5_Amplified_subway.mp4" type="video/mp4">
+      </video> 
+    </div>
+
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+print('Saving video...')
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+writer = cv2.VideoWriter(f'5_Amplified_{video_name}.mp4', fourcc, FPS, (WIDTH, HEIGHT))
+
+for i in range(FRAME_COUNT):
+  yiq_reconstructed_frame = cv2.pyrUp(
+                              cv2.pyrUp(
+                                  cv2.pyrUp(yiq_video_laplacian_pyramid_amplified['l3'][i]) \
+                                      + yiq_video_laplacian_pyramid_amplified['l2'][i]) \
+                                  + yiq_video_laplacian_pyramid_amplified['l1'][i]) \
+                              + yiq_video_laplacian_pyramid_amplified['l0'][i]
+
+  _rgb_reconstructed_frame = np.clip(np.dot(yiq_reconstructed_frame, yiq2rgb.T), 0, 1)
+  rgb_reconstructed_frame = (_rgb_reconstructed_frame * 255).astype(np.uint8)
+  frame = cv2.cvtColor(rgb_reconstructed_frame, cv2.COLOR_RGB2BGR)
+  writer.write(frame)
+
+writer.release()
+</pre>
+    </code>
+    </div>
+  </div>
+
+<!-- End page content -->
+</div>
+
+
+</body>
+</html>
