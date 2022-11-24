@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI621 - Assignment 4</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-center" style="max-width:1500px">
+  <img class="w3-image" src="./assets/assign4/main.jpg" alt="Me" width="900" height="300">
+  <div class="w3-display-middle w3-padding-large w3-border w3-wide w3-text-white w3-center">
+    <h1 class="w3-hide-medium w3-hide-small w3-xxxlarge">AI621</h1>
+    <h5 class="w3-hide-large" style="white-space:nowrap">AI621</h5>
+    <h3 class="w3-hide-medium w3-hide-small">Assignment 4</h3>
+  </div>
+  
+  <!-- Navbar (placed at the bottom of the header image) -->
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#linearize" class="w3-bar-item w3-button">Linearize Image</a>
+    <a href="#mergestack" class="w3-bar-item w3-button">Merge into HDR</a>
+    <a href="#Tonemapping" class="w3-bar-item w3-button">Tonemapping</a>
+  </div>
+</header>
+
+<!-- Navbar on small screens -->
+<div class="w3-center w3-light-grey w3-padding-16 w3-hide-large w3-hide-medium">
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#linearize" class="w3-bar-item w3-button">Linearize Image</a>
+    <a href="#mergestack" class="w3-bar-item w3-button">Merge into HDR</a>
+    <a href="#Tonemapping" class="w3-bar-item w3-button">Tonemapping</a>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="w3-content w3-padding-large w3-margin-top", id="intro">
+  <h3 class="w3-hide-medium w3-hide-small">Assignment 4 - HDR imaging</h3>
+  <h5 class="w3-right-align w3-serif">by 20218085 윤주열</h5>
+  <p class="w3-serif w3-large"> 
+    We will be implementing several HDR imaging techniques. 
+    The codes are written in <strong>Python</strong> >=3.8 with the help of some basic libraries. <br>
+    In order to run the code, first unzip the codes and run <br>
+    <code>
+      pip install -r requirements.txt
+    </code>
+    in the desired Python enviornment.
+  </p>
+  <!-- Code -->
+  <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+        import math<br>
+        import random<br>
+        <br>
+        import cv2<br>
+        import numpy as np<br>
+        import rawpy<br>
+        import scipy.sparse<br>
+        from scipy.sparse import linalg<br>
+        from matplotlib import pyplot as plt<br>
+    </code>
+    </div>
+</div>
+
+<div class="w3-content w3-padding-large w3-margin-top">
+
+  <!-- Linearize Image -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="linearize">
+    <h3 class="w3-center w3-wide">Linearize Rendered Image</h3> <hr>
+    <p class="w3-serif w3-large">
+      We will work with two different types of images. 
+      The first is the <code>.nef</code> RAW format directly from the digital camera, 
+      and the second type is the <code>.jpg</code> which is rendered from the RAW image. 
+      While RAW images can be directly used for stacking, rendered images should be linearized. <br>
+      So, first for a linear image, we would simply load it with the following <code>rawpy</code> library.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+K = 16
+raw_image = {}
+
+for k in range(K):
+    raw = rawpy.imread(f'./data/exposure{k+1}.nef')
+    raw_image[k] = raw.postprocess(use_camera_wb=True, 
+                                    no_auto_bright=True, 
+                                    half_size=False, 
+                                    output_color=rawpy.ColorSpace.sRGB,
+output_bps=8).astype(np.float32)
+raw_image[k] = raw_image[k] / 255
+</pre>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+        However, in the case of <code>.jpg</code> images, we need to linearize the image with the method by Debevec and Malic. 
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+        <code>
+<pre>
+for k in range(K):
+    rendered_image[k] = cv2.cvtColor(cv2.imread(f'./data/exposure{k+1}.jpg'), cv2.COLOR_BGR2RGB).astype(np.float32)
+
+exposure = {k: math.pow(2, k)/2048 for k in raw_image.keys()}
+
+# tent
+weight = lambda x: np.clip(np.where(x >(255//2) , 2 * (1 - x/255), 2*x/255), 0.01/255, 0.99/255)
+
+
+sample_locations = random.sample(list(np.ndindex((H, W))), N)
+
+print('Solving for response curve...')
+g = {}
+for c in range(C):
+    A = scipy.sparse.lil_matrix((N*K + 255, N + 256))
+    b = np.zeros((N*K + 255, 1), np.float32)
+    
+    _row = 0
+    for i, (h,w) in enumerate(sample_locations):
+        for k in range(K):
+            z_ijk = rendered_image[k][h,w,c]
+            w_ijk = weight(z_ijk)
+            A[_row, z_ijk] = w_ijk
+            A[_row, 256 + i] = -w_ijk
+            b[_row, 0] = w_ijk * np.log(exposure[k])
+            _row += 1
+    
+    A[_row, 255//2] = 1
+    _row += 1
+    
+    for _g in range(1, 255):
+        w_k = weight(_g)
+        A[_row, _g-1] = -w_k * LAMBDA
+        A[_row, _g] =  2*w_k * LAMBDA
+        A[_row, _g+1] = -w_k * LAMBDA
+        _row += 1
+        
+    x = linalg.lsqr(A, b, atol=1e-07, btol=1e-07,)[0]
+
+    g[c] = x[0:256]
+
+map = lambda x, l: np.exp(l[x])
+
+print('Concatenating to linear image...')
+linear_image = {}
+for k in raw_image.keys():
+    linear_image[k] = np.stack([
+                    map(raw_image[k][:,:,0].astype(np.uint8), g[0]), 
+                    map(raw_image[k][:,:,1].astype(np.uint8), g[1]),
+                    map(raw_image[k][:,:,2].astype(np.uint8), g[2])], axis=2)
+</pre>
+        </code>
+    </div>
+    <p class="w3-serif w3-large">
+        This gives us a response curve like the following.
+    </p>
+    
+    <div class="w3-center">
+        <img src="./assets/assign4/1_response_curve.png" class="w3-image" width="500"> 
+    </div>
+  </div>
+
+  <!-- Merge Exposure Stacks -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="mergestack">
+    <h3 class="w3-center w3-wide">Merging Exposure Stacks</h3> <hr>
+    <p class="w3-serif w3-large">
+        Now that we have obtained a linearized image regardless of the initial file format, 
+        we will merge these exposure stacks to a single HDR image. 
+        The mergeing process is quite simple and requires adding pixels values from different exposure stacks. 
+        We can use linear merging and the logarithmic merging with the following lines. 
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign4/1_exposure7.jpg" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign4/1_exposure10.jpg" class="w3-image" width="250"> 
+        
+        <img src="./assets/assign4/1_exposure16.jpg" class="w3-image" width="250"> 
+        <figcaption class="w3-serif">
+            Different exposure stacks in <code>.jpg</code> format. 
+          </figcaption>
+    </div>
+    
+    <p class="w3-serif w3-large">
+        Given a mask of the source image and the desired location in the target image, we first resize the
+        Then we obtain the boundary region using the <code>cv2.findContours</code> function and subtract the regions that overlap with the mask.
+        In this way, we can identify the source image region and the neighboring pixels.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+<pre>
+linear_num, log_num, denom = 0, 0, 0
+for k in linear_image.keys():
+    w_ldr = weight(raw_image[k])
+    denom += w_ldr
+    linear_num += w_ldr * linear_image[k] / exposure[k]
+    log_num += w_ldr * (linear_image[k] - np.log(exposure[k]))
+
+hdr_linear = linear_num / denom
+hdr_log = np.exp(log_num / denom)
+
+cv2.imwrite('1_linear_hdr.hdr', np.stack([hdr_linear[:,:,2], 
+                                        hdr_linear[:,:,1], 
+                                        hdr_linear[:,:,0]], axis=-1))
+cv2.imwrite('1_log_hdr.hdr', np.stack([hdr_log[:,:,2], 
+                                        hdr_log[:,:,1], 
+                                        hdr_log[:,:,0]], axis=-1))
+</pre>
+    </code>
+    </div>
+    <br>
+
+    <div class="w3-serif w3-large">
+        Now that we cannot see the HDR image before tonemapping since the dynamic range is beyond the capacity of the monitor. 
+        However we can take a peek at the results after tonemapping.
+        We can use two weighting schemes by changing the following code.
+    </div>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+        <code>
+        # uniform <br>
+        weight = lambda x: 1.0<br>
+        <br>
+        # tent<br>
+        weight = lambda x: np.clip(np.where(x >(255//2) , 2 * (1 - x/255), 2*x/255), 0.01/255, 0.99/255)<br>
+        </code>
+    </div>
+    <div class="w3-center">
+        <img src="./assets/assign4/1_raw_linear_tent.png" class="w3-image" width="300"> 
+        <img src="./assets/assign4/1_raw_linear_uniform.png" class="w3-image" width="300"> 
+        <br>
+        <img src="./assets/assign4/1_raw_log_tent.png" class="w3-image" width="300"> 
+        <img src="./assets/assign4/1_raw_log_uniform.png" class="w3-image" width="300"> 
+        <figcaption class="w3-serif">
+            Each image is tonemapped from<br>
+            Top-left : RAW image linear tonemapping with tent weighting<br>
+            Top-right: RAW image linear tonemapping with uniform weighting<br>
+            Bottom-left : RAW image logarithmic tonemapping with tent weighting<br>
+            Bottom-right : RAW image logarithmic tonemapping with uniform weighting<br>
+        </figcaption>
+    </div>
+    <div class="w3-center">
+        <img src="./assets/assign4/1_rendered_linear_tent.png" class="w3-image" width="300"> 
+        <img src="./assets/assign4/1_rendered_linear_uniform.png" class="w3-image" width="300"> 
+        <br>
+        <img src="./assets/assign4/1_rendered_log_tent.png" class="w3-image" width="300"> 
+        <img src="./assets/assign4/1_rendered_log_uniform.png" class="w3-image" width="300"> 
+        <figcaption class="w3-serif">
+            Each image is tonemapped from<br>
+            Top-left : Rendered image linear tonemapping with tent weighting<br>
+            Top-right: Rendered image linear tonemapping with uniform weighting<br>
+            Bottom-left : Rendered image logarithmic tonemapping with tent weighting<br>
+            Bottom-right : Rendered image logarithmic tonemapping with uniform weighting<br>
+        </figcaption>
+    </div>
+  </div>
+
+
+  <!-- Tonemapping -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="Tonemapping">
+    <h3 class="w3-center w3-wide">Tonemapping</h3> <hr>
+    <p class="w3-serif w3-large">
+        To visualize the HDR images, we perform tonemapping on the HDR images. 
+        We will try out two different types of tonemapping, the photographic tonemapping and the one using bilateral filtering.
+        We will use the linear HDR image for all the experiments.
+    </p>
+
+    <p class="w3-serif w3-large">
+        The first type of tonemapping, the photographic tonemapping,
+        can be done in both the RGB and luminance domain with the following code. 
+        For the luminance domain, I calculated how much the values are scaled and applied that value in the RGB image.
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign4/2_photographic_tonemapping_rgb.png" class="w3-image" width="800">
+
+        <img src="./assets/assign4/2_photographic_tonemapping_Y.png" class="w3-image" width="800"> 
+
+        <figcaption class="w3-serif">
+          Top - RGB domain /
+          Bottom - Luminance domain
+        </figcaption>
+    </div>
+
+    <p class="w3-serif w3-large">
+        The second type of tonemapping is the tonemapping using bilateral filters.
+        The following lines produce a tonemapped image following the methods by Durand and Dorsey.
+    </p>
+
+    <div class="w3-center">
+        <img src="./assets/assign4/2_bilateral_tonemapping_rgb.png" class="w3-image" width="800">
+
+        <img src="./assets/assign4/2_bilateral_tonemapping_Y.png" class="w3-image" width="800"> 
+        
+        <figcaption class="w3-serif">
+          Left - RGB domain /
+          Right - Luminance domain
+        </figcaption>
+    </div>
+  </div>
+
+<!-- End page content -->
+</div>
+
+
+</body>
+</html>
