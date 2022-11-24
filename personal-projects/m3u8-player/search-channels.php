@@ -25,9 +25,23 @@ if (!isset($_SESSION['loggedin'])) {
                 <button class="btn btn-lg btn-outline-info" type="button" id="search-btn">Search</button>
             </div>
             <br>
-            <div class="progress" style="width:80%;opacity:100;margin:auto">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+            <div class="progress" style="width:50%;opacity:100;margin:auto">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100", id="pbar"></div>
             </div>
+            <br>
+            <table class="table table-hover" style="margin:auto;text-align:center;width: 50%">
+            <thead>
+                <tr>
+                <th scope="col">Live Channels</th>
+                </tr>
+            </thead>
+            <tbody id="search-table">
+                <!-- <tr class="table-active">
+                </tr> -->
+            </tbody>
+            </table>
+
+
 		</div>
 	</body>
 </html>

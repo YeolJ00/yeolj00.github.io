@@ -8,8 +8,12 @@ $(window).on('load', function () {
     $('#login-btn').on('click', function () {
         localStorage.setItem('invitation-code', $('#search-placeholder')[0].value);
         if ($('#search-placeholder')[0].value != ''){
-            var div = document.getElementsByName("authenticate")[0];
-            div.submit();
+            setCookie('device-id', getMachineId(), 1)
+            setCookie('from-btn', 'True', 1)
+            // var div = document.getElementsByName("authenticate")[0];
+            // div.submit();
+            alert(getCookie('device-id'))
+            window.location.href = './authenticate.php'
         }else{
             div = document.getElementsByClassName("alert")[0];
             div.style.opacity = "1";
@@ -34,4 +38,39 @@ function fadeout(el){
 
 function swing(progress) {
     return 0.5 - Math.cos(progress * Math.PI) / 2;
+}
+
+function getMachineId() {
+    
+    let machineId = localStorage.getItem('MachineId');
+    
+    if (!machineId) {
+        machineId = crypto.randomUUID();
+        localStorage.setItem('MachineId', machineId);
+    }
+
+    return machineId;
+}
+
+function setCookie(cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + (exdays*24*60*60*1000));
+    let expires = "expires="+ d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for(let i = 0; i <ca.length; i++){
+        let c = ca[i];
+        while (c.charAt(0) == ' '){
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0){
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
 }
