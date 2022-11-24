@@ -6,8 +6,8 @@ $(window).on('load', function () {
         window.location.href = './player' + '#' + $('#m3u8-placeholder')[0].value;
     });
     $('#login-btn').on('click', function () {
-        localStorage.setItem('invidation-code', $('#search-placeholder')[0].value);
-        if ($('#search-placeholder')[0].value != ''){ // Change to code
+        localStorage.setItem('invitation-code', $('#search-placeholder')[0].value);
+        if ($('#search-placeholder')[0].value != ''){
             var div = document.getElementsByName("authenticate")[0];
             div.submit();
         }else{
