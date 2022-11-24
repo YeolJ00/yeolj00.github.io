@@ -1,15 +1,31 @@
 $(window).on('load', function () {
-    $('#search-placeholder')[0].value = localStorage.getItem('invitation-code') || '';
-
     $('#search-btn').on('click', function () {
-        localStorage.setItem('invidation-code', $('#search-placeholder')[0].value);
-        if ($('#search-placeholder')[0].value != ''){ // Change to code
-            var div = document.getElementsByName("authenticate")[0];
-            div.submit();
-        }else{
-            div = document.getElementsByClassName("alert")[0];
-            div.style.opacity = "1";
-            fadeout(div);
+        var div = document.getElementById("pbar");
+        var table = document.getElementById("search-table");
+        for (let i = 0; i < 100; i++) {
+            div.style.width = i+"%";
+            channel = String(i).padStart(2,'0');
+            var header_list = ["ch","spt"];
+            var length = header_list.length;
+            for (var j = 0; j < length; j++) {
+                const url = 'https://ch'+channel+'-livecdn.spotvnow.co.kr/ch'+channel
+                            +'/'+header_list[j]+''+channel+'.smil/chunklist_b3692000.m3u8';
+                fetch(url)
+                    .then(function(r){
+                        if(r.status =="200"){
+                            ch = url.split('/')[-2]
+                            var row = table.insertRow(-1);
+                            row.className = "table-default"
+                            row.innerHTML = "<br><a href="+'https://yeolj00.github.io/personal-projects/m3u8-player/player#'+url+">"+url+"</a>";
+                        }
+                    }
+                    ).catch(
+                        
+                    );
+            }
+
         }
+        div.style.width = "100%";
     });
 });
+
