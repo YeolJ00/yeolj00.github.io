@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>AI621 - Assignment 5</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+
+<!-- Header -->
+<header class="w3-display-container w3-content w3-center" style="max-width:1500px">
+  <img class="w3-image" src="./assets/assign5/main.jpg" alt="Me" width="900" height="300">
+  <div class="w3-display-middle w3-padding-large w3-border w3-wide w3-text-white w3-center">
+    <h1 class="w3-hide-medium w3-hide-small w3-xxxlarge">AI621</h1>
+    <h5 class="w3-hide-large" style="white-space:nowrap">AI621</h5>
+    <h3 class="w3-hide-medium w3-hide-small">Assignment 5</h3>
+  </div>
+  
+  <!-- Navbar (placed at the bottom of the header image) -->
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#subaperature" class="w3-bar-item w3-button">Sub-aperture Views</a>
+    <a href="#refocusing" class="w3-bar-item w3-button">Refocusing</a>
+    <a href="#defocus" class="w3-bar-item w3-button">All-focus Image</a>
+  </div>
+</header>
+
+<!-- Navbar on small screens -->
+<div class="w3-center w3-light-grey w3-padding-16 w3-hide-large w3-hide-medium">
+  <div class="w3-bar w3-light-grey w3-round w3-display-bottommiddle w3-hide-small" style="bottom:10px">
+    <a href="#initials" class="w3-bar-item w3-button">Initials</a>
+    <a href="#subaperature" class="w3-bar-item w3-button">Sub-aperture Views</a>
+    <a href="#refocusing" class="w3-bar-item w3-button">Refocusing</a>
+    <a href="#defocus" class="w3-bar-item w3-button">All-focus Image</a>
+  </div>
+</div>
+
+<!-- Page content -->
+<div class="w3-content w3-padding-large w3-margin-top", id="intro">
+  <h3 class="w3-hide-medium w3-hide-small">Assignment 5 - Lgith Field Rendering and Depth from Defocus</h3>
+  <h5 class="w3-right-align w3-serif">by 20218085 윤주열</h5>
+  <p class="w3-serif w3-large"> 
+    We will be playing around with an image from a plenoptic camera and obtaining refocused images. <br>
+    Also, we will create an all-focused image from this focal stack. <br> 
+    The codes are written in <strong>Python</strong> >=3.8 with the help of some basic libraries. <br>
+    In order to run the code, first unzip the codes and run <br>
+    <code>
+      pip install -r requirements.txt
+    </code>
+    in the desired Python enviornment.
+  </p>
+  <!-- Code -->
+  <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+    <code>
+      import numpy as np <br>
+      import cv2 <br>
+      from einops import rearrange <br>
+    </code>
+    </div>
+</div>
+
+<div class="w3-content w3-padding-large w3-margin-top">
+
+  <!-- Load image -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="initials">
+    <h3 class="w3-center w3-wide">Initials</h3> <hr>
+    <p class="w3-serif w3-large">
+      We will load the image from a plenoptic camera and save it as a formal lightfield format. 
+      Each <code>(u,v)</code> stands for a pinhole in the camera, where it captures an image <code>(s, t)</code>.
+    </p>
+    <!-- Code -->
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+# Read image
+lightfield_image = cv2.imread("./data/chessboard_lightfield.png")
+
+U, V = 16, 16
+S, T = lightfield_image.shape[0] // U, lightfield_image.shape[1] // V
+
+lightfield = np.zeros((U, V, S, T, 3), dtype=np.float32)
+
+# Split lightfield image into UxV tiles
+for s, t in np.ndindex(S, T):
+    lightfield[:, :, s, t, :] = lightfield_image[s * U:(s + 1) * U, t * V:(t + 1) * V, :]
+</pre>
+      </code>
+    </div>
+  </div>
+
+  <!-- Sub-aperture view -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="subaperture">
+    <h3 class="w3-center w3-wide">Sub-aperture Views</h3> <hr>
+    <p class="w3-serif w3-large">
+      The lightfield is a flexible format for multiple uses, but we will visualize it to observe the image for each pinhole view.
+      This can be easily done through a single line code which rearranges the axes. 
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+        # Read image<br>
+        # Select sub-aperture views<br>
+        sub_aperture_views = rearrange(lightfield, "u v s t c -> (u s) (v t) c")<br>
+        <br>
+        for u, v in np.ndindex(U, V):<br>
+            cv2.imwrite(f'./debug/sub_aperture_view_{u}_{v}.png', lightfield[u, v, :, :, :])<br>
+        <br>
+        cv2.imwrite('2_sub_aperture_views.png', sub_aperture_views)<br>
+      </code>
+    </div>
+    <br>
+    <div class="w3-center">
+        <img src="./assets/assign5/2_sub_aperture_views.png" class="w3-image" width="1000"> 
+        <figcaption class="w3-serif">
+            All sub-aperture views in a single image. 
+          </figcaption>
+    </div>
+  </div>
+
+  <!-- Refocusing -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="refocusing">
+    <h3 class="w3-center w3-wide">Refocusing</h3> <hr>
+    <p class="w3-serif w3-large">
+      We can obtain a partially focused image with a lightfield. 
+      We can simply take the average of all the sub-aperture views to obtain an image focused on the furthest distance.
+      We can also sample the light rays from a different location to obtain an image focused on nearer regions. 
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+# Mean refocusing
+mean_refocusing = np.mean(lightfield, axis=(0, 1))
+
+# Focal-stack generation
+depth_list = [0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5]
+D = len(depth_list)
+focal_stack = np.zeros((S, T, 3, D), dtype=np.float32)
+
+for d, depth in enumerate(depth_list):
+    for s, t in tqdm(np.ndindex(S, T), total=S*T, desc=f'Focal stack {d}'):
+        for u, v in np.ndindex(U, V):
+            shifted_s, shifted_t = int(min(s + (depth * u), S-1)), int(max(t - (depth * v), 0))
+            focal_stack[s, t, :, d] += lightfield[u, v, shifted_s, shifted_t, :]
+    focal_stack[:, :, :, d] /= U * V
+
+focal_stack = np.load('focal_stack.npy', allow_pickle=True)
+
+for d, depth in enumerate(depth_list):
+    cv2.imwrite(f'3_focal_stack_{depth:.2f}.png', focal_stack[:, :, :, d])
+</pre>
+      </code>
+    </div>
+    <p class="w3-serif w3-large">
+      Note that the distnace <code>d</code> ranges from 0 to 1.25, which is a parameter I had to find by myself. 
+      Also, after carefull inspection of the sub-aperture views, 
+      I concluded that the width/x-axis is inverted and took the negative of <code>depth * v</code>.
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign5/3_focal_stack_0.00.png" class="w3-image" width="1000"><br>
+        <img src="./assets/assign5/3_focal_stack_0.50.png" class="w3-image" width="1000"><br>
+        <img src="./assets/assign5/3_focal_stack_1.00.png" class="w3-image" width="1000"><br>
+        <img src="./assets/assign5/3_focal_stack_1.50.png" class="w3-image" width="1000"><br>
+
+        <figcaption class="w3-serif">
+          Focal stack of d=0, 0.5, 1.0, and 1.5.
+        </figcaption>
+    </div>
+  </div>
+
+  <!-- All-focus -->
+  <div class="w3-sand w3-padding-large w3-round-xxlarge w3-padding-32 w3-margin-top" id="defocus">
+    <h3 class="w3-center w3-wide">All-focus Image</h3> <hr>
+    <p class="w3-serif w3-large">
+      Although we already have a all-focused image from the lightfield, we can also obtain one by merging the focal stack.
+      We can do this by performing a weighted sum over the focal stack, where edges are given a higher weight.
+      We experiment with multiple configurations for obtaining the edges, with different Gaussian filters.
+      The image becomes blurries as the Gaussian filter becomes smoother.
+    </p>
+    <div class="w3-light-grey w3-padding-large w3-padding-32 w3-margin-top">
+      <code>
+<pre>
+std1, std2 = 1, 5
+
+w_sharpness_stack = np.zeros((S, T, D), dtype=np.float32)
+for d, depth in enumerate(depth_list):
+    luminance_Y = cv2.cvtColor(focal_stack[:, :, :, d], cv2.COLOR_BGR2XYZ)[:,:,1]
+
+    low_freq = cv2.GaussianBlur(luminance_Y, (5, 5), std1)
+    high_freq = luminance_Y - low_freq
+    w_sharpness_stack[:,:,d] = cv2.GaussianBlur(np.power(high_freq, 2), (5, 5), std2)
+
+weighted_image = np.zeros((S, T, 3), dtype=np.float32)
+weighted_depth = np.zeros((S, T, 3), dtype=np.float32)
+weight_sum = np.zeros((S, T, 3), dtype=np.float32)
+for d, depth in enumerate(depth_list):
+    weighted_image += np.expand_dims(w_sharpness_stack[:, :, d], axis=2) * focal_stack[:, :, :, d]
+    weighted_depth += d * np.expand_dims(w_sharpness_stack[:, :, d], axis=2)
+    weight_sum += np.expand_dims(w_sharpness_stack[:, :, d], axis=2)
+
+all_focus_image = weighted_image / weight_sum
+depth_map = weighted_depth / weight_sum
+</pre>
+      </code>
+    </div>
+    <div class="w3-center">
+      <img src="./assets/assign5/4_all_focus_image_1.png" class="w3-image" width="400">
+      <img src="./assets/assign5/4_all_focus_image_3.png" class="w3-image" width="400"><br>
+      <img src="./assets/assign5/4_all_focus_image_5.png" class="w3-image" width="400">
+      <img src="./assets/assign5/4_all_focus_image_7.png" class="w3-image" width="400"><br>
+
+      <figcaption class="w3-serif">
+        Gaussian filter with standard deviation of 1, 3, 5, 7, from top-left to bottom-right.
+      </figcaption>
+  </div>
+    <p class="w3-serif w3-large">
+      We can also obtain a pseudo depth map from this, which is obtained by bluring the weights with a Gaussian filter.
+      However, the depth near strong edges have erros, which hinders its usage for actual depth estimation.
+    </p>
+    <div class="w3-center">
+        <img src="./assets/assign5/4_depth_map.png" class="w3-image" width="1000">
+
+        <figcaption class="w3-serif">
+          Pseudo depth map from the wieghts.
+        </figcaption>
+    </div>
+  </div>
+
+
+<!-- End page content -->
+</div>
+
+
+</body>
+</html>
