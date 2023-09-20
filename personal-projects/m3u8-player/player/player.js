@@ -7,7 +7,17 @@ function playM3u8(url){
       var m3u8Url = decodeURIComponent(url)
 
       const customHeaders = {
+        "Accept": "*/*",
+        "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Origin": "https://www.spotvnow.co.kr",
+        "DNT": "1",
+        "Connection": "keep-alive",
         "Cookie": localStorage.getItem('cookie-values'),
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
+        "TE": "trailers"
         };
 
         // Set up hls.js to use custom headers
