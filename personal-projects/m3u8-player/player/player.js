@@ -5,6 +5,18 @@ function playM3u8(url){
       video.volume = 0.3;
       var hls = new Hls();
       var m3u8Url = decodeURIComponent(url)
+
+      const customHeaders = {
+        "Cookie": localStorage.getItem('cookie-values'),
+        };
+
+        // Set up hls.js to use custom headers
+        hls.config.xhrSetup = function (xhr, url) {
+            for (const header in customHeaders) {
+                xhr.setRequestHeader(header, customHeaders[header]);
+            }
+        };
+
       hls.loadSource(m3u8Url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED,function() {
