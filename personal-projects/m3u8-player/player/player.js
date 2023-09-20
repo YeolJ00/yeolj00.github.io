@@ -19,6 +19,7 @@ function playM3u8(url){
         "Sec-Fetch-Site": "same-site",
         "TE": "trailers"
         };
+        console.log(localStorage.getItem('cookie-values'));
 
         // Set up hls.js to use custom headers
         hls.config.xhrSetup = function (xhr, url) {
