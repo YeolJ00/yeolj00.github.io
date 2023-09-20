@@ -184,22 +184,23 @@ function SHA256(s){
 
 $(window).on('load', function () {
     $('#m3u8-placeholder')[0].value = localStorage.getItem('m3u8-link') || '';
-    $('#search-placeholder')[0].value = localStorage.getItem('invitation-code') || '';
+    $('#cookie-placeholder')[0].value = localStorage.getItem('cookie-values') || '';
     $('#play-btn').on('click', function () {
         localStorage.setItem('m3u8-link', $('#m3u8-placeholder')[0].value);
+        localStorage.setItem('cookie-values', $('#cookie-placeholder')[0].value);
         window.location.href = './player' + '#' + $('#m3u8-placeholder')[0].value;
     });
-    $('#login-btn').on('click', function () {
-        localStorage.setItem('invitation-code', $('#search-placeholder')[0].value);
-        if (SHA256($('#search-placeholder')[0].value) === '40d463bc9592d89e63ccdc2b8093a06a872a8e5555e417b75c2a50d151040111'){ // CODE HERE
-            setCookie('from-btn', 'True', 1);
-            window.location.href = './search-channels.html';
-        }else if ($('#search-placeholder')[0].value != ''){
-            window.location.href = './index.html';
-        }else{
-            div = document.getElementsByClassName("alert")[0];
-            div.style.opacity = "1";
-            fadeout(div);
-        }
-    });
+    // $('#login-btn').on('click', function () {
+    //     localStorage.setItem('cookie-values', $('#cookie-placeholder')[0].value);
+    //     if (SHA256($('#cookie-placeholder')[0].value) === '40d463bc9592d89e63ccdc2b8093a06a872a8e5555e417b75c2a50d151040111'){ // CODE HERE
+    //         setCookie('from-btn', 'True', 1);
+    //         window.location.href = './cookie-channels.html';
+    //     }else if ($('#cookie-placeholder')[0].value != ''){
+    //         window.location.href = './index.html';
+    //     }else{
+    //         div = document.getElementsByClassName("alert")[0];
+    //         div.style.opacity = "1";
+    //         fadeout(div);
+    //     }
+    // });
 });
