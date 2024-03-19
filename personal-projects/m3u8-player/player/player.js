@@ -5,6 +5,29 @@ function playM3u8(url){
       video.volume = 0.3;
       var hls = new Hls();
       var m3u8Url = decodeURIComponent(url)
+
+      const customHeaders = {
+        "Accept": "*/*",
+        "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Origin": "https://www.spotvnow.co.kr",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Cookie": localStorage.getItem('cookie-values'),
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
+        "TE": "trailers"
+        };
+        console.log(localStorage.getItem('cookie-values'));
+
+        // Set up hls.js to use custom headers
+        hls.config.xhrSetup = function (xhr, url) {
+            for (const header in customHeaders) {
+                xhr.setRequestHeader(header, customHeaders[header]);
+            }
+        };
+
       hls.loadSource(m3u8Url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED,function() {
