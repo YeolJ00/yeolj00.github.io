@@ -8,7 +8,7 @@ redirect_from:
   - /about.html
 ---
 
-Hi! I'm Jooyeol Yun. I am a Ph.D. candidate at <a href="http://gsai.kaist.ac.kr/" style="color:#a7d7ca;text-decoration:none">Korea Advanced Institute of Science and Technology (KAIST)</a> supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#a7d7ca;text-decoration:none">Jaegul Choo</a>. <br>
+Hi! I'm Jooyeol Yun. I am a Ph.D. candidate at <a href="http://gsai.kaist.ac.kr/" style="text-decoration:none" class="text-primary">Korea Advanced Institute of Science and Technology (KAIST)</a> supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="text-decoration:none" class="text-primary">Jaegul Choo</a>. <br>
 My research interests are
 
 * Enhancing the quality of everyday images taken by casual users. 📷🎨
