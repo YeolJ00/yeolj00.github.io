@@ -3,8 +3,11 @@
 <div class="masthead bg-primary">
   <div class="masthead__inner-wrap bg-primary">
     <div class="masthead__menu bg-primary">
-      <nav id="site-nav" class="navbar navbar-expand-lg bg-primary">
-        <button><div class="navicon"></div></button>
+      <nav id="site-nav" class="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
+        <!-- <button><div class="navicon"></div></button> -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
         <ul class="visible-links">
           <li class="nav-item"><a href="{{ base_path }}/" class="navbar-brand">{{ site.title }}</a></li>
           {% for link in site.data.navigation.main %}
