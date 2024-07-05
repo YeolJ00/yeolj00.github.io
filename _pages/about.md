@@ -8,12 +8,11 @@ redirect_from:
   - /about.html
 ---
 
-Hi there. I'm JooYeol Yun. I am a Ph.D. candidate at <a href="http://davian.kaist.ac.kr/" style="color:#0f6bff"> <strong>Data and Visual Analytics Lab (DAVIAN)</strong></a> in Korea Advanced Institute of Science and Technology (KAIST) supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#0f6bff"> <strong>Jaegul Choo</strong></a>. <br>
+Hi! I'm Jooyeol Yun. I am a Ph.D. candidate at <a href="http://gsai.kaist.ac.kr/" style="color:#a7d7ca;text-decoration:none">Korea Advanced Institute of Science and Technology (KAIST)</a> supervised Prof. <a href="https://sites.google.com/site/jaegulchoo/" style="color:#a7d7ca;text-decoration:none">Jaegul Choo</a>. <br>
 My research interests are
 
-* Computational Photography
-* Image Generation and Manipulation
 * Enhancing the quality of everyday images taken by casual users. 📷🎨
+* Image Generation and Manipulation
 
 Education
 -----
@@ -35,6 +34,9 @@ __B.S.__ in Computer Science and Engineering at Korea University
 
 International Conference Publications
 ----
+* Scaling Up Personalized Image Aesthetic Assessment via Task Vector Customization <br>
+   __Jooyeol Yun__ and Jaegul Choo <br>
+  European Conference on Computer Vision [ECCV](https://eccv2024.ecva.net/), 2024, *Accepted*
 
 * Learning to Generate Semantic Layouts for Higher Text-Image Correspondence in Text-to-Image Synthesis <br>
   Minho Park\*, __Jooyeol Yun\*__, Seunghwan Choi, and Jaegul Choo (\*: equal contributions) <br>
