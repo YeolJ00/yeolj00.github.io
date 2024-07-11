@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Personalized Aesthetics</title>
+        <link rel="icon" type="image/x-icon" href="./assets/favicon_davian.png">
+        <link type="text/css" rel="stylesheet" href="https://bootswatch.com/5/minty/bootstrap.min.css">
+    </head>
+    
+<body>
+    <div class="container" style="margin-top:20px;">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-10">
+                <!-- Title and autors -->
+                <center>
+                    <h2 style="margin-top: 20px; margin-bottom: 20px; line-height: 1.2em;">
+                        Scaling Up Personalized Aesthetic Assessment via Task Vector Arithmetic</h2>
+                    <h4>ECCV 2024</h4>
+                    <!-- author -->
+                    <div class="row author" style="margin-top:18px;">
+                        <div class="col-md"></div>
+                        <div class="col-md">
+                            <a href="https://yeolj00.github.io/" style="text-decoration: none;">
+                                <h5 class="text-primary">Jooyeol Yun</h5>
+                            </a>
+                            <em>blizzard072@kaist.ac.kr</em>
+                        </div>
+                        <div class="col-md">
+                            <a href="https://sites.google.com/site/jaegulchoo/" style="text-decoration: none;">
+                                <h5 class="text-primary">Jaegul Choo</h5>
+                            </a>
+                            <em>jchoo@kaist.ac.kr</em>
+                        </div>
+                        <div class="col-md"></div>
+                    </div>
+                    <div class="row author" , style="margin-top:18px; font-size: 20px;">
+                        <div class="col-sm-12">Korea Advanced Institute of Science and Technology (KAIST)</div>
+                    </div>
+                </center>
+                
+                <!-- Teaser -->
+                <center>
+                    <figure class="figure">
+                        <img src="assets/teaser.png" class="figure-img img-fluid" alt="Responsive image" style="margin:0px 0px;" width="40%">
+                        <figcaption class="figure-caption text-justify">
+                            <center>
+                                Ecompassing your unique aesthetic preferences with a few personal images.
+                            </center>
+                        </figcaption>
+                    </figure>
+                </center>
+                
+                <!-- ICONs (arXiv, Code, BibTeX) -->
+                <div style="margin-top:15px"></div>
+                <center>
+                    <div class="row">
+                        <div class="col-sm-3"></div>
+                        <div class="col-sm">
+                            <a href="https://arxiv.org/abs/2407.07176" style="text-decoration: none;color: #000000;">
+                                <div>
+                                    <img src="assets/icon_arxiv.png" height="64px"></img>
+                                    <h4>arXiv</h4>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-sm">
+                            <a href="https://github.com/YeolJ00/Personalized-Aesthetics/" style="text-decoration: none;color: #000000;">
+                                <div>
+                                    <img src="assets/icon_github.png" height="64px"></img>
+                                    <h4>Code</h4>
+                                </div>
+                            </a>
+                        </div>
+                        <!-- <div class="col-sm">
+                            <a style="text-decoration: none;color: #000000;">
+                                <div>
+                                    <img src="assets/icon_bibtex.png" height="64px"></img>
+                                    <h4>BibTeX</h4>
+                                </div>
+                            </a>
+                        </div> -->
+                        <div class="col-sm-3"></div>
+                    </div>
+                </center>
+                <hr>
+                <!-- Abstract -->
+                <h3>Abstract</h3>
+                <div>
+                    <p class="lead">
+                        The task of personalized image aesthetic assessment seeks to tailor aesthetic score prediction models to match individual preferences with just a few user-provided inputs. 
+                        However, the scalability and generalization capabilities of current approaches are considerably restricted by their reliance on an expensive curated database.
+                        To overcome this long-standing scalability challenge, we present a unique approach that leverages readily available databases for general image aesthetic assessment and image quality assessment. 
+                        Specifically, we view each database as a distinct image score regression task that exhibits varying degrees of personalization potential. 
+                        By determining optimal combinations of task vectors, known to represent specific traits of each database, we successfully create personalized models for individuals. 
+                        This approach of integrating multiple models allows us to harness a substantial amount of data. 
+                        Our extensive experiments demonstrate the effectiveness of our approach in generalizing to previously unseen domains&ndasha challenge previous approaches have struggled to achieve&ndash;making it highly applicable to real-world scenarios. 
+                        Our novel approach significantly advances the field by offering scalable solutions for personalized aesthetic assessment and establishing high standards for future research. 
+                    </p>
+                </div>
+                <hr>
+                <!-- Introduction -->
+                <h3>Introduction</h3>
+                <center>
+                    <h5 class="text-primary">Everyone has their own unique aesthetic appetite.</h5>
+                    <h5 class="text-body-secondary">While there are <span class="text-info">numerous models</span> that assess the <span class="text-info">aesthetic quality</span> of images, </h5>
+                    <h5 class="text-body-secondary"><span class="text-secondary">no model</span> universally reflects the aesthetic preference of <span class="text-secondary">all individuals</span>.</h5>
+                    <br>
+                    <figure class="figure">
+                        <img src="./assets/intro_zeroshot.png" class="figure-img img-fluid" alt="Responsive image"
+                            style="margin:0px;margin-bottom: 10px;" width="50%">
+                            <figcaption class="figure-caption text-body-tertiary">
+                                <center>
+                                    Concordance between aesthetic models and individual preferences.
+                                </center>
+                            </figcaption>
+                    </figure>
+                </center>
+                <hr>
+
+                <h3>Task Vectors in Aesthetics Assessment</h3>
+                <center>
+                    <div style="margin-top:25px"></div>
+                    <h5 class="text-body-secondary">We train <span class="text-info">multiple models</span> using publicly available aesthetic assessment databases.</h5>
+                    <h5 class="text-body-secondary"><span class="text-primary">Task vectors</span> obtained from these models represent the <span class="text-primary">characteristics</span> of each database.</h5>
+                    <h5 class="text-body-secondary">In this way, we effectively use more than <span class="text-danger">400,000</span> aesthetic score samples.</h5>
+                    <br>
+                    <figure class="figure">
+                        <img src="assets/datasets.png" class="figure-img img-fluid" alt="Responsive image"
+                            style="margin:0px;margin-bottom:10px;" width="75%">
+                        <figcaption class="figure-caption text-body-tertiary">
+                                Image quality assessment (IQA) and image aesthetic assessment (IAA) datasets and their statistics.
+                        </figcaption>
+                    </figure>
+                    <br>
+                </center>
+                <hr>
+                
+                <h3>Personalization via Task Vector Customization</h3>
+                <center>
+                <br>
+                <h5 class="text-body-secondary"><span class="text-warning">Combining task vectors</span> produces a new aesthetic score model with unique behaviors.</h5>
+                <h5 class="text-body-secondary">Given a small set of personal image collections, we optimize the <span class="text-warning">coefficients</span> for combining task vectors.</h5>
+                <h5 class="text-body-secondary">This allows us to create personalized models by training a <span class="text-warning">minimal number</span> of parameters.</h5>
+                <br>
+                <figure class="figure">
+                    <img src="assets/method.png" class="figure-img img-fluid" alt="Responsive image"
+                        style="margin:0px;margin-bottom:10px;" width="75%">
+                    <figcaption class="figure-caption text-body-tertiary">
+                            We obtain task vectors from the image quality assessment and general image aesthetic assessment databases.<br>
+                            By combining these task vectors, we create personalized models for individuals.
+                    </figcaption>
+                </figure>
+                </center>
+                <h3>Results</h3>
+                <center>
+                <h5 class="text-body-secondary">Our approach demonstrates outstanding <span class="text-success">generalization</span> to unseen domains.</h5>
+                <h5 class="text-body-secondary">We outperform methods trained on the AADB dataset <span class="text-danger">without</span> pretraining on the AADB dataset.</h5>
+                <br>
+                <figure class="figure">
+                    <img src="assets/results.png" class="figure-img img-fluid" alt="Responsive image"
+                        style="margin:0px;margin-bottom:10px;" width="75%">
+                    <figcaption class="figure-caption text-justify">
+                        <center>
+                            Cross-dataset comparison of our approach against existing methods on the AADB test protocols.<br>
+                            Our approach does is not trained on the AADB dataset, yet it outperforms existing methods.
+                        </center>
+                    </figcaption>
+                </figure>
+                <h5 class="text-body-secondary">Accuracy of personalization <span class="text-primary">increases</span> with the number of available <span class="text-primary">task vectors</span>.</h5>
+                <h5 class="text-body-secondary">Our scalable approach can also easily integrate <span class="text-secondary">additional datasets</span>.</h5>
+                <figure class="figure">
+                    <img src="assets/ntask.png" class="figure-img img-fluid" alt="Responsive image"
+                        style="margin:0px;margin-bottom:0px;" width="45%">
+                    <figcaption class="figure-caption text-body-tertiary">
+                            Personalization accuracy as with respect to the number of task vectors used.<br>
+                            Our approach can easily integrate additional datasets to improve personalization accuracy.
+                    </figcaption>
+                </figure>
+                </center>
+                <hr>
+                <!-- Citation -->
+                <h3>Citation</h3>
+                <pre> 
+<code>@article{yun2024scaling,
+      title={Scaling Up Personalized Aesthetic Assessment via Task Vector Customization}, 
+      author={Jooyeol Yun and Jaegul Choo},
+      year={2024},
+      eprint={2407.07176},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2407.07176}, 
+}</code></pre>
+                <hr>
+            </div>
+            <div class="col-md-1"></div>
+        </div>
+    </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script type="text/x-mathjax-config">
+            MathJax.Hub.Config({
+                tex2jax: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] }
+            });
+        </script>
+    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>
