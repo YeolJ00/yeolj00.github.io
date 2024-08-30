@@ -12,28 +12,33 @@ Hi! I'm Jooyeol Yun. I am a Ph.D. candidate at <a href="http://gsai.kaist.ac.kr/
 My research interests are
 
 * Enhancing the quality of everyday images taken by casual users. 📷🎨
-* Image Generation and Manipulation
+* Image generation and editing.
+* Assisting content creators in designing.
 
 Education
 -----
 
 __Ph.D.__ in Artificial Intelligence at Korea Advanced Institue of Science and Technology (KAIST)
 
-2023 - Present
+<div align="right"> 2023 - Present </div>
 
 __M.S.__ in Artificial Intelligence at Korea Advanced Institue of Science and Technology (KAIST)
 
-2021 - 2023
+<div align="right"> 2021 - 2023 </div>
 
 __B.S.__ in Computer Science and Engineering at Korea University
 
-2017 - 2021
+<div align="right"> 2017 - 2021 </div>
 
 
 
 
 International Conference Publications
 ----
+* Disentangling Subject-Irrelevant Elements against Subject in Personalized Text-to-Image Diffusion via Filtered Self-distillation<br>
+  Seunghwan Choi, __Jooyeol Yun__, Jeonghoon Park, and Jaegul Choo <br>
+  Winter Conference on Applications of Computer Vision [WACV](https://wacv2025.thecvf.com/), 2025, *Accepted*
+
 * Scaling Up Personalized Image Aesthetic Assessment via Task Vector Customization <br>
    __Jooyeol Yun__ and Jaegul Choo <br>
   European Conference on Computer Vision [ECCV](https://eccv2024.ecva.net/), 2024, *Accepted*
