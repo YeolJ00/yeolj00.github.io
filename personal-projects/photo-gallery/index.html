@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Encrypted Photo Gallery</title>
+
+    <!-- Adding Bootswatch Sandstone theme -->
+    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/sandstone/bootstrap.min.css" rel="stylesheet" integrity="sha384-TX8t27HuQJ0p/7k0t4T0v0N9LtmXcz8bfp6V+FFvNFCQ/pz1g8z3g5m6b06a58a8" crossorigin="anonymous">
+
+    <style>
+        body {
+            text-align: center;
+            background-color: #f8f9fa; /* Light background from the Sandstone theme */
+        }
+
+        #folders {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .folder-container {
+            cursor: pointer;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .folder-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .folder-icon {
+            width: 100px;
+            height: 100px;
+            background: url('assets/folder-icon.svg') no-repeat center center;
+            background-size: contain;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #3c3c3c;
+            font-size: 2em;
+            margin-top: 20px;
+            font-weight: 700;
+        }
+
+        p {
+            font-size: 1.1em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Jooyeol's Photo Gallery</h2>
+    <div id="folders"></div>
+
+    <script>
+        const repoOwner = 'YeolJ00'; // Replace with your GitHub username
+        const repoName = 'yeolj00.github.io'; // Replace with your repository name
+        const baseApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/photos`;
+
+        async function fetchFolders() {
+            try {
+                const response = await fetch(baseApiUrl);
+                const folders = await response.json();
+
+                if (response.ok) {
+                    const filteredFolders = folders.filter(folder => folder.type === 'dir');
+                    displayFolders(filteredFolders);
+                } else {
+                    throw new Error(folders.message);
+                }
+            } catch (error) {
+                console.error("Error fetching folders from GitHub:", error);
+            }
+        }
+
+        function displayFolders(folders) {
+            const foldersDiv = document.getElementById("folders");
+            foldersDiv.innerHTML = "";
+            folders.forEach(folder => {
+                const folderName = folder.name;
+                const div = document.createElement("div");
+                div.className = "folder-container";
+                div.innerHTML = `<div class='folder-icon'></div><p>${folderName}</p>`;
+                foldersDiv.appendChild(div);
+            });
+        }
+
+        fetchFolders();
+    </script>
+</body>
+
+</html>
