@@ -68,18 +68,19 @@
     <script>
         const repoOwner = 'YeolJ00'; // Replace with your GitHub username
         const repoName = 'yeolj00.github.io'; // Replace with your repository name
-        const baseApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/personal-projects/photo-gallery/photos`;
+        const baseApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/personal-projects/photo-gallery/photos`;
 
         async function fetchFolders() {
             try {
                 const response = await fetch(baseApiUrl);
-                const folders = await response.json();
+                const data = await response.json();
 
                 if (response.ok) {
-                    const filteredFolders = folders.filter(folder => folder.type === 'dir');
-                    displayFolders(filteredFolders);
+                    // Filter only directories
+                    const folders = data.filter(item => item.type === 'dir');
+                    displayFolders(folders);
                 } else {
-                    throw new Error(folders.message);
+                    throw new Error(data.message);
                 }
             } catch (error) {
                 console.error("Error fetching folders from GitHub:", error);
