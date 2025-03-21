@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Encrypted Photo Gallery</title>
+    <title>Photo Gallery</title>
 
     <!-- Adding Bootswatch Sandstone theme -->
-    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/sandstone/bootstrap.min.css" rel="stylesheet" integrity="sha384-TX8t27HuQJ0p/7k0t4T0v0N9LtmXcz8bfp6V+FFvNFCQ/pz1g8z3g5m6b06a58a8" crossorigin="anonymous">
+    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/sandstone/bootstrap.min.css" rel="stylesheet">
 
     <style>
         body {
@@ -68,7 +68,7 @@
     <script>
         const repoOwner = 'YeolJ00'; // Replace with your GitHub username
         const repoName = 'yeolj00.github.io'; // Replace with your repository name
-        const baseApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/photos`;
+        const baseApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/personal-projects/photo-gallery/photos`;
 
         async function fetchFolders() {
             try {
