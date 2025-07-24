@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Password</title>
+    
+    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/sandstone/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            text-align: center;
+            background-color: #f8f9fa;
+            margin: 0 20px;
+        }
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .image-container {
+            text-align: center;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 10px;
+        }
+        .image-container img {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+        }
+        input {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 1em;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Enter Password for <span id="folder-name"></span></h2>
+    <div class="password-container">
+        <input type="password" id="password" placeholder="Enter Password">
+        <button onclick="loadGallery()">Submit</button>
+    </div>
+    <div id="gallery" class="gallery-container"></div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const folderName = params.get("folder");
+        document.getElementById("folder-name").innerText = folderName;
+
+        async function loadGallery() {
+            const password = document.getElementById("password").value;
+            const baseApiUrl = `https://api.github.com/repos/YeolJ00/yeolj00.github.io/contents/personal-projects/photo-gallery/photos/${folderName}`;
+            
+            try {
+                const response = await fetch(baseApiUrl);
+                const files = await response.json();
+                
+                if (response.ok) {
+                    displayImages(files, password);
+                } else {
+                    throw new Error(files.message);
+                }
+            } catch (error) {
+                console.error("Error fetching images:", error);
+            }
+        }
+
+        function displayImages(files, password) {
+            const galleryDiv = document.getElementById("gallery");
+            galleryDiv.innerHTML = "";
+            
+            files.forEach(file => {
+                if (file.name.endsWith(".enc")) {
+                    const imageUrl = decodeImage(file.download_url, password);
+                    const div = document.createElement("div");
+                    div.className = "image-container";
+                    div.innerHTML = `<img src="${imageUrl}" alt="Image">`;
+                    galleryDiv.appendChild(div);
+                }
+            });
+        }
+
+        function decodeImage(fileUrl, password) {
+            // Placeholder for actual decryption logic.
+            // In a real setup, decryption would happen server-side.
+            return "assets/lock.svg"; // Fallback if decoding fails.
+        }
+    </script>
+</body>
+
+</html>

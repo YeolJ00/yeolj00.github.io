@@ -12,7 +12,8 @@
     <style>
         body {
             text-align: center;
-            background-color: #f8f9fa; /* Light background from the Sandstone theme */
+            background-color: #f8f9fa;
+            /* Light background from the Sandstone theme */
         }
 
         #folders {
@@ -76,9 +77,8 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Filter only directories
-                    const folders = data.filter(item => item.type === 'dir');
-                    displayFolders(folders);
+                    const filteredFolders = data.filter(item => item.type === 'dir');
+                    displayFolders(filteredFolders);
                 } else {
                     throw new Error(data.message);
                 }
@@ -95,8 +95,13 @@
                 const div = document.createElement("div");
                 div.className = "folder-container";
                 div.innerHTML = `<div class='folder-icon'></div><p>${folderName}</p>`;
+                div.onclick = () => openPasswordPage(folderName);
                 foldersDiv.appendChild(div);
             });
+        }
+
+        function openPasswordPage(folderName) {
+            window.location.href = `gallery.html?folder=${encodeURIComponent(folderName)}`;
         }
 
         fetchFolders();
