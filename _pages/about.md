@@ -34,7 +34,9 @@ __B.S.__ in Computer Science and Engineering at Korea University
 
 
 International Conference Publications
+
 ----
+
 * Devil is in the Detail: Towards Injecting Fine Details of Image Prompt in Image Generation via Conflict-free Guidance and Stratified Attention<br>
   Kyungmin Jo, __Jooyeol Yun__, Jaegul Choo<br>
   Computer Vision and Pattern Recognition [CVPR](https://cvpr.thecvf.com/Conferences/2025), 2025, *Accepted*
@@ -59,8 +61,6 @@ International Conference Publications
   __<u>Jooyeol Yun</u>\*__, <u>Sanghyeon Lee</u>\*, <u>Minho Park</u>\*, and Jaegul Choo (\*: equal contributions) <br>
   Winter Conference on Applications of Computer Vision [WACV](https://wacv2023.thecvf.com/), 2023, *Accepted*
 
-
 * Improving Face Recognition with Large Age Gaps by Learning to Distinguish Children <br>
   <u>Jungsoo Lee</u>\*, __<u>Jooyeol Yun</u>\*__, Sunghyun Park, Yonggyu Kim, and Jaegul Choo (\*: equal contributions) <br>
   British Machine Vision Conference [BMVC](https://www.bmvc2021-virtualconference.com/), 2021, *Accepted*
-
