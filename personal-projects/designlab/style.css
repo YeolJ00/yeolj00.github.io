@@ -1,0 +1,155 @@
+/* Header */
+
+/* Animation Styles */
+.magic-text {
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+
+    0%,
+    100% {
+        filter: hue-rotate(0deg);
+    }
+
+    50% {
+        filter: hue-rotate(180deg);
+    }
+}
+
+/* Transformation Effect Styles */
+.slide-container {
+    position: relative;
+    border-radius: 0px;
+    perspective: 1000px;
+}
+
+.slide-before,
+.slide-after {
+    width: 100%;
+    height: auto;
+    display: block;
+    transition: all 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+    filter: brightness(1) contrast(1);
+    backface-visibility: hidden;
+}
+
+.slide-after {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transform: rotateY(180deg);
+}
+
+.slide-container:hover .slide-before {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.slide-container:hover .slide-after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.slide-container:hover .slide-before {
+    opacity: 0;
+    transform: rotateY(-180deg);
+    filter: brightness(0.7);
+}
+
+.slide-container:hover .slide-after {
+    opacity: 1;
+    transform: rotateY(0deg);
+    filter: brightness(1.1) contrast(1.1);
+}
+
+/* Progress indicator */
+.transform-progress {
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
+    transition: width 0.8s ease;
+    border-radius: 0 0 4px 4px;
+}
+
+.slide-container:hover .transform-progress {
+    width: 100%;
+}
+
+/* Caption enhancement */
+.transform-caption {
+    text-align: center;
+    margin-top: 15px;
+    padding: 8px 12px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+
+/* Gallery Grid Styles */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    max-width: 900px;
+    margin: 30px auto;
+    width: 100%;
+}
+
+.gallery-item {
+    display: block;
+    width: 100%;
+}
+
+.gallery-item .slide-container {
+    width: 100%;
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.5s ease;
+}
+
+.gallery-item .slide-container:hover {
+    transform: scale(1.05);
+    z-index: 10;
+    position: relative;
+}
+
+.gallery-caption {
+    text-align: center;
+    margin-top: 15px;
+    padding: 8px 12px;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Auto-flip animation */
+.gallery-item.auto-flipped .slide-before {
+    opacity: 0;
+    transform: rotateY(-180deg);
+    filter: brightness(0.7);
+}
+
+.gallery-item.auto-flipped .slide-after {
+    opacity: 1;
+    transform: rotateY(0deg);
+    filter: brightness(1.1) contrast(1.1);
+}
+
+.gallery-item.auto-flipped .transform-progress {
+    width: 100%;
+}
+
+/* Pause auto-flip on hover */
+.gallery-item:hover.auto-flipped .slide-before,
+.gallery-item:hover.auto-flipped .slide-after,
+.gallery-item:hover.auto-flipped .transform-progress {
+    animation-play-state: paused;
+}
