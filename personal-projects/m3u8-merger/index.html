@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coupang Stream Merger</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🚀</span>Coupang Stream Merger</h1>
+
+        <form id="streamForm">
+            <div class="input-group">
+                <label for="url1">Stream URL 1:</label>
+                <input type="url" id="url1" name="url1" placeholder="https://live04.coupangstreaming.com/..." required>
+            </div>
+            
+            <div class="input-group">
+                <label for="url2">Stream URL 2:</label>
+                <input type="url" id="url2" name="url2" placeholder="https://live04.coupangstreaming.com/..." required>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit" class="btn-primary" id="processBtn">
+                    <span id="btnText">⚡ Create Stream</span>
+                </button>
+                <button type="button" class="btn-secondary" onclick="clearForm()">
+                    🗑️ Clear
+                </button>
+            </div>
+        </form>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="instructions">
+            <h3>📋 How to use:</h3>
+            <ol>
+                <li><strong>Paste your two stream URLs</strong> in the boxes above</li>
+                <li><strong>Click "Create Stream"</strong> to process</li>
+                <li><strong>Download the generated playlist file</strong></li>
+                <li><strong>Open the file with a video player:</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>Desktop:</strong> VLC, MPV, or any HLS-compatible player</li>
+                        <li><strong>Mobile:</strong> VLC for Mobile, Infuse (iOS), MX Player (Android)</li>
+                        <li><strong>TV:</strong> Plex, Kodi, or smart TV built-in players</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
