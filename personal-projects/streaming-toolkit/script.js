@@ -88,13 +88,86 @@ function showStatus(message, type) {
 }
 
 async function detectStreamType(url1, url2) {
-    // Simple heuristic - assume first URL is video for now
-    // In a real implementation, you'd fetch and analyze the manifests
-    showStatus('Auto-detecting stream types...', 'info');
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate processing
-    return url1; // Assume first is video
+    try {
+        showStatus('Fetching and analyzing manifests...', 'info');
+        
+        // Fetch both manifests
+        const [type1, type2] = await Promise.all([
+            analyzeStreamType(url1),
+            analyzeStreamType(url2)
+        ]);
+        
+        console.log(`Stream 1: ${type1}`);
+        console.log(`Stream 2: ${type2}`);
+        
+        if (type1 === "video" && type2 === "audio") {
+            return url1; // First URL is video
+        } else if (type1 === "audio" && type2 === "video") {
+            return url2; // Second URL is video
+        } else {
+            console.log("Could not determine stream types, using first as video");
+            showStatus('Could not auto-detect stream types, assuming first URL is video', 'warning');
+            return url1;
+        }
+    } catch (error) {
+        console.error('Error detecting stream types:', error);
+        showStatus('Error analyzing streams, assuming first URL is video', 'warning');
+        return url1;
+    }
 }
 
+async function analyzeStreamType(manifestUrl) {
+    try {
+        // Set up headers to match the Python implementation
+        const response = await fetch(manifestUrl, {
+            // headers: {
+            //     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+            //     'Accept': '*/*',
+            //     'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            //     'Accept-Encoding': 'gzip, deflate, br, zstd',
+            //     'Origin': 'https://www.coupangplay.com',
+            //     'Referer': 'https://www.coupangplay.com/',
+            //     'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+            //     'Sec-Ch-Ua-Mobile': '?0',
+            //     'Sec-Ch-Ua-Platform': '"Windows"',
+            //     'Sec-Fetch-Dest': 'empty',
+            //     'Sec-Fetch-Mode': 'cors',
+            //     'Sec-Fetch-Site': 'cross-site'
+            // }
+        });
+        
+        if (!response.ok) {
+            console.error(`Failed to fetch manifest: ${response.status}`);
+            return "unknown";
+        }
+        
+        const manifest = await response.text();
+        const manifestLower = manifest.toLowerCase();
+        
+        // Check for audio-specific indicators
+        const audioIndicators = ['audio'];
+        
+        // Check for video-specific indicators  
+        const videoIndicators = ['video'];
+        
+        const audioScore = audioIndicators.filter(indicator => 
+            manifestLower.includes(indicator)).length;
+        const videoScore = videoIndicators.filter(indicator => 
+            manifestLower.includes(indicator)).length;
+        
+        if (audioScore > videoScore) {
+            return "audio";
+        } else if (videoScore > audioScore) {
+            return "video";
+        } else {
+            return "unknown";
+        }
+        
+    } catch (error) {
+        console.error(`Error fetching manifest: ${error}`);
+        return "unknown";
+    }
+}
 function createCombinedM3U8(videoUrl, audioUrl) {
     return `#EXTM3U
 #EXT-X-VERSION:6
