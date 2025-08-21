@@ -31,6 +31,7 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -166,8 +167,13 @@ button {
 }
 
 @keyframes successShimmer {
-    0% { left: -100%; }
-    100% { left: 100%; }
+    0% {
+        left: -100%;
+    }
+
+    100% {
+        left: 100%;
+    }
 }
 
 .status.error {
@@ -264,6 +270,7 @@ button {
         opacity: 0;
         transform: translateY(20px) scale(0.9);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -283,6 +290,7 @@ button {
         opacity: 0;
         transform: translateY(30px);
     }
+
     100% {
         opacity: 1;
         transform: translateY(0);
@@ -294,11 +302,11 @@ button {
         padding: 20px;
         margin: 10px;
     }
-   
+
     h1 {
         font-size: 24px;
     }
-   
+
     .button-group {
         flex-direction: column;
     }
@@ -316,7 +324,46 @@ button {
 }
 
 @keyframes spin {
-    to { 
-        transform: rotate(360deg); 
+    to {
+        transform: rotate(360deg);
     }
+}
+
+/* Buy Me a Coffee Button Styles */
+.support-section {
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 2px solid #e0e0e0;
+    text-align: center;
+}
+
+.coffee-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #FFDD00, #FFC107);
+    color: #333;
+    text-decoration: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    border: none;
+    cursor: pointer;
+}
+
+.coffee-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+    background: linear-gradient(135deg, #FFE55C, #FFD54F);
+}
+
+.coffee-button:active {
+    transform: translateY(0);
+}
+
+.support-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
 }

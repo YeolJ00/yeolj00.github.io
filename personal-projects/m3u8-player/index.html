@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="assets/favicon.ico" type="image/x-icon">
 </head>
+
 <body>
     <div class="container">
         <h1><span class="emoji">🚀</span>Coupang Stream Merger</h1>
@@ -16,12 +18,12 @@
                 <label for="url1">Stream URL 1:</label>
                 <input type="url" id="url1" name="url1" placeholder="https://live04.coupangstreaming.com/..." required>
             </div>
-            
+
             <div class="input-group">
                 <label for="url2">Stream URL 2:</label>
                 <input type="url" id="url2" name="url2" placeholder="https://live04.coupangstreaming.com/..." required>
             </div>
-            
+
             <div class="button-group">
                 <button type="submit" class="btn-primary" id="processBtn">
                     <span id="btnText">⚡ Create Stream</span>
@@ -31,9 +33,9 @@
                 </button>
             </div>
         </form>
-        
+
         <div id="status" class="status"></div>
-        
+
         <div class="instructions">
             <h3>📋 How to use:</h3>
             <ol>
@@ -49,8 +51,15 @@
                 </li>
             </ol>
         </div>
+        <div class="support-section">
+            <p class="support-text">If this tool helped you, consider supporting the developer! ☕</p>
+            <a href="https://buymeacoffee.com/jooyeol" target="_blank" class="coffee-button">
+                ☕ Buy me a coffee
+            </a>
+        </div>
     </div>
 
     <script src="script.js"></script>
 </body>
+
 </html>
