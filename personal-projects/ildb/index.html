@@ -40,7 +40,7 @@
         const B__ = 'SQPWDGD3CekP';
         const _T_ = 'pCa8jx46nryM';
         const GITHUB_OBFUSCATED = G__ + I__ + T__ + H__ + U__ + B__ + _T_;
-        const GIST_ID = 'aefe5d7001b39cf9df349c09a58a7860';  // 비워두면 자동 생성됨, 기존 Gist 사용시 ID 입력
+        const GIST_ID = 'aefe5d7001b39cf9df349c09a58a7860';
         const PASSWORD_HASH = '136040f6ccedf6eee620407451ceefe7c93172d4386a0099758eff8e7ef1bbfe';
         // ========================================
 
@@ -98,7 +98,8 @@
                     passwordInput: '',
                     pendingAction: null,
                     gistId: storedGistId,
-                    theme: storedTheme
+                    theme: storedTheme,
+                    selectedYear: new Date().getFullYear()
                 };
                 
                 this.loadFromGist();
@@ -305,7 +306,7 @@
             }
 
             getStats() {
-                const { reviews } = this.state;
+                const { reviews, selectedYear } = this.state;
                 const totalReviews = reviews.length;
                 const avgRating = totalReviews > 0 
                     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) 
@@ -321,19 +322,21 @@
                     else ratingDistribution['4-5']++;
                 });
 
-                const genreCount = {};
-                reviews.forEach(r => {
-                    if (r.genres) {
-                        r.genres.forEach(g => {
-                            genreCount[g] = (genreCount[g] || 0) + 1;
-                        });
-                    }
+                // 연도별 베스트 계산
+                const yearReviews = reviews.filter(r => {
+                    const year = new Date(r.watchDate).getFullYear();
+                    return year === selectedYear;
                 });
-                const topGenres = Object.entries(genreCount)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5);
+                
+                const bestMovies = yearReviews
+                    .sort((a, b) => b.rating - a.rating)
+                    .slice(0, 3);
 
-                return { totalReviews, avgRating, ratingDistribution, topGenres };
+                // 전체 연도 목록
+                const years = [...new Set(reviews.map(r => new Date(r.watchDate).getFullYear()))]
+                    .sort((a, b) => b - a);
+
+                return { totalReviews, avgRating, ratingDistribution, bestMovies, years };
             }
 
             toggleFilterGenre = (genre) => {
@@ -532,13 +535,38 @@
                                 </div>
 
                                 <div class="bg-white dark:bg-[#2a2a2a] rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-[#854836]">
-                                    <h3 class="text-black dark:text-white text-lg font-bold mb-4">상위 장르</h3>
-                                    ${stats.topGenres.length === 0 ? html`
-                                        <p class="text-gray-500 dark:text-gray-400">리뷰를 추가하면 통계가 표시됩니다</p>
-                                    ` : stats.topGenres.map(([genre, count]) => html`
-                                        <div class="flex justify-between items-center mb-3">
-                                            <span class="text-black dark:text-white font-medium">${genre}</span>
-                                            <span class="px-3 py-1 bg-[#FFB22C] bg-opacity-20 text-[#854836] dark:text-[#FFB22C] rounded-full text-sm">${count}편</span>
+                                    <div class="flex justify-between items-center mb-4">
+                                        <h3 class="text-black dark:text-white text-lg font-bold">연도별 베스트</h3>
+                                        ${stats.years.length > 0 && html`
+                                            <select
+                                                value=${this.state.selectedYear}
+                                                onChange=${(e) => this.setState({ selectedYear: parseInt(e.target.value) })}
+                                                class="px-3 py-1 bg-gray-100 dark:bg-[#1a1a1a] border border-gray-300 dark:border-[#854836] rounded-lg text-black dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#FFB22C]"
+                                            >
+                                                ${stats.years.map(year => html`<option value=${year}>${year}년</option>`)}
+                                            </select>
+                                        `}
+                                    </div>
+                                    ${stats.bestMovies.length === 0 ? html`
+                                        <p class="text-gray-500 dark:text-gray-400">해당 연도에 본 영화가 없습니다</p>
+                                    ` : stats.bestMovies.map((movie, index) => html`
+                                        <div class="mb-4 last:mb-0 p-3 bg-gradient-to-r ${index === 0 ? 'from-[#FFB22C]/20 to-transparent border-l-4 border-[#FFB22C]' : index === 1 ? 'from-gray-300/20 dark:from-gray-600/20 to-transparent border-l-4 border-gray-400' : 'from-[#854836]/20 to-transparent border-l-4 border-[#854836]'} rounded-lg">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-2 mb-1">
+                                                        <span class="text-2xl font-bold ${index === 0 ? 'text-[#FFB22C]' : index === 1 ? 'text-gray-500 dark:text-gray-400' : 'text-[#854836]'}">
+                                                            ${index + 1}
+                                                        </span>
+                                                        <h4 class="text-black dark:text-white font-bold">${movie.title}</h4>
+                                                    </div>
+                                                    <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                                        ${movie.director && html`<span>${movie.director}</span>`}
+                                                        ${movie.director && html`<span>•</span>`}
+                                                        <div class="flex">${this.renderStars(movie.rating)}</div>
+                                                        <span class="font-bold text-black dark:text-white">${movie.rating}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     `)}
                                 </div>
