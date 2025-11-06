@@ -33,7 +33,7 @@
 
             <div class="consent-box">
                 <h3>Consent</h3>
-                <p>By clicking "Start Study", you agree to participate in this research study. Your responses will be used for research purposes and will be automatically submitted to the researcher. You may stop at any time.</p>
+                <p>By clicking "Start Study", you agree to participate in this research study. Your responses will be used for research purposes and will be automatically submitted to the researcher. You may stop at any time, but the results will not be recorded.</p>
             </div>
 
             <div class="button-group">
@@ -75,8 +75,8 @@
         const GIST_PUBLIC = false;
 
     const studyData = [
-      { id:1, instruction:"I want the moon pop up and then the stars to emerge gently.",
-        svgPath:'svg/universe-planet-06-svgrepo-com.svg',
+      { id:1, instruction:"I want an opening animation for the whole SVG, so that the windmill pops up in a lively manner, starting from the bottom elements and moving up to the top elements.",
+        svgPath:'svg/windmill-svgrepo-com.svg',
         videoA:"videos/q01_wan_chroma.mp4", videoB:"videos/q01_ours.mp4" 
       },
       { id:2, instruction:"I want the moon pop up and then the stars to emerge gently.",
@@ -326,14 +326,14 @@
         <div class="video-comparison">
         <div class="video-box">
             <h3>Video A</h3>
-            <video controls playsinline preload="metadata">
+            <video controls playsinline preload="metadata" loop muted>
             <source src="${videoAUrl}" type="video/mp4"/>
             Your browser does not support the video tag.
             </video>
         </div>
         <div class="video-box">
             <h3>Video B</h3>
-            <video controls playsinline preload="metadata">
+            <video controls playsinline preload="metadata" loop muted>
             <source src="${videoBUrl}" type="video/mp4"/>
             Your browser does not support the video tag.
             </video>
@@ -375,7 +375,7 @@
       }
 
       document.getElementById('total-questions').textContent = studyData.length;
-      document.getElementById('estimated-time').textContent = Math.ceil(studyData.length * 1.5);
+      document.getElementById('estimated-time').textContent = Math.ceil(studyData.length * 0.5);
       updateProgress();
     }
 
