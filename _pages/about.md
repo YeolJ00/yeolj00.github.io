@@ -31,11 +31,13 @@ __B.S.__ in Computer Science and Engineering at Korea University
 <div align="right"> 2017 - 2021 </div><br>
 
 
-
-
 International Conference Publications
-
 ----
+
+* SphereDiff: Tuning-free Omnidirectional Panoramic Image and Video Generation via Spherical Latent Representation<br>
+  Minho Park\*, Taewoong Kang\*, __Jooyeol Yun__, Seongwon Hwang, Jaegul Choo<br>
+  Association for the Advancement of Artificial Intelligence [AAAI](https://aaai.org/conference/aaai/aaai-26/), 2026, *Oral*
+
 
 * Devil is in the Detail: Towards Injecting Fine Details of Image Prompt in Image Generation via Conflict-free Guidance and Stratified Attention<br>
   Kyungmin Jo, __Jooyeol Yun__, Jaegul Choo<br>
