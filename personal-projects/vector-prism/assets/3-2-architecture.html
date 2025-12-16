@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* --- Composer & @property declarations (added once) ---
+   We expose a color lane for the sky circle's "brightness" so the fill can be smoothly
+   interpolated by the UA. Declared with '<color>' so color interpolation is performed
+   natively and efficiently.
+*/
+@property --sky_circle-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #7FE6EE;
+}
+@property --sky_circle-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #07182A;
+}
+
+/* Keyframes:
+   - 0% → 60%: day cyan (#7FE6EE) → twilight (#4AB9D1)
+   - 60% → 100%: twilight → deep night (#07182A)
+   - Uses a single custom-property lane (--sky_circle-bright1) to avoid animating
+     layout/paint-heavy properties and keep motion performant.
+*/
+@keyframes sky_circle__bright-color {
+  0% {
+    --sky_circle-bright1: #7FE6EE;
+  }
+  60% {
+    --sky_circle-bright1: #4AB9D1;
+  }
+  100% {
+    --sky_circle-bright1: #07182A;
+  }
+}
+
+/* Composer for the SVG element with class 'sky_circle'
+   - We set the fill via the custom property (with !important to override inline style).
+   - transform-origin derived from the group's data-center (56.31, 30.00) so any
+     later motion lanes that use transforms align to the scene center. No transforms
+     are applied here; origin is declared for coherence with other layers.
+   - Using animation longhand properties as requested.
+*/
+.sky_circle {
+  /* initial lane values (keeps a defined start even if UA doesn't support @property) */
+  --sky_circle-bright1: #7FE6EE;
+  --sky_circle-bright2: #07182A;
+
+  /* Placement hint derived from SVG data-center to avoid collisions (user units / viewBox coords) */
+  transform-origin: 56.31px 30px;
+
+  /* Apply the animated color to the SVG fill. !important used to override inline style fill. */
+  fill: var(--sky_circle-bright1) !important;
+
+  /* Performance: hint the UA which custom property will change. */
+  will-change: --sky_circle-bright1;
+
+  /* Animation longhand (10s, ease-in-out cubic-bezier, run once, hold final color) */
+  animation-name: sky_circle__bright-color;
+  animation-duration: 10s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-direction: normal;
+  animation-fill-mode: forwards; /* hold night color at end */
+  animation-play-state: running;
+}
+
+/* Notes:
+   - This animation only animates a single color custom-property lane, keeping GPU/paint work low.
+   - The lane names follow the requested pattern (--sky_circle-...); additional lanes can be
+     added as separate @property declarations and keyframes on new lanes (use next free lane).
+   - The rule is self-contained and starts on load (no JS/class toggles required).
+*/
+
+/* --- twilight overlay custom-property lanes (added once) ---
+   Lanes follow the requested naming convention and expose:
+   - opacity lane (--sky_twilight_overlay-op1/op2)
+   - vertical-stop lane (--sky_twilight_overlay-ty1/ty2) expressed as percentages
+   - color lane for smooth hue interpolation (--sky_twilight_overlay-bright1/bright2)
+*/
+@property --sky_twilight_overlay-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --sky_twilight_overlay-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --sky_twilight_overlay-ty1 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+@property --sky_twilight_overlay-ty2 {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 5%;
+}
+
+@property --sky_twilight_overlay-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  /* warm peach, low alpha (day/dusk) */
+  initial-value: rgba(255,170,100,0.12);
+}
+@property --sky_twilight_overlay-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  /* cool purple, stronger alpha (night) */
+  initial-value: rgba(20,25,60,0.30);
+}
+
+/* Keyframes
+   - fade: opacity from 0 → 1 between 4s→9s (we implement via delay/duration below)
+   - sink: vertical gradient stop moves down ~5% of circle height
+   - hue: color lane interpolates warm → cool (uses <color> interpolation)
+*/
+@keyframes sky_twilight_overlay__fade {
+  from { --sky_twilight_overlay-op1: 0; }
+  to   { --sky_twilight_overlay-op1: 1; }
+}
+
+@keyframes sky_twilight_overlay__sink {
+  from { --sky_twilight_overlay-ty1: 0%; }
+  to   { --sky_twilight_overlay-ty1: 5%; }
+}
+
+@keyframes sky_twilight_overlay__hue {
+  from { --sky_twilight_overlay-bright1: rgba(255,170,100,0.12); }
+  to   { --sky_twilight_overlay-bright1: rgba(20,25,60,0.30); }
+}
+
+/* Composer for the SVG element with class 'sky_twilight_overlay'
+   - Align transform-origin to same scene center used by sky_circle (56.31,30)
+   - Apply the color lane to fill and the opacity lane to element opacity.
+   - The vertical-stop lane is exposed here for the SVG gradient stop to consume:
+     to make the sink visible the SVG gradient should reference the variable in its
+     stop offset (example: <stop offset="var(--sky_twilight_overlay-ty1)" .../>).
+     This CSS alone will still drive color & opacity smoothly; the ty lane is provided
+     so the gradient can sink if the SVG's stop offsets are wired to the lane.
+   - Animations are self-starting, timed to run between 4s and 9s (delay:4s, duration:5s)
+     so they read harmoniously with the existing 10s sky color animation.
+*/
+.sky_twilight_overlay {
+  /* initial lane values (keeps defined start on UAs without @property support) */
+  --sky_twilight_overlay-op1: 0;
+  --sky_twilight_overlay-op2: 1;
+  --sky_twilight_overlay-ty1: 0%;
+  --sky_twilight_overlay-ty2: 5%;
+  --sky_twilight_overlay-bright1: rgba(255,170,100,0.12);
+  --sky_twilight_overlay-bright2: rgba(20,25,60,0.30);
+
+  /* Placement / alignment (matches sky_circle group's data-center) */
+  transform-origin: 56.31px 30px;
+
+  /* Use the animated color lane for the overlay's fill and opacity lane for overall transparency.
+     Using !important to ensure this overrides any inline fill on the overlay element. */
+  fill: var(--sky_twilight_overlay-bright1) !important;
+  opacity: var(--sky_twilight_overlay-op1);
+
+  /* Hint to the UA which custom-properties will change (keeps paint work focused) */
+  will-change: --sky_twilight_overlay-op1, --sky_twilight_overlay-ty1, --sky_twilight_overlay-bright1;
+
+  /*
+    Multiple animations applied as parallel lanes. Order alignment is important:
+    - index 0: fade (opacity)
+    - index 1: sink (vertical stop)
+    - index 2: hue  (color)
+  */
+  animation-name: sky_twilight_overlay__fade, sky_twilight_overlay__sink, sky_twilight_overlay__hue;
+  animation-duration: 5s, 5s, 5s;                 /* each runs for the 4s→9s window */
+  animation-timing-function: ease-out, ease-out, ease-out;
+  animation-delay: 4s, 4s, 4s;                    /* start at 4s from page load */
+  animation-iteration-count: 1, 1, 1;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: forwards, forwards, forwards; /* hold final dark / sunk state */
+  animation-play-state: running, running, running;
+}
+
+/* Optional helper: if the SVG provides a dedicated gradient object under the overlay
+   (e.g. .sky_twilight_overlay-gradient stop), these rules map the animated lanes
+   to the stop color/opacity. The vertical offset must be referenced in the SVG
+   stop's offset attribute (offset="var(--sky_twilight_overlay-ty1)") for the sink to work.
+*/
+.sky_twilight_overlay-gradient stop {
+  /* animate stop color and alpha via the same color lane */
+  stop-color: var(--sky_twilight_overlay-bright1);
+  /* preserve the alpha encoded in the color lane; stop-opacity left at 1 */
+  stop-opacity: 1;
+}
+
+/* Coherence notes:
+   - The overlay fades in and shifts hue between 4s→9s to match the sky_circle's 0→10s transition:
+     it begins after the sky's primary color shift has started and finishes slightly earlier
+     to let the silhouette read against a fully darkening sky.
+   - All motion is exposed via custom-property lanes (no transforms in keyframes) to avoid layout/
+     transform collision with other animated groups and to keep the UA's compositor/paint work minimal.
+*/
+
+/* --- building_silhouette custom-property lanes (added once) ---
+   Lanes expose:
+   - color lane: --building_silhouette-bright1 / bright2  (interpolated as <color>)
+   - ambient shadow opacity lane: --building_silhouette-op1 / op2 (numbers)
+*/
+@property --building_silhouette-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  /* start: slightly lighter dark used in artwork */
+  initial-value: #26343A;
+}
+@property --building_silhouette-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #1A2326; /* final night tone */
+}
+
+@property --building_silhouette-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* no ambient shadow at day */
+}
+@property --building_silhouette-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.15; /* subtle ambient shadow at night */
+}
+
+/* Keyframes:
+   - bright: smoothly interpolate building fill color over 10s to match the sky timeline.
+   - ambient: fade in a subtle vertical ambient shadow (opacity 0 -> 0.15) over same 10s.
+   Both lanes animate via custom-properties only (no transform in keyframes).
+*/
+@keyframes building_silhouette__bright {
+  from { --building_silhouette-bright1: #26343A; }
+  to   { --building_silhouette-bright1: #1A2326; }
+}
+
+@keyframes building_silhouette__ambient {
+  from { --building_silhouette-op1: 0; }
+  to   { --building_silhouette-op1: 0.15; }
+}
+
+/* Composer for the SVG element(s) with class 'building_silhouette'
+   - Fill is driven by the color lane; !important used to override inline fills.
+   - A separate lane controls the opacity of a hypothetical vertical gradient "shadow"
+     (if the SVG contains a gradient object used as an overlay/extra fill, it should
+     reference the lane's value in its stop-opacity or stop-color alpha).
+   - transform-origin uses the group's data-center to stay aligned with the scene center
+     (data-center="34.14,38.33" from the building_silhouette-group).
+   - All animations start on load and hold final state (for night).
+*/
+.building_silhouette {
+  /* initial lane values (safe fallback) */
+  --building_silhouette-bright1: #26343A;
+  --building_silhouette-bright2: #1A2326;
+  --building_silhouette-op1: 0;
+  --building_silhouette-op2: 0.15;
+
+  /* Scene-aligned origin (group data-center: 34.14,38.33) */
+  transform-origin: 34.14px 38.33px;
+
+  /* Apply animated fill color; override inline SVG fill with !important */
+  fill: var(--building_silhouette-bright1) !important;
+
+  /* Hint the UA which custom-properties will change for performance */
+  will-change: --building_silhouette-bright1, --building_silhouette-op1;
+
+  /* Animation longhand (keeps alignment with existing sky 10s animation).
+     Timing uses a subtle ease-in leaning curve so darkening feels natural but remains restrained. */
+  animation-name: building_silhouette__bright, building_silhouette__ambient;
+  animation-duration: 10s, 10s;
+  animation-timing-function: cubic-bezier(0.18, 0, 0.30, 1), ease-in;
+  animation-delay: 0s, 0s;
+  animation-iteration-count: 1, 1;
+  animation-direction: normal, normal;
+  animation-fill-mode: forwards, forwards;
+  animation-play-state: running, running;
+}
+
+/* If the SVG contains a dedicated gradient object intended as the skyline's ambient shadow
+   (for example: <linearGradient id="building_silhouette-shadow"> ... </linearGradient>),
+   authoring that gradient to use 'stop-opacity="var(--building_silhouette-op1)"' will make
+   the shadow fade-in driven purely by the custom-property lane below.
+   This rule maps the lane to stop-opacity if the gradient exists in the document.
+*/
+.building_silhouette-shadow stop {
+  /* black shadow with animated opacity lane controlling overall transparency */
+  stop-color: #000000;
+  stop-opacity: var(--building_silhouette-op1);
+}
+
+/* Coherence notes:
+   - Color change (bright → dark) runs in lock-step with the 10s sky transition so the silhouette
+     reads naturally against the evening sky.
+   - Only custom-properties are animated (no transforms or layout-changing properties in keyframes),
+     keeping paint/composite work minimal and collision-safe with other animated groups.
+   - The optional .building_silhouette-shadow gradient rule is harmless if no gradient is present;
+     it allows the SVG to declaratively reference the lane (recommended for a smooth vertical shadow).
+*/
+
+/* building_front_shade: color + subtle inner-highlight opacity lanes
+   - Animates from #36474D → #24333A between 3.5s → 10s (delay 3.5s, dur 6.5s)
+   - Inner highlight opacity lane goes 0.12 → 0.02 on the same schedule.
+   - Uses @property lanes (color interpolated as <color>) so the UA can natively interpolate
+     the fill without expensive repaints. No transforms inside keyframes (collision-safe).
+*/
+
+/* custom-property lanes (added once) */
+@property --building_front_shade-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #36474D;
+}
+@property --building_front_shade-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #24333A;
+}
+
+@property --building_front_shade-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.12; /* subtle highlight at day */
+}
+@property --building_front_shade-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.02; /* reduced highlight at night */
+}
+
+/* Keyframes (unique names to avoid conflicts) */
+@keyframes building_front_shade__bright {
+  from { --building_front_shade-bright1: #36474D; }
+  to   { --building_front_shade-bright1: #24333A; }
+}
+
+@keyframes building_front_shade__highlight_op {
+  from { --building_front_shade-op1: 0.12; }
+  to   { --building_front_shade-op1: 0.02; }
+}
+
+/* Composer for the .building_front_shade element(s)
+   - transform-origin aligned with the main building_silhouette group's data-center
+     so any future transform lanes (if added) stay visually coherent.
+   - fill is driven by the color lane; !important used to override inline SVG fill.
+   - Highlight lane is exposed so an SVG gradient/stop or a nested highlight element
+     can reference it (see .building_front_shade-highlight stop rule below).
+   - Animations run on load (self-starting), timed to darken slightly later than the sky.
+*/
+.building_front_shade {
+  /* safe initial lane values */
+  --building_front_shade-bright1: #36474D;
+  --building_front_shade-bright2: #24333A;
+  --building_front_shade-op1: 0.12;
+  --building_front_shade-op2: 0.02;
+
+  /* Align with the scene's building center (derived from building_silhouette-group data-center) */
+  transform-origin: 34.14px 38.33px;
+
+  /* Apply animated fill color; override inline SVG fills if present */
+  fill: var(--building_front_shade-bright1) !important;
+
+  /* Hint which custom-properties will change for performance */
+  will-change: --building_front_shade-bright1, --building_front_shade-op1;
+
+  /* Two parallel lanes: index 0 = color, index 1 = highlight opacity */
+  animation-name: building_front_shade__bright, building_front_shade__highlight_op;
+  animation-duration: 6.5s, 6.5s;                     /* 3.5s -> 10s window */
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-delay: 3.5s, 3.5s;
+  animation-iteration-count: 1, 1;
+  animation-direction: normal, normal;
+  animation-fill-mode: forwards, forwards;            /* hold final darker state */
+  animation-play-state: running, running;
+}
+
+/* If the SVG contains a dedicated gradient/stop used as a subtle highlight inside
+   the building_front_shade group, author that stop to reference offset/opacity like:
+     <stop offset="..." stop-color="..." stop-opacity="var(--building_front_shade-op1)"/>
+   The rule below maps the lane to stop-opacity if such a gradient exists.
+*/
+.building_front_shade-highlight stop {
+  /* preserve highlight alpha via the lane; color left to the SVG author */
+  stop-opacity: var(--building_front_shade-op1);
+}
+
+/* Coherence:
+   - The color/opacity lanes run slightly later than the primary sky (which transitions 0→10s),
+     starting at 3.5s so the front buildings darken after the sky begins to shift. This subtle
+     delay helps maintain layered depth and avoids visual collision with the silhouette's timing.
+   - All motion is expressed via custom-properties only (no transform keyframes), keeping the
+     animation compositor-friendly and minimizing paint churn for complex SVGs.
+*/
+
+/* building_windows_group animation lanes (added once)
+   - Lanes follow the requested naming pattern and expose:
+     color lanes, opacity lanes, scale lanes and a blur lane for a soft glow.
+   - Animations are driven by custom-properties only (no transforms inside keyframes),
+     keeping this compositor-friendly and collision-safe with other scene animations.
+*/
+@property --building_windows_group-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #375055; /* muted bluish-gray (base) */
+}
+@property --building_windows_group-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #FFD54A; /* lit warm yellow (target) */
+}
+
+@property --building_windows_group-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.65; /* muted base opacity */
+}
+@property --building_windows_group-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* fully visible when lit */
+}
+
+/* scale lanes - used to implement the tiny "pop" via transform on the element (scale only) */
+@property --building_windows_group-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.96; /* start slightly reduced */
+}
+@property --building_windows_group-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* final scale */
+}
+@property --building_windows_group-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.96;
+}
+@property --building_windows_group-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* blur lane - used to drive a soft drop-shadow glow (length syntax for blur radius) */
+@property --building_windows_group-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --building_windows_group-blur2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 2px; /* soft glow when lit */
+}
+
+/* Keyframes
+   - bright: color + opacity change (600ms)
+   - pop: scale pop (250ms) using cubic-bezier(0.2,0.8,0.2,1) per spec
+   - glow: blur ramp (600ms) to simulate bloom
+   These only animate custom-properties (no transform inside keyframes).
+*/
+@keyframes building_windows_group__bright {
+  from {
+    --building_windows_group-bright1: #375055;
+    --building_windows_group-op1: 0.65;
+  }
+  to {
+    --building_windows_group-bright1: #FFD54A;
+    --building_windows_group-op1: 1;
+  }
+}
+
+@keyframes building_windows_group__pop {
+  from {
+    --building_windows_group-sx1: 0.96;
+    --building_windows_group-sy1: 0.96;
+  }
+  to {
+    --building_windows_group-sx1: 1;
+    --building_windows_group-sy1: 1;
+  }
+}
+
+/* gentle glow ramp in parallel with bright (matches the 600ms color transition) */
+@keyframes building_windows_group__glow {
+  from { --building_windows_group-blur1: 0px; }
+  to   { --building_windows_group-blur1: 2px; }
+}
+
+/* Composer for each window element (.building_windows_group)
+   - Uses the group's data-center for transform-origin so scale pops are spatially coherent.
+   - Applies animated lanes to fill, opacity, transform (via scale custom-properties),
+     and filter (drop-shadow uses the blur lane to emulate bloom).
+   - Animations self-start on page load; delays are overridden per-window below to achieve
+     natural staggered timing. Default base start is 6s (approx when sky is ~60% dark).
+*/
+.building_windows_group {
+  /* fallback / initial lane values (keeps defined start on UAs without @property support) */
+  --building_windows_group-bright1: #375055;
+  --building_windows_group-bright2: #FFD54A;
+  --building_windows_group-op1: 0.65;
+  --building_windows_group-op2: 1;
+  --building_windows_group-sx1: 0.96;
+  --building_windows_group-sx2: 1;
+  --building_windows_group-sy1: 0.96;
+  --building_windows_group-sy2: 1;
+  --building_windows_group-blur1: 0px;
+  --building_windows_group-blur2: 2px;
+
+  /* Placement / alignment:
+     transform-origin set from the parent group data-center (52.26, 40.70) so small scale pops
+     don't shift visually relative to the skyline. Units are in the SVG viewBox coordinate space. */
+  transform-origin: 52.26px 40.70px;
+
+  /* Apply animated lanes to presentation. !important used to override inline SVG fills/opacity. */
+  fill: var(--building_windows_group-bright1) !important;
+  opacity: var(--building_windows_group-op1) !important;
+
+  /* Use transform (reads custom-properties) for the scale pop - transform itself is not animated in keyframes. */
+  transform: scale(var(--building_windows_group-sx1), var(--building_windows_group-sy1));
+
+  /* Soft warm drop-shadow to emulate bloom when lit. Alpha is modest to stay subtle.
+     The blur radius is driven by a custom-property lane (fast to composite). */
+  filter: drop-shadow(0 0 var(--building_windows_group-blur1) rgba(255,213,74,0.28));
+
+  /* Performance hint: these are the lanes that will change */
+  will-change: --building_windows_group-bright1, --building_windows_group-op1, --building_windows_group-sx1, --building_windows_group-blur1;
+
+  /* Multiple parallel animations:
+     index 0 = color/opacity (600ms)
+     index 1 = pop scale (250ms)
+     index 2 = glow blur (600ms)
+     Default start aligned at ~6s; per-window selectors below add small randomized stagger offsets (0s–2.2s).
+  */
+  animation-name: building_windows_group__bright, building_windows_group__pop, building_windows_group__glow;
+  animation-duration: 600ms, 250ms, 600ms;
+  animation-timing-function: ease, cubic-bezier(0.2,0.8,0.2,1), ease;
+  /* base delay (will be overridden per-window with small staggers) */
+  animation-delay: 6s, 6s, 6s;
+  animation-iteration-count: 1, 1, 1;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: forwards, forwards, forwards; /* lights stay on */
+  animation-play-state: running, running, running;
+}
+
+/* Staggered start times for each window (randomized offsets between 0s and 2.2s).
+   These selectors are scoped to the group so nth-of-type counts only the window <path> siblings.
+   Adjustments are explicit to keep the animation deterministic and self-contained.
+   Note: the lists align with the three parallel animations above (color, pop, glow).
+*/
+.building_windows_group-group .building_windows_group:nth-of-type(1)  { animation-delay: 6.05s, 6.05s, 6.05s; }
+.building_windows_group-group .building_windows_group:nth-of-type(2)  { animation-delay: 6.60s, 6.60s, 6.60s; }
+.building_windows_group-group .building_windows_group:nth-of-type(3)  { animation-delay: 7.35s, 7.35s, 7.35s; }
+.building_windows_group-group .building_windows_group:nth-of-type(4)  { animation-delay: 6.90s, 6.90s, 6.90s; }
+.building_windows_group-group .building_windows_group:nth-of-type(5)  { animation-delay: 8.00s, 8.00s, 8.00s; }
+.building_windows_group-group .building_windows_group:nth-of-type(6)  { animation-delay: 6.30s, 6.30s, 6.30s; }
+.building_windows_group-group .building_windows_group:nth-of-type(7)  { animation-delay: 7.60s, 7.60s, 7.60s; }
+.building_windows_group-group .building_windows_group:nth-of-type(8)  { animation-delay: 6.15s, 6.15s, 6.15s; }
+.building_windows_group-group .building_windows_group:nth-of-type(9)  { animation-delay: 8.05s, 8.05s, 8.05s; }
+.building_windows_group-group .building_windows_group:nth-of-type(10) { animation-delay: 7.10s, 7.10s, 7.10s; }
+
+/* Coherence notes:
+   - Windows begin switching on after ~6s to align with the sky's ~60% darkening milestone (existing sky animation).
+   - Color/opacity transition lasts 600ms and holds final state (for night). The short 250ms pop runs in parallel
+     with an ease-out cubic-bezier to give a quick, tactile feel. A subtle drop-shadow bloom (2px) is added in
+     parallel to simulate a warm window glow without adding expensive filters or duplicating geometry.
+   - All motion is expressed via custom-properties only (no transform animations inside keyframes),
+     avoiding collisions with other SVG group transforms and keeping the UA's compositor/paint workload minimal.
+*/
+
+/* windows_glow_group: soft behind-window glow that appears in unison with each window.
+   - Exposes custom-property "lanes" only (no transforms in keyframes) to avoid layout/paint churn.
+   - Glow entrance: opacity 0 -> 0.55 and blur 0.5px -> 6px over 600ms (matches window bright timing).
+   - After entrance the glow holds then begins a very subtle infinite pulse (±10% of 0.55) every 5s.
+   - Staggers below mirror the building_windows_group delays so glow and window appear together.
+   - Placement origin derived from building windows group data-center (52.26,40.70).
+*/
+
+/* --- @property lanes (added once) --- */
+@property --windows_glow_group-tx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --windows_glow_group-tx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --windows_glow_group-ty1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --windows_glow_group-ty2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --windows_glow_group-rot1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --windows_glow_group-rot2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --windows_glow_group-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --windows_glow_group-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --windows_glow_group-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --windows_glow_group-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --windows_glow_group-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* start invisible */
+}
+@property --windows_glow_group-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.55; /* target visible alpha */
+}
+
+/* blur lane uses <length> so it can be consumed directly by CSS blur() */
+@property --windows_glow_group-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0.5px; /* subtle base so tiny blur exists if UA doesn't animate */
+}
+@property --windows_glow_group-blur2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 6px; /* target soft bloom */
+}
+
+@property --windows_glow_group-stroke1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0,0,0,0);
+}
+@property --windows_glow_group-stroke2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0,0,0,0);
+}
+
+@property --windows_glow_group-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #FFD54A; /* warm window glow */
+}
+@property --windows_glow_group-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #FFD54A;
+}
+
+/* --- Keyframes (unique names to avoid collisions) --- */
+/* entrance: animate opacity lane from 0 -> 0.55 */
+@keyframes windows_glow_group__ignite {
+  from { --windows_glow_group-op1: 0; }
+  to   { --windows_glow_group-op1: 0.55; }
+}
+
+/* blur ramp: 0.5px -> 6px over same window timing */
+@keyframes windows_glow_group__blur_in {
+  from { --windows_glow_group-blur1: 0.5px; }
+  to   { --windows_glow_group-blur1: 6px; }
+}
+
+/* gentle infinite pulse around final opacity (~±10%) to suggest life without distraction.
+   This animation starts after the entrance finishes (we schedule its delay accordingly). */
+@keyframes windows_glow_group__pulse {
+  0%   { --windows_glow_group-op1: 0.55; }
+  50%  { --windows_glow_group-op1: 0.495; } /* -10% */
+  100% { --windows_glow_group-op1: 0.55; }
+}
+
+/* --- Composer for the .windows_glow_group elements --- */
+.windows_glow_group {
+  /* safe initial lane values (fallbacks if @property unsupported) */
+  --windows_glow_group-tx1: 0;
+  --windows_glow_group-tx2: 0;
+  --windows_glow_group-ty1: 0;
+  --windows_glow_group-ty2: 0;
+  --windows_glow_group-rot1: 0;
+  --windows_glow_group-rot2: 0;
+  --windows_glow_group-sx1: 1;
+  --windows_glow_group-sx2: 1;
+  --windows_glow_group-sy1: 1;
+  --windows_glow_group-sy2: 1;
+  --windows_glow_group-op1: 0;
+  --windows_glow_group-op2: 0.55;
+  --windows_glow_group-blur1: 0.5px;
+  --windows_glow_group-blur2: 6px;
+  --windows_glow_group-bright1: #FFD54A;
+  --windows_glow_group-bright2: #FFD54A;
+
+  /* Align small glows to the building/windows scene center for coherent scaling (derived from windows group) */
+  transform-origin: 52.26px 40.70px;
+
+  /* presentation lanes consumed by the glow elements:
+     - fill uses the bright lane (warm yellow)
+     - overall transparency uses the op lane
+     - visual softness uses CSS blur() driven by the blur lane.
+  */
+  fill: var(--windows_glow_group-bright1) !important;
+  opacity: var(--windows_glow_group-op1);
+  filter: blur(var(--windows_glow_group-blur1));
+
+  /* keep pointer events off so glows don't interfere with UI */
+  pointer-events: none;
+
+  /* Performance hint: tell the UA which custom properties will change */
+  will-change: --windows_glow_group-op1, --windows_glow_group-blur1;
+
+  /*
+    Parallel animations:
+    index 0 = ignite (opacity ramp)  -> 600ms (matches window color/opacity)
+    index 1 = blur_in (blur ramp)   -> 600ms (same window timing)
+    index 2 = pulse (infinite subtle pulse) -> 5s, infinite; starts after ramp completes
+    Default start aligned at ~6s; per-glow selectors below add the same small staggers used by windows.
+  */
+  animation-name: windows_glow_group__ignite, windows_glow_group__blur_in, windows_glow_group__pulse;
+  animation-duration: 600ms, 600ms, 5s;
+  animation-timing-function: ease-out, ease-out, ease-in-out;
+  /* base delay: ~6s to align with windows group; per-window rules override with precise staggers */
+  animation-delay: 6s, 6s, 6.6s; /* pulse is scheduled 600ms after start so it begins once the glow is established */
+  animation-iteration-count: 1, 1, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: forwards, forwards, none; /* hold the final glow; pulse runs continuously after start */
+  animation-play-state: running, running, running;
+}
+
+/* --- Per-glow staggered offsets to match the building_windows_group window timings.
+   Note: the triple values correspond to the three parallel animations above (ignite, blur, pulse)
+         pulse delay = (window delay + 0.6s) so it begins after the entrance finishes.
+*/
+.building_windows_group-group .windows_glow_group:nth-of-type(1)  { animation-delay: 6.05s, 6.05s, 6.65s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(2)  { animation-delay: 6.60s, 6.60s, 7.20s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(3)  { animation-delay: 7.35s, 7.35s, 7.95s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(4)  { animation-delay: 6.90s, 6.90s, 7.50s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(5)  { animation-delay: 8.00s, 8.00s, 8.60s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(6)  { animation-delay: 6.30s, 6.30s, 6.90s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(7)  { animation-delay: 7.60s, 7.60s, 8.20s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(8)  { animation-delay: 6.15s, 6.15s, 6.75s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(9)  { animation-delay: 8.05s, 8.05s, 8.65s; }
+.building_windows_group-group .windows_glow_group:nth-of-type(10) { animation-delay: 7.10s, 7.10s, 7.70s; }
+
+/* Coherence notes:
+   - Entrance timing (600ms) matches building_windows_group bright/pop/glow so the soft halo appears exactly with the window.
+   - Pulse starts once the initial ramp completes and is deliberately slow and small (5s cycle, ±10%) to avoid distraction.
+   - All animations animate custom-properties (no transforms in keyframes) keeping this compositor-friendly and avoiding collisions.
+   - Using CSS blur() driven by a <length> custom-property keeps the effect performant across browsers that composite CSS filters on the GPU.
+*/
+
+/* star_background_1: small top-left star that appears after twilight (7.5s → 9s)
+   - Uses the custom-property "lanes" pattern only (no transforms in keyframes).
+   - Appearance: opacity 0 → 0.9 and scale 0.6 → 1 between 7.5s–9s (ease-out).
+   - Twinkle: subtle, slow opacity pulse (0.85 ↔ 1.00) and tiny scale jitter (±2%) looping indeﬁnitely.
+   - Timings chosen to harmonize with the existing scene:
+     sky/twilight transitions end ~9s, windows/glows begin ~6–8s; this star pops after twilight settles.
+*/
+
+/* --- @property lanes for star_background_1 (added once) --- */
+@property --star_background_1-tx1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_1-tx2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --star_background_1-ty1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_1-ty2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --star_background_1-rot1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_1-rot2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+/* scale lanes: start slightly reduced (0.6) then grow to 1 */
+@property --star_background_1-sx1 { syntax: '<number>'; inherits: false; initial-value: 0.6; }
+@property --star_background_1-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_background_1-sy1 { syntax: '<number>'; inherits: false; initial-value: 0.6; }
+@property --star_background_1-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* opacity lane: hidden → mostly visible */
+@property --star_background_1-op1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_1-op2 { syntax: '<number>'; inherits: false; initial-value: 0.9; }
+
+/* subtle softening blur (optional gentle halo) */
+@property --star_background_1-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_background_1-blur2 { syntax: '<length>'; inherits: false; initial-value: 0.8px; }
+
+/* stroke & bright lanes (color) - declared so authoring can wire visual variations */
+@property --star_background_1-stroke1 { syntax: '<color>'; inherits: false; initial-value: rgba(0,0,0,0); }
+@property --star_background_1-stroke2 { syntax: '<color>'; inherits: false; initial-value: rgba(0,0,0,0); }
+
+@property --star_background_1-bright1 { syntax: '<color>'; inherits: false; initial-value: #FFFFFF; }
+@property --star_background_1-bright2 { syntax: '<color>'; inherits: false; initial-value: #FFF9D9; }
+
+/* --- Keyframes (unique names) --- */
+/* appearance: drive opacity + scale lanes only (7.5s → 9s) */
+@keyframes star_background_1__appear {
+  from {
+    --star_background_1-op1: 0;
+    --star_background_1-sx1: 0.6;
+    --star_background_1-sy1: 0.6;
+    --star_background_1-blur1: 0px;
+  }
+  to {
+    --star_background_1-op1: 0.9;
+    --star_background_1-sx1: 1;
+    --star_background_1-sy1: 1;
+    --star_background_1-blur1: 0.6px; /* slight halo as it settles */
+  }
+}
+
+/* twinkle: slow, gentle pulse and tiny scale jitter (±2%). Starts after appearance completes.
+   Uses an asymmetric curve (non-linear key positions) to avoid robotic motion. */
+@keyframes star_background_1__twinkle {
+  0% {
+    --star_background_1-op1: 0.90;
+    --star_background_1-sx1: 0.98;
+    --star_background_1-sy1: 0.98;
+  }
+  40% {
+    --star_background_1-op1: 1.00;
+    --star_background_1-sx1: 1.02;
+    --star_background_1-sy1: 1.02;
+  }
+  65% {
+    --star_background_1-op1: 0.92;
+    --star_background_1-sx1: 0.99;
+    --star_background_1-sy1: 0.99;
+  }
+  100% {
+    --star_background_1-op1: 0.85;
+    --star_background_1-sx1: 0.98;
+    --star_background_1-sy1: 0.98;
+  }
+}
+
+/* --- Composer for the .star_background_1 element --- */
+.star_background_1 {
+  /* safe fallback lane values (keeps a defined start on UAs without @property support) */
+  --star_background_1-tx1: 0;
+  --star_background_1-tx2: 0;
+  --star_background_1-ty1: 0;
+  --star_background_1-ty2: 0;
+  --star_background_1-rot1: 0;
+  --star_background_1-rot2: 0;
+  --star_background_1-sx1: 0.6;
+  --star_background_1-sx2: 1;
+  --star_background_1-sy1: 0.6;
+  --star_background_1-sy2: 1;
+  --star_background_1-op1: 0;
+  --star_background_1-op2: 0.9;
+  --star_background_1-blur1: 0px;
+  --star_background_1-blur2: 0.8px;
+  --star_background_1-stroke1: rgba(0,0,0,0);
+  --star_background_1-stroke2: rgba(0,0,0,0);
+  --star_background_1-bright1: #FFFFFF;
+  --star_background_1-bright2: #FFF9D9;
+
+  /* Placement:
+     - Star sits near the top-left quadrant of the sky circle.
+     - Use a transform-origin derived from the scene: top-left-ish of the sky circle (approx).
+     - Coordinates are in the SVG viewBox space so scale pops don't misalign relative to other groups.
+     (Sky center: 56.31,30.00; star visually sits ~18–20px left and ~8–12px down from the top edge).
+  */
+  transform-origin: 18px 12px;
+
+  /* Presentation mapping:
+     - fill uses the bright lane
+     - opacity driven by the opacity lane
+     - transform reads the scale lanes (transform itself is not animated in keyframes)
+     - slight blur for gentle halo driven by blur lane
+  */
+  fill: var(--star_background_1-bright1) !important;
+  opacity: var(--star_background_1-op1);
+  transform: scale(var(--star_background_1-sx1), var(--star_background_1-sy1));
+  filter: blur(var(--star_background_1-blur1));
+
+  /* performance hint: tell the UA which custom-properties will change */
+  will-change: --star_background_1-op1, --star_background_1-sx1, --star_background_1-blur1;
+
+  /*
+    Two parallel animations:
+      index 0 = appear (one-shot, 1.5s, starts at 7.5s)
+      index 1 = twinkle (infinite, 3.5s, starts after appearance completes at 9s)
+    Longhand properties used and aligned per-index as requested.
+  */
+  animation-name: star_background_1__appear, star_background_1__twinkle;
+  animation-duration: 1.5s, 3.5s;
+  animation-timing-function: cubic-bezier(0.0, 0.0, 0.2, 1), ease-in-out;
+  animation-delay: 7.5s, 9s;             /* appear starts at 7.5s; twinkle begins after appear ends */
+  animation-iteration-count: 1, infinite;
+  animation-direction: normal, alternate; /* twinkle alternates so it swings back & forth */
+  animation-fill-mode: forwards, none;    /* hold final visible state after appear; twinkle loops */
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - This star intentionally appears slightly after twilight settles (appearance finishes at 9s),
+     so it reads against a darker portion of the sky and avoids collision with the twilight overlay.
+   - All keyframes animate custom-properties only (no transform inside @keyframes) to avoid layout/transform collisions
+     with other animated groups and keep the compositor/paint work minimal.
+   - The twinkle loop is deliberately slow and small (3.5s, ±2%) so it feels natural and unobtrusive.
+*/
+
+/* star_background_2: small top-right star
+   - Uses the same "lanes" pattern as star_background_1 but with its own unique names.
+   - Appears at 8s (0 → 0.8 over 1.5s) and then runs a slower twinkle loop (4.2s) to desynchronize from star 1.
+   - All keyframes animate custom-properties only (no transform inside @keyframes) to avoid collisions.
+   - Soft additive blending applied (screen) so the star reads naturally over the darkening sky.
+*/
+
+/* --- @property lanes (declare once for star_background_2) --- */
+@property --star_background_2-tx1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_2-tx2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --star_background_2-ty1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_2-ty2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --star_background_2-rot1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_2-rot2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+/* scale lanes */
+@property --star_background_2-sx1 { syntax: '<number>'; inherits: false; initial-value: 0.6; }
+@property --star_background_2-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_background_2-sy1 { syntax: '<number>'; inherits: false; initial-value: 0.6; }
+@property --star_background_2-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* opacity lane (appears to 0.8) */
+@property --star_background_2-op1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_background_2-op2 { syntax: '<number>'; inherits: false; initial-value: 0.8; }
+
+/* subtle halo blur */
+@property --star_background_2-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_background_2-blur2 { syntax: '<length>'; inherits: false; initial-value: 0.7px; }
+
+/* stroke & color lanes */
+@property --star_background_2-stroke1 { syntax: '<color>'; inherits: false; initial-value: rgba(0,0,0,0); }
+@property --star_background_2-stroke2 { syntax: '<color>'; inherits: false; initial-value: rgba(0,0,0,0); }
+
+@property --star_background_2-bright1 { syntax: '<color>'; inherits: false; initial-value: #FFFFFF; }
+@property --star_background_2-bright2 { syntax: '<color>'; inherits: false; initial-value: #FFF9D9; }
+
+/* --- Keyframes (unique names to avoid conflicts) --- */
+/* appearance: fade + scale settle (starts at 8s, 1.5s duration) */
+@keyframes star_background_2__appear {
+  from {
+    --star_background_2-op1: 0;
+    --star_background_2-sx1: 0.6;
+    --star_background_2-sy1: 0.6;
+    --star_background_2-blur1: 0px;
+  }
+  to {
+    --star_background_2-op1: 0.8;
+    --star_background_2-sx1: 1;
+    --star_background_2-sy1: 1;
+    --star_background_2-blur1: 0.6px;
+  }
+}
+
+/* twinkle: slow, gentle pulse and tiny scale jitter (4.2s loop) */
+@keyframes star_background_2__twinkle {
+  0% {
+    --star_background_2-op1: 0.80;
+    --star_background_2-sx1: 0.99;
+    --star_background_2-sy1: 0.99;
+  }
+  35% {
+    --star_background_2-op1: 0.88;    /* peak slightly brighter */
+    --star_background_2-sx1: 1.02;    /* tiny +2% pop */
+    --star_background_2-sy1: 1.02;
+  }
+  65% {
+    --star_background_2-op1: 0.74;    /* dip */
+    --star_background_2-sx1: 0.98;
+    --star_background_2-sy1: 0.98;
+  }
+  100% {
+    --star_background_2-op1: 0.80;
+    --star_background_2-sx1: 0.99;
+    --star_background_2-sy1: 0.99;
+  }
+}
+
+/* --- Composer for the .star_background_2 element --- */
+.star_background_2 {
+  /* fallback lane values (keeps a defined start if @property unsupported) */
+  --star_background_2-tx1: 0;
+  --star_background_2-tx2: 0;
+  --star_background_2-ty1: 0;
+  --star_background_2-ty2: 0;
+  --star_background_2-rot1: 0;
+  --star_background_2-rot2: 0;
+  --star_background_2-sx1: 0.6;
+  --star_background_2-sx2: 1;
+  --star_background_2-sy1: 0.6;
+  --star_background_2-sy2: 1;
+  --star_background_2-op1: 0;
+  --star_background_2-op2: 0.8;
+  --star_background_2-blur1: 0px;
+  --star_background_2-blur2: 0.7px;
+  --star_background_2-stroke1: rgba(0,0,0,0);
+  --star_background_2-stroke2: rgba(0,0,0,0);
+  --star_background_2-bright1: #FFFFFF;
+  --star_background_2-bright2: #FFF9D9;
+
+  /* Placement / transform-origin:
+     - Top-right-ish of the sky circle. Chosen in the SVG coordinate system (viewBox 0–120).
+     - Using ~98px x 12px so small scale pops remain visually coherent relative to the skyline and avoid clipping.
+  */
+  transform-origin: 98px 12px;
+
+  /* Presentation:
+     - fill driven by the bright lane
+     - opacity driven by the op lane
+     - transform reads scale lanes; transform itself is not animated in keyframes (lane-only animations)
+     - blur used for a subtle halo
+     - additive blending (screen) so star brightens underlying sky/silhouette naturally; isolation ensures blending is contained.
+  */
+  fill: var(--star_background_2-bright1) !important;
+  opacity: var(--star_background_2-op1);
+  transform: scale(var(--star_background_2-sx1), var(--star_background_2-sy1));
+  filter: blur(var(--star_background_2-blur1));
+  mix-blend-mode: screen;
+  isolation: isolate;
+  pointer-events: none;
+
+  /* performance hints */
+  will-change: --star_background_2-op1, --star_background_2-sx1, --star_background_2-blur1;
+
+  /*
+    Two parallel animations:
+      index 0 = appear (one-shot)  -> 1.5s, starts at 8s
+      index 1 = twinkle (infinite) -> 4.2s, starts after appearance finishes (8s + 1.5s = 9.5s)
+    Use longhand animation properties with aligned indexes.
+  */
+  animation-name: star_background_2__appear, star_background_2__twinkle;
+  animation-duration: 1.5s, 4.2s;
+  animation-timing-function: cubic-bezier(0.0, 0.0, 0.2, 1), ease-in-out;
+  animation-delay: 8s, 9.5s;
+  animation-iteration-count: 1, infinite;
+  animation-direction: normal, alternate;
+  animation-fill-mode: forwards, none;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - The star appears slightly after star_background_1 (which finished its appear at 9s); this one starts at 8s
+     and finishes at 9.5s so the two stars' settles/twinkles are offset to avoid synchronous flashing.
+   - All keyframes animate only custom-properties (no transform inside @keyframes) to minimize layout/paint churn
+     and avoid collisions with other animated groups (per collision-avoidance rules).
+   - The blend mode is set to 'screen' so multiple stars compose additively over the darkening sky without darkening edges.
+*/
+
+/* moon_faint_rim: subtle rim that fades in as sky reaches night.
+   - Animates opacity (0 → 0.6), color (warm pale → cool silver) and a tiny upward
+     translation (translateY -4px) so the rim feels like a distant, drifting light.
+   - All motion is expressed via custom-property "lanes" to avoid transform/layout
+     collisions with other scene groups (per collision-avoidance rules).
+   - Animations start on load and are timed to run between 7.5s → 10s to harmonize
+     with the twilight / star window timings already in the scene.
+*/
+
+/* --- @property lanes (declare once) --- */
+@property --moon_faint_rim-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --moon_faint_rim-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --moon_faint_rim-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --moon_faint_rim-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -4px;
+}
+
+@property --moon_faint_rim-rot1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --moon_faint_rim-rot2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --moon_faint_rim-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --moon_faint_rim-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --moon_faint_rim-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --moon_faint_rim-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --moon_faint_rim-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --moon_faint_rim-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.6;
+}
+
+@property --moon_faint_rim-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --moon_faint_rim-blur2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0.6px;
+}
+
+@property --moon_faint_rim-stroke1 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0,0,0,0);
+}
+@property --moon_faint_rim-stroke2 {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: rgba(0,0,0,0);
+}
+
+@property --moon_faint_rim-bright1 {
+  syntax: '<color>';
+  inherits: false;
+  /* start: pale peach, very low alpha */
+  initial-value: rgba(255,230,180,0.12);
+}
+@property --moon_faint_rim-bright2 {
+  syntax: '<color>';
+  inherits: false;
+  /* end: cool silver, even lower alpha */
+  initial-value: rgba(220,230,255,0.08);
+}
+
+/* --- Keyframes (unique names) --- */
+/* opacity lane: 0 → 0.6 (7.5s → 10s) */
+@keyframes moon_faint_rim__fade {
+  from { --moon_faint_rim-op1: 0; }
+  to   { --moon_faint_rim-op1: 0.6; }
+}
+
+/* color lane: warm pale → cool silver over same window */
+@keyframes moon_faint_rim__hue {
+  from { --moon_faint_rim-bright1: rgba(255,230,180,0.12); }
+  to   { --moon_faint_rim-bright1: rgba(220,230,255,0.08); }
+}
+
+/* vertical "rise" lane: ty 0px → -4px (subtle upward drift) */
+@keyframes moon_faint_rim__rise {
+  from { --moon_faint_rim-ty1: 0px; }
+  to   { --moon_faint_rim-ty1: -4px; }
+}
+
+/* --- Composer for .moon_faint_rim --- */
+.moon_faint_rim {
+  /* safe fallbacks (keeps a defined start if @property is unsupported) */
+  --moon_faint_rim-tx1: 0px;
+  --moon_faint_rim-tx2: 0px;
+  --moon_faint_rim-ty1: 0px;
+  --moon_faint_rim-ty2: -4px;
+  --moon_faint_rim-rot1: 0;
+  --moon_faint_rim-rot2: 0;
+  --moon_faint_rim-sx1: 1;
+  --moon_faint_rim-sx2: 1;
+  --moon_faint_rim-sy1: 1;
+  --moon_faint_rim-sy2: 1;
+  --moon_faint_rim-op1: 0;
+  --moon_faint_rim-op2: 0.6;
+  --moon_faint_rim-blur1: 0px;
+  --moon_faint_rim-blur2: 0.6px;
+  --moon_faint_rim-stroke1: rgba(0,0,0,0);
+  --moon_faint_rim-stroke2: rgba(0,0,0,0);
+  --moon_faint_rim-bright1: rgba(255,230,180,0.12);
+  --moon_faint_rim-bright2: rgba(220,230,255,0.08);
+
+  /* Placement / transform-origin:
+     - Chosen in the SVG viewBox coordinate space to align with the sky circle and avoid colliding
+       with the skyline silhouettes. This places the rim in the upper-right quadrant of the sky
+       (keeps it above the horizon and out of building silhouettes).
+     - If the author prefers a different position, adjust transform-origin in the SVG/CSS authoring layer.
+  */
+  transform-origin: 86px 17px;
+
+  /* Presentation mapping:
+     - fill uses the animated color lane
+     - overall transparency uses the opacity lane
+     - translate/scale read lanes from custom-properties (no transform animation inside @keyframes).
+       This keeps the UA's compositor work efficient and avoids collisions with other transform-based lanes.
+     - subtle blur halo driven by a length lane (kept very small to remain low-contrast).
+  */
+  fill: var(--moon_faint_rim-bright1) !important;
+  opacity: var(--moon_faint_rim-op1);
+  transform: translate(var(--moon_faint_rim-tx1), var(--moon_faint_rim-ty1)) scale(var(--moon_faint_rim-sx1), var(--moon_faint_rim-sy1));
+  filter: blur(var(--moon_faint_rim-blur1));
+
+  /* Hint to UA which custom-properties will change (keeps paint work focused) */
+  will-change: --moon_faint_rim-op1, --moon_faint_rim-bright1, --moon_faint_rim-ty1, --moon_faint_rim-blur1;
+
+  /* Parallel animations:
+     index 0 = fade (opacity)
+     index 1 = hue  (color)
+     index 2 = rise (vertical translation)
+     All run between 7.5s → 10s (2.5s) so the rim settles in as the scene reaches full night.
+  */
+  animation-name: moon_faint_rim__fade, moon_faint_rim__hue, moon_faint_rim__rise;
+  animation-duration: 2.5s, 2.5s, 2.5s;
+  animation-timing-function: ease-out, ease-out, cubic-bezier(0.2,0.8,0.2,1);
+  animation-delay: 7.5s, 7.5s, 7.5s;
+  animation-iteration-count: 1, 1, 1;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: forwards, forwards, forwards; /* hold final subtle rim state */
+  animation-play-state: running, running, running;
+}
+
+/* Coherence notes:
+   - Timed to start at 7.5s so the rim begins appearing as twilight deepens but after most of the sky shift
+     has started—this keeps it low-contrast and avoids stealing attention from window glows.
+   - All animations animate custom-properties (no transforms in @keyframes) to remain compositor-friendly
+     and avoid collisions with other group transforms in the SVG.
+   - The visual values (alpha and blur) are intentionally small so the rim reads as atmospheric and distant.
+   - If you prefer no rim, the element can be omitted; otherwise it will appear automatically on load.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg height="800px" id="svg4254" version="1.1" viewbox="0 0 120 120" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <defs id="defs4256">
+   </defs>
+   <g class="root-animation-group">
+    <g class="sky_circle-group" data-bounds="0.0,0.0,112.6,60.0" data-center="56.31,30.00" data-center-relative="56.31,30.00" data-logical-parent="sky" data-paint-order="0" data-semantic-type="sky_circle">
+     <path class="sky_circle" d="M 112.61327,59.999893 A 52.613215,52.61317 0 0 1 60.000057,112.61306 52.613215,52.61317 0 0 1 7.3868411,59.999893 52.613215,52.61317 0 0 1 60.000057,7.3867239 52.613215,52.61317 0 0 1 112.61327,59.999893 Z" id="circle16012" style="opacity:1;fill:#80deea;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+    </g>
+    <g class="building_silhouette-group" data-bounds="-28.6,-35.9,96.9,112.6" data-center="34.14,38.33" data-center-relative="62.76,74.28" data-logical-parent="building" data-merged-count="2" data-paint-order="1" data-semantic-type="building_silhouette">
+     <path class="building_silhouette" d="m 43.634881,49.818162 0,18.601674 -6.764032,0 -28.6240621,0.943345 C 12.773797,94.39536 34.56167,112.60349 59.99991,112.61329 c 22.618605,-0.0208 42.69283,-14.495513 49.85651,-35.949716 l -7.24586,0 0,-17.967159 -9.723942,0 0,21.137752 -12.935679,0 0,-14.373732 -7.779738,0 0,-6.552854 -7.186872,0 0,19.869713 -11.41434,0 0,-28.959132 z" id="path16014" style="fill:#37474f;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1">
+     </path>
+     <path class="building_silhouette" d="m 96.902894,50.029836 0,25.788058 -5.707158,0 0,-7.186866 -3.170594,0 0,-17.755994 -9.089427,0 0,36.146506 -4.016277,0 0,-7.821405 -9.935109,0 0,-8.455387 -5.624873,0 0,-18.994794 -10.017418,5.783523 0,18.284417 -7.081289,0 0,15.431086 -5.601574,0 0,-26.211385 -8.032554,0 0,-8.032567 -21.0897041,0 A 52.613215,52.613171 0 0 0 7.3867145,60.000139 52.613215,52.613171 0 0 0 59.99991,112.61329 52.613215,52.613171 0 0 0 112.6131,60.000139 a 52.613215,52.613171 0 0 0 -0.19731,-4.26315 l -8.32602,0 0,-5.707153 -7.186876,0 z" id="path16016" style="fill:#263238;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1">
+     </path>
+    </g>
+    <g class="building_windows_group-group" data-bounds="-2.2,0.0,106.7,81.4" data-center="52.26,40.70" data-center-relative="54.44,40.70" data-logical-children="windows_glow_group" data-logical-parent="building" data-merged-count="10" data-paint-order="2" data-semantic-type="building_windows_group">
+     <path class="building_windows_group" d="m 51.098291,62.376193 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16018" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 82.337405,71.643264 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16020" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 84.728919,54.753236 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16022" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 12.684699,60.881474 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16024" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 29.425267,71.045402 2.172747,0 0,2.172744 -2.172747,0 z" id="rect16026" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 44.222726,78.369395 2.172746,0 0,2.172744 -2.172746,0 z" id="rect16028" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 99.227462,52.959617 2.172748,0 0,2.172745 -2.172748,0 z" id="rect16030" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 106.70092,59.984665 2.17274,0 0,2.172745 -2.17274,0 z" id="rect16032" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 60.399078,74.424904 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16034" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+     <path class="building_windows_group" d="m 69.699867,81.400504 2.172747,0 0,2.172745 -2.172747,0 z" id="rect16036" style="opacity:1;fill:#37474f;fill-opacity:1;stroke:none;stroke-width:6.9000001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

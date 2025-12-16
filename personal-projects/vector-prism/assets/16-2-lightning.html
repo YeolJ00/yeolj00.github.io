@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+  Cloud_main "no-motion" composer
+  - We declare the necessary @property lanes once and compose the visual state from them.
+  - Keyframes are intentionally identity (no visual change) so the cloud body remains visually stable
+    while other elements (bolt, drops) animate. This satisfies "no animation" visually but keeps
+    lanes and timing available and harmonised with the scene.
+  - transform is applied in the composer rule (outside @keyframes) and reads the custom properties.
+  - Be mindful: @keyframes only changes custom properties (no direct transform inside keyframes).
+*/
+
+/* --- lane/property declarations (add once) --- */
+@property --cloud_main-tx1 {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --cloud_main-ty1 {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --cloud_main-rot1 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --cloud_main-sx1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_main-sy1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_main-op1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_main-bright1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+/* --- identity keyframes (kept neutral to avoid visual motion) --- */
+/* Opacity lane: kept constant so cloud remains visually stable */
+@keyframes cloud_main_idle_opacity {
+  0%   { --cloud_main-op1: 1; }
+  100% { --cloud_main-op1: 1; }
+}
+
+/* Brightness lane: kept constant; available for subtle sync if later needed */
+@keyframes cloud_main_idle_brightness {
+  0%   { --cloud_main-bright1: 1; }
+  100% { --cloud_main-bright1: 1; }
+}
+
+/* --- composer rule for the cloud_main path --- */
+/* transform-origin derived from group data-center-relative ≈ (12.85,27.45) on 64x64 viewBox:
+   x% = 12.85/64 ≈ 20.1%, y% = 27.45/64 ≈ 42.9% so we use 20% 43% to anchor transforms. */
+.cloud_main {
+  /* ensure transforms are relative to the cloud shape */
+  transform-box: fill-box;
+  transform-origin: 20% 43%;
+
+  /* Compose the visual state from lanes. Keep values neutral (no perceptible motion). */
+  /* Use translate/rotate/scale from custom properties (no direct keyframe transform). */
+  transform: translate(var(--cloud_main-tx1, 0px), var(--cloud_main-ty1, 0px))
+             rotate(var(--cloud_main-rot1, 0deg))
+             scale(var(--cloud_main-sx1, 1), var(--cloud_main-sy1, 1));
+
+  opacity: var(--cloud_main-op1, 1);
+  /* brightness used to preserve contrast without moving the cloud — default 1 */
+  filter: brightness(var(--cloud_main-bright1, 1));
+
+  /* Performance: hint which properties may change (even though they are neutral here). */
+  will-change: transform, opacity, filter;
+
+  /* Start the neutral animations immediately so they run in harmony with other elements.
+     Longhand animation properties used and ordered to align indexes across lanes. */
+  animation-name: cloud_main_idle_opacity, cloud_main_idle_brightness;
+  animation-duration: 2.8s, 3.2s;               /* durations chosen to sit harmoniously with nearby motions */
+  animation-timing-function: cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1);
+  animation-delay: 0s, 0s;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, normal;
+  animation-fill-mode: both, both;
+  animation-play-state: running, running;
+}
+
+/* Comment:
+   - The cloud is intentionally held visually stable to avoid interfering with the lightning bolt and drops.
+   - Lanes are present and active but neutral; if later tweaks are required to add a subtle parallax or micro-breathe,
+     the same lanes can be animated without changing element markup or compositing strategy.
+*/
+
+/* cloud_outline: neutral "no-motion" composer using lanes so the outline remains visually static
+   - Lanes are active (identity keyframes) so timing/synchronisation is available and harmonised
+     with nearby motion (cloud_main, lightning, drops) without introducing visible movement.
+   - Transform-origin computed from group's data-center-relative (≈24.25,29.75 on 64x64 box)
+     => ~38% 46.5% to anchor any future micro-transforms to the cloud's natural pivot.
+   - All keyframes only mutate custom properties (no direct transform inside keyframes).
+   - Added once; names chosen to avoid collisions with existing keyframes.
+*/
+
+/* --- property declarations (add once for cloud_outline lanes) --- */
+@property --cloud_outline-tx1 {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --cloud_outline-ty1 {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --cloud_outline-rot1 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --cloud_outline-sx1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_outline-sy1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_outline-op1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_outline-blur1 {
+  /* blur is a length used in filter: blur() */
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --cloud_outline-stroke1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+@property --cloud_outline-bright1 {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+/* --- identity keyframes (keep lanes neutral but active for harmony) --- */
+/* Transform lane (kept neutral so outline does not shift) */
+@keyframes cloud_outline_idle_transform {
+  0%   { --cloud_outline-tx1: 0px; --cloud_outline-ty1: 0px; --cloud_outline-rot1: 0deg; --cloud_outline-sx1: 1; --cloud_outline-sy1: 1; }
+  100% { --cloud_outline-tx1: 0px; --cloud_outline-ty1: 0px; --cloud_outline-rot1: 0deg; --cloud_outline-sx1: 1; --cloud_outline-sy1: 1; }
+}
+
+/* Opacity lane (neutral) */
+@keyframes cloud_outline_idle_opacity {
+  0%   { --cloud_outline-op1: 1; }
+  100% { --cloud_outline-op1: 1; }
+}
+
+/* Brightness lane (neutral) */
+@keyframes cloud_outline_idle_brightness {
+  0%   { --cloud_outline-bright1: 1; }
+  100% { --cloud_outline-bright1: 1; }
+}
+
+/* Blur lane (neutral - kept at 0 to avoid softening the crisp outline) */
+@keyframes cloud_outline_idle_blur {
+  0%   { --cloud_outline-blur1: 0px; }
+  100% { --cloud_outline-blur1: 0px; }
+}
+
+/* Stroke lane (neutral; available to subtly modulate stroke-thickness if needed) */
+@keyframes cloud_outline_idle_stroke {
+  0%   { --cloud_outline-stroke1: 1; }
+  100% { --cloud_outline-stroke1: 1; }
+}
+
+/* --- composer rule for the cloud_outline path --- */
+/* transform-origin anchored to the cloud's geometry (≈38% 46.5% of viewBox) */
+.cloud_outline {
+  transform-box: fill-box;
+  transform-origin: 38% 46.5%;
+
+  /* Compose visual state from lanes (kept neutral). Avoid putting transforms inside keyframes. */
+  transform: translate(var(--cloud_outline-tx1, 0px), var(--cloud_outline-ty1, 0px))
+             rotate(var(--cloud_outline-rot1, 0deg))
+             scale(var(--cloud_outline-sx1, 1), var(--cloud_outline-sy1, 1));
+
+  /* opacity + brightness for non-destructive visual adjustments */
+  opacity: var(--cloud_outline-op1, 1);
+  filter: brightness(var(--cloud_outline-bright1, 1)) blur(var(--cloud_outline-blur1, 0px));
+
+  /* Use stroke-width driven by a lane — safe even if the shape is filled; keeps the lane available */
+  /* Note: we do not overwrite fill; stroke-width declared to preserve lane semantics for future tweaks. */
+  stroke-width: calc(var(--cloud_outline-stroke1, 1) * 1px);
+
+  will-change: transform, opacity, filter, stroke-width;
+
+  /* Start neutral animations immediately so they run in step with other animated elements.
+     The index order across longhand animation-* lists aligns each lane to its keyframe. */
+  animation-name: cloud_outline_idle_transform, cloud_outline_idle_opacity, cloud_outline_idle_brightness, cloud_outline_idle_blur, cloud_outline_idle_stroke;
+  animation-duration: 3s, 2.8s, 3.2s, 4s, 5s;
+  animation-timing-function: cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1);
+  animation-delay: 0s, 0s, 0s, 0s, 0s;
+  animation-iteration-count: infinite, infinite, infinite, infinite, infinite;
+  animation-direction: normal, normal, normal, normal, normal;
+  animation-fill-mode: both, both, both, both, both;
+  animation-play-state: running, running, running, running, running;
+}
+
+/* Coherence note:
+   - Lanes are intentionally neutral to avoid visual collisions with the lightning bolt and raindrops.
+   - Animations are lightweight identity keyframes; they keep the timeline alive and in-phase with
+     neighboring motions without impacting rendering complexity.
+*/
+
+/* Lightning bolt glow + subtle breath animation
+   - Implements lanes pattern using custom properties (@property) so keyframes never write transform directly.
+   - Animates glow opacity and blur plus a gentle scale "breath".
+   - Uses drop-shadow as the outer glow so no markup changes required.
+   - All animations start on load and loop indefinitely.
+*/
+
+/* --- declare @property lanes for lightning_bolt (added once) --- */
+@property --lightning_bolt-tx1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lightning_bolt-ty1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lightning_bolt-rot1 { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@property --lightning_bolt-sx1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-sy1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-op1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lightning_bolt-stroke1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-bright1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* lanes reserved for motion (breath + glow) - next free lanes (sx2/sy2 for scale; op2/blur2 for glow) */
+@property --lightning_bolt-tx2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lightning_bolt-ty2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --lightning_bolt-rot2 { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@property --lightning_bolt-sx2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-sy2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-op2 { syntax: "<number>"; inherits: false; initial-value: 0.18; }
+@property --lightning_bolt-blur2 { syntax: "<length>"; inherits: false; initial-value: 0.6px; }
+@property --lightning_bolt-stroke2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --lightning_bolt-bright2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes only change custom properties (no direct transform/filter values inside keyframes) --- */
+/* Glow opacity lane (soft pulse) */
+@keyframes lightning_bolt_glow_opacity {
+  0%   { --lightning_bolt-op2: 0.18; }
+  50%  { --lightning_bolt-op2: 0.85; }
+  100% { --lightning_bolt-op2: 0.18; }
+}
+
+/* Glow blur lane (stdDeviation-like pulse; expressed in CSS length) */
+@keyframes lightning_bolt_glow_blur {
+  0%   { --lightning_bolt-blur2: 0.6px; }
+  50%  { --lightning_bolt-blur2: 3.0px; }
+  100% { --lightning_bolt-blur2: 0.6px; }
+}
+
+/* Breathing scale lane (very subtle) - uses sx2/sy2 lanes */
+@keyframes lightning_bolt_breathe_scale {
+  0%   { --lightning_bolt-sx2: 1;     --lightning_bolt-sy2: 1; }
+  50%  { --lightning_bolt-sx2: 1.025; --lightning_bolt-sy2: 1.025; }
+  100% { --lightning_bolt-sx2: 1;     --lightning_bolt-sy2: 1; }
+}
+
+/* --- composer rule for the lightning bolt path (added once) ---
+   transform-origin chosen from data-center-relative ≈ (41.10, 21.20) on 64x64 viewBox:
+   -> x% ≈ 41.10/64 ≈ 64.2% ; y% ≈ 21.20/64 ≈ 33.1%
+   This anchors the breath to the bolt's center/base so it expands/contracts naturally.
+*/
+.lightning_bolt {
+  transform-box: fill-box;
+  transform-origin: 64.2% 33.1%;
+
+  /* compose transform from lanes (scale uses sx2/sy2 breathing lane) */
+  transform: translate(var(--lightning_bolt-tx1, 0px), var(--lightning_bolt-ty1, 0px))
+             rotate(var(--lightning_bolt-rot1, 0deg))
+             scale(var(--lightning_bolt-sx2, 1), var(--lightning_bolt-sy2, 1));
+
+  /* main fill opacity + brightness lane (kept available) */
+  opacity: var(--lightning_bolt-op1, 1);
+  filter:
+    /* outer glow using drop-shadow; color picked to match bolt fill (#ffce31).
+       The blur radius and alpha are driven by lanes so they animate via keyframes. */
+    drop-shadow(0 0 var(--lightning_bolt-blur2, 0.6px) rgba(255,206,49, var(--lightning_bolt-op2, 0.18)));
+
+  will-change: transform, filter, opacity;
+
+  /* Start the lanes together with the desired timing. Indexes aligned across longhand lists. */
+  animation-name: lightning_bolt_glow_opacity, lightning_bolt_glow_blur, lightning_bolt_breathe_scale;
+  animation-duration: 1.8s, 1.8s, 1.8s;
+  animation-timing-function: ease-in-out, ease-in-out, cubic-bezier(.4,0,.2,1);
+  animation-delay: 0s, 0s, 0s;
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence notes:
+   - Lanes are self-contained and neutral with respect to other cloud animations; they only affect
+     the lightning bolt and its glow so collisions with cloud/drops are avoided.
+   - Using drop-shadow keeps markup unchanged and performs well on modern browsers. The animated
+     values are small and loop quickly (1.8s) to feel lively but subtle.
+   - Keyframes never write direct transforms; they only change custom properties read by the composer rule.
+*/
+
+/* left_top_drop animation lanes + composer
+   - Adds lanes only for left_top_drop and composes transform/opacity from them.
+   - Motion lanes (ty2, sx2/sy2, op2) carry the visible animation; keyframes modify only custom properties
+     (no direct transform inside keyframes) to avoid collision with other element lanes.
+   - Transform-origin derived from group's data-center-relative "7.50,24.90" on 64×64 viewBox:
+     -> 7.50/64 ≈ 11.7% ; 24.90/64 ≈ 38.9%
+*/
+
+/* --- base lanes (declare once) --- */
+@property --left_top_drop-tx1  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-ty1  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-rot1 { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_top_drop-sx1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-sy1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-op1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-stroke1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-bright1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- motion lanes (next free lanes) --- */
+/* ty2: vertical fall; sx2/sy2: tiny scale; op2: fade in/out */
+@property --left_top_drop-tx2  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-ty2  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-rot2 { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_top_drop-sx2  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-sy2  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-op2  { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --left_top_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_top_drop-stroke2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_top_drop-bright2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes: only mutate custom properties (no direct transform) --- */
+/* Opacity: 0 -> 1 -> 0 */
+@keyframes left_top_drop_fade_opacity {
+  0%   { --left_top_drop-op2: 0; }
+  50%  { --left_top_drop-op2: 1; }
+  100% { --left_top_drop-op2: 0; }
+}
+
+/* Vertical motion: small fall and rebound (0px -> 6px -> 0px) */
+@keyframes left_top_drop_fall_translate {
+  0%   { --left_top_drop-ty2: 0px; }
+  50%  { --left_top_drop-ty2: 6px; }
+  100% { --left_top_drop-ty2: 0px; }
+}
+
+/* Subtle scale (0.99 -> 1.01 -> 0.99) to avoid mechanical motion */
+@keyframes left_top_drop_breath_scale {
+  0%   { --left_top_drop-sx2: 0.99; --left_top_drop-sy2: 0.99; }
+  50%  { --left_top_drop-sx2: 1.01; --left_top_drop-sy2: 1.01; }
+  100% { --left_top_drop-sx2: 0.99; --left_top_drop-sy2: 0.99; }
+}
+
+/* --- composer rule for the SVG path with class left_top_drop --- */
+.left_top_drop {
+  /* keep transforms relative to the shape geometry */
+  transform-box: fill-box;
+  transform-origin: 11.7% 38.9%;
+
+  /* Compose the final transform from lanes:
+     - ty2 drives the visible vertical fall
+     - sx2/sy2 drive the tiny scale breathing
+     - tx1/rot1/sx1 etc remain available for future lanes (kept in order) */
+  transform:
+    translate(var(--left_top_drop-tx1, 0px), var(--left_top_drop-ty2, 0px))
+    rotate(var(--left_top_drop-rot1, 0deg))
+    scale(var(--left_top_drop-sx2, 1), var(--left_top_drop-sy2, 1));
+
+  /* Opacity controlled by the motion lane op2 (falls in sync with movement).
+     Fall back to op1 if op2 is not present for robust composition. */
+  opacity: var(--left_top_drop-op2, var(--left_top_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start the three lanes together. Use longhand animation lists with aligned indexes. */
+  animation-name: left_top_drop_fade_opacity, left_top_drop_fall_translate, left_top_drop_breath_scale;
+  animation-duration: 1.25s, 1.25s, 1.25s;
+  animation-timing-function: cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1), cubic-bezier(.4,0,.2,1);
+  animation-delay: 0.05s, 0.05s, 0.05s;              /* small stagger to sit in rhythm with other drops */
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence notes:
+   - This drop's motion is intentionally subtle and phase-aligned (same delay on all lanes) so it
+     reads as a soft fall that does not visually collide with the cloud or lightning. The transform-origin
+     anchors the motion to the SVG group's data-center-relative coordinates to avoid clipping or odd pivots.
+   - Keyframes only change custom properties (lanes) to avoid interfering with other element animations
+     and to keep the compositor-friendly pattern already used across the SVG.
+   - Performance: animations are small (translate + opacity + tiny scale) and use will-change to hint
+     GPU-friendly properties; they will be inexpensive even with multiple drops animated.
+*/
+
+/* left_mid_drop - staggered fade + vertical drift with tiny horizontal wobble
+   - Lanes pattern: custom properties declared once; keyframes only mutate custom properties
+     (no direct transform inside @keyframes) to avoid collisions with other animated elements.
+   - Transform-origin derived from group data-center-relative "21.20,31.40" on 64×64 viewBox:
+     -> x% = 21.20/64 ≈ 33.1% ; y% = 31.40/64 ≈ 49.1%
+   - Motion uses the next free lanes (tx2, ty2, op2). Duration 1.35s, delay 0.30s, ease-in-out, infinite.
+   - Slightly different amplitude than siblings (7px fall, ±1px wobble) so each drop reads as an individual.
+*/
+
+/* --- @property lanes (added once for left_mid_drop) --- */
+@property --left_mid_drop-tx1  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-ty1  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-rot1 { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_mid_drop-sx1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-sy1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-op1  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-stroke1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-bright1 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- motion lanes (next free lanes) --- */
+/* ty2: vertical fall; tx2: tiny horizontal wobble; op2: fade in/out */
+@property --left_mid_drop-tx2  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-ty2  { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-rot2 { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_mid_drop-sx2  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-sy2  { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-op2  { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --left_mid_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_mid_drop-stroke2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_mid_drop-bright2 { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes (only mutate custom properties) --- */
+/* Fade: 0 -> 0.92 -> 0 */
+@keyframes left_mid_drop_fade_opacity_v1 {
+  0%   { --left_mid_drop-op2: 0; }
+  50%  { --left_mid_drop-op2: 0.92; }
+  100% { --left_mid_drop-op2: 0; }
+}
+
+/* Vertical fall: 0px -> 7px -> 0px (slightly larger amplitude than some siblings) */
+@keyframes left_mid_drop_fall_translate_v1 {
+  0%   { --left_mid_drop-ty2: 0px; }
+  50%  { --left_mid_drop-ty2: 7px; }
+  100% { --left_mid_drop-ty2: 0px; }
+}
+
+/* Tiny horizontal wobble centered at the peak (sub-pixel friendly values) */
+@keyframes left_mid_drop_wobble_translate_v1 {
+  0%   { --left_mid_drop-tx2: 0px; }
+  25%  { --left_mid_drop-tx2: -0.6px; }
+  50%  { --left_mid_drop-tx2: 1px; }
+  75%  { --left_mid_drop-tx2: -0.6px; }
+  100% { --left_mid_drop-tx2: 0px; }
+}
+
+/* --- composer rule for .left_mid_drop (added once) ---
+   - Compose final transform from lanes; visible motion driven by tx2/ty2/op2.
+   - Opacity reads op2 and falls back to op1 for robustness.
+*/
+.left_mid_drop {
+  transform-box: fill-box;
+  transform-origin: 33.1% 49.1%;
+
+  /* Compose transform from lanes (motion resides on tx2/ty2) */
+  transform:
+    translate(var(--left_mid_drop-tx2, 0px), var(--left_mid_drop-ty2, 0px))
+    rotate(var(--left_mid_drop-rot1, 0deg))
+    scale(var(--left_mid_drop-sx1, 1), var(--left_mid_drop-sy1, 1));
+
+  /* Opacity driven by motion lane op2; fallback to op1 for safety */
+  opacity: var(--left_mid_drop-op2, var(--left_mid_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start all motion lanes together; indexes aligned across longhand lists */
+  animation-name: left_mid_drop_fade_opacity_v1, left_mid_drop_fall_translate_v1, left_mid_drop_wobble_translate_v1;
+  animation-duration: 1.35s, 1.35s, 1.35s;
+  animation-timing-function: ease-in-out, ease-in-out, ease-in-out;
+  animation-delay: 0.30s, 0.30s, 0.30s;
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence note:
+   - These lanes run neutrally with other drop animations (similar cadence, slight stagger) to avoid visual
+     collisions with cloud or lightning. All keyframes update custom properties only; transforms are composed
+     in the rule above to preserve compositor friendliness and avoid layout thrash.
+*/
+
+/* left_bottom_drop - depth-layered soft drop animation
+   - Lanes declared once; keyframes only mutate custom properties (no direct transform in keyframes).
+   - Motion uses ty2 (vertical fall), op2 (soft depth fade) and sx2/sy2 (subtle scale to suggest distance).
+   - transform-origin chosen from the two left_bottom_drop group centers
+     (groups at ~8.70,32.15 and ~11.40,31.40 on 64×64). We anchor near their average
+     (~15.5% x, ~49.6% y) so both elements animate without odd pivots or clipping.
+   - Animation timing: duration 1.5s, delay 0.55s, ease-in-out, infinite.
+   - Names are unique to avoid collisions with existing keyframes.
+*/
+
+/* --- @property lanes (declare once) --- */
+@property --left_bottom_drop-tx1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-ty1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-rot1  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_bottom_drop-sx1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-sy1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-op1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-stroke1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-bright1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- next free motion lanes (used for the visible animation) --- */
+@property --left_bottom_drop-tx2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-ty2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-rot2  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --left_bottom_drop-sx2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-sy2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-op2   { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --left_bottom_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --left_bottom_drop-stroke2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --left_bottom_drop-bright2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes: only mutate custom properties (no 'transform' declarations here) --- */
+/* Soft depth fade: 0.0 -> 0.85 -> 0.0 */
+@keyframes left_bottom_drop_depth_fade_opacity {
+  0%   { --left_bottom_drop-op2: 0; }
+  50%  { --left_bottom_drop-op2: 0.85; }
+  100% { --left_bottom_drop-op2: 0; }
+}
+
+/* Vertical travel: 0px -> 8px -> 0px (gentle fall and return) */
+@keyframes left_bottom_drop_depth_fall_translate {
+  0%   { --left_bottom_drop-ty2: 0px; }
+  50%  { --left_bottom_drop-ty2: 8px; }
+  100% { --left_bottom_drop-ty2: 0px; }
+}
+
+/* Subtle depth scale: 1.00 -> 1.02 -> 1.00 */
+@keyframes left_bottom_drop_depth_breath_scale {
+  0%   { --left_bottom_drop-sx2: 1;    --left_bottom_drop-sy2: 1; }
+  50%  { --left_bottom_drop-sx2: 1.02; --left_bottom_drop-sy2: 1.02; }
+  100% { --left_bottom_drop-sx2: 1;    --left_bottom_drop-sy2: 1; }
+}
+
+/* --- composer rule: apply lanes to the .left_bottom_drop shape(s) --- */
+/* transform-origin anchored near average of the two left_bottom_drop group centers:
+   group-0 (8.70,32.15) -> ~13.6% 50.2%
+   group-1 (11.40,31.40) -> ~17.8% 49.1%
+   chosen anchor ≈ 15.5% 49.7% (rounded for readability) */
+.left_bottom_drop {
+  transform-box: fill-box;
+  transform-origin: 15.5% 49.7%;
+
+  /* Compose transforms from lanes. Visible motion is driven by ty2 and sx2/sy2.
+     tx1/rot1/sx1 remain available for future lanes (kept in order). */
+  transform:
+    translate(var(--left_bottom_drop-tx1, 0px), var(--left_bottom_drop-ty2, 0px))
+    rotate(var(--left_bottom_drop-rot1, 0deg))
+    scale(var(--left_bottom_drop-sx2, 1), var(--left_bottom_drop-sy2, 1));
+
+  /* Opacity is driven by the motion lane op2; fallback to op1 for robustness if needed. */
+  opacity: var(--left_bottom_drop-op2, var(--left_bottom_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start motion lanes together. Use longhand animation lists with aligned indexes. */
+  animation-name: left_bottom_drop_depth_fade_opacity, left_bottom_drop_depth_fall_translate, left_bottom_drop_depth_breath_scale;
+  animation-duration: 1.5s, 1.5s, 1.5s;
+  animation-timing-function: ease-in-out, ease-in-out, ease-in-out;
+  animation-delay: 0.55s, 0.55s, 0.55s;
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence note:
+   - Lanes-only keyframes avoid writing transforms, preserving compositor friendliness and preventing
+     collisions with other element animations (cloud, lightning, sibling drops).
+   - Timing and amplitude chosen so this drop reads slightly slower and softer than nearby drops,
+     reinforcing depth layering without introducing noticeable layout work.
+*/
+
+/* right_top_drop - mirrored-but-staggered drop animation
+   - Lanes pattern: keyframes update custom properties only (no 'transform' inside @keyframes).
+   - Uses next-free motion lanes (ty2, op2, rot2) so it composes with existing composer rules used elsewhere.
+   - Transform-origin computed from group's data-center-relative "27.85,22.15" on 64×64 viewBox:
+     27.85/64 ≈ 43.5% ; 22.15/64 ≈ 34.6% so we anchor at 43.5% 34.6% to avoid odd pivots.
+   - Duration: 1.2s; Delay: 0.18s; Easing: ease-in-out; infinite loop.
+   - Keyframe names chosen to avoid collisions with existing animations.
+*/
+
+/* --- @property declarations (add once for right_top_drop lanes) --- */
+@property --right_top_drop-tx1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-ty1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-rot1  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_top_drop-sx1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-sy1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-op1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-stroke1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-bright1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* motion lanes (next free lanes) */
+@property --right_top_drop-tx2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-ty2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-rot2  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_top_drop-sx2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-sy2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-op2   { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --right_top_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_top_drop-stroke2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_top_drop-bright2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes (mutate only custom properties) --- */
+/* Opacity lane: 0 -> 1 -> 0 */
+@keyframes right_top_drop_fade_opacity_v1 {
+  0%   { --right_top_drop-op2: 0; }
+  50%  { --right_top_drop-op2: 1; }
+  100% { --right_top_drop-op2: 0; }
+}
+
+/* Vertical travel: 0px -> 6px -> 0px */
+@keyframes right_top_drop_fall_translate_v1 {
+  0%   { --right_top_drop-ty2: 0px; }
+  50%  { --right_top_drop-ty2: 6px; }
+  100% { --right_top_drop-ty2: 0px; }
+}
+
+/* Tiny rotate around the peak to imply fluid motion (±2° at peak) */
+@keyframes right_top_drop_peak_rotate_v1 {
+  0%   { --right_top_drop-rot2: 0deg; }
+  40%  { --right_top_drop-rot2: -2deg; }
+  50%  { --right_top_drop-rot2: 2deg; }
+  60%  { --right_top_drop-rot2: -2deg; }
+  100% { --right_top_drop-rot2: 0deg; }
+}
+
+/* --- composer rule for .right_top_drop (added once if missing) --- */
+.right_top_drop {
+  transform-box: fill-box;
+  /* Anchor transforms to the drop group's visual center to avoid clipping/pivot issues. */
+  transform-origin: 43.5% 34.6%;
+
+  /* Compose final transform from lanes. Motion reads from ty2 (fall) and rot2 (tiny rotate).
+     tx1/rot1/sx1 remain available for future lanes; we don't overwrite them here. */
+  transform:
+    translate(var(--right_top_drop-tx1, 0px), var(--right_top_drop-ty2, 0px))
+    rotate(var(--right_top_drop-rot2, 0deg))
+    scale(var(--right_top_drop-sx1, 1), var(--right_top_drop-sy1, 1));
+
+  /* Opacity driven by motion lane op2; fallback to op1 if op2 absent. */
+  opacity: var(--right_top_drop-op2, var(--right_top_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start lanes together. Use longhand with aligned indexes so lanes stay in-phase and compositor-friendly. */
+  animation-name: right_top_drop_fade_opacity_v1, right_top_drop_fall_translate_v1, right_top_drop_peak_rotate_v1;
+  animation-duration: 1.2s, 1.2s, 1.2s;
+  animation-timing-function: ease-in-out, ease-in-out, ease-in-out;
+  animation-delay: 0.18s, 0.18s, 0.18s;
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence note:
+   - Lanes-only keyframes avoid writing transform directly; the composer rule composes transforms at paint time
+     to avoid layout thrash and collisions with other animated elements (cloud, lightning, sibling drops).
+   - Timing and amplitude are slightly different from left_top_drop (different delay & duration) so the scene
+     reads natural and non-symmetrical while remaining lightweight for the compositor.
+*/
+
+/* right_mid_drop — lanes + composer + motion
+   - Adds missing @property lanes and a composer rule if absent.
+   - Motion uses the next-free lanes (ty2 drives vertical travel, op2 drives opacity).
+   - Keyframes never write transform directly — they only update custom properties (lanes),
+     preserving compositor friendliness and avoiding collisions with other element animations.
+   - Timing chosen to sit rhythmically with existing drops (slightly faster): duration 1.05s, delay 0.42s.
+*/
+
+/* --- @property lane declarations (add once) --- */
+@property --right_mid_drop-tx1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-ty1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-rot1  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_mid_drop-sx1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-sy1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-op1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-stroke1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-bright1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* next-free motion lanes (ty2 for vertical motion, op2 for opacity) */
+@property --right_mid_drop-tx2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-ty2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-rot2  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_mid_drop-sx2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-sy2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-op2   { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --right_mid_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_mid_drop-stroke2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_mid_drop-bright2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes (only update custom properties) --- */
+/* Opacity pulse: 0 -> 1 -> 0 (slightly faster rhythm) */
+@keyframes right_mid_drop_fade_opacity_v2 {
+  0%   { --right_mid_drop-op2: 0; }
+  50%  { --right_mid_drop-op2: 1; }
+  100% { --right_mid_drop-op2: 0; }
+}
+
+/* Vertical travel: anchored to top — 0px -> 6.5px -> 0px */
+@keyframes right_mid_drop_fall_translate_v2 {
+  0%   { --right_mid_drop-ty2: 0px; }
+  50%  { --right_mid_drop-ty2: 6.5px; }
+  100% { --right_mid_drop-ty2: 0px; }
+}
+
+/* --- composer rule for .right_mid_drop (added once if missing) ---
+   transform-origin: anchor near the top of the drop so movement appears pinned to the cloud.
+   Derivation: group data-center-relative "21.20,31.40" -> x% ≈ 21.20/64 ≈ 33.1%;
+   to pin to the top of the drop use a smaller y% (around 36% of viewBox) so the drop falls away from cloud.
+*/
+.right_mid_drop {
+  transform-box: fill-box;
+  transform-origin: 33.1% 36%; /* anchored near top of the drop for natural fall */
+
+  /* Compose transform from lanes. Motion lives on ty2 (vertical) and other lanes are reserved. */
+  transform:
+    translate(var(--right_mid_drop-tx1, 0px), var(--right_mid_drop-ty2, 0px))
+    rotate(var(--right_mid_drop-rot1, 0deg))
+    scale(var(--right_mid_drop-sx1, 1), var(--right_mid_drop-sy1, 1));
+
+  /* Opacity driven by motion lane op2; fallback to op1 for robustness. */
+  opacity: var(--right_mid_drop-op2, var(--right_mid_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start motion lanes together. Indexes aligned so lanes remain in-phase and compositor-friendly. */
+  animation-name: right_mid_drop_fade_opacity_v2, right_mid_drop_fall_translate_v2;
+  animation-duration: 1.05s, 1.05s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-delay: 0.42s, 0.42s;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, normal;
+  animation-fill-mode: both, both;
+  animation-play-state: running, running;
+}
+
+/* Coherence:
+   - Uses the established lanes pattern so keyframes only touch custom properties (no transform in keyframes).
+   - Delay and duration are chosen to provide rhythmic variety while remaining harmonious with sibling drops.
+   - Small will-change hint to help the compositor; motion is limited to opacity + small translate (GPU-friendly).
+*/
+
+/* right_bottom_drop — deepest-layer raindrop lanes + composer
+   - Adds @property lanes (once) and composer rule that reads lanes; keyframes only mutate custom properties.
+   - transform-origin derived from data-center-relative "25.55,31.40" on 64×64 viewBox -> ~39.9% 49.1%
+   - Motion lanes used: --right_bottom_drop-ty2 (vertical travel), --right_bottom_drop-op2 (opacity), --right_bottom_drop-sx2/sy2 (subtle scale)
+   - Duration: 1.6s; Delay: 0.7s; Easing: ease-in-out; infinite loop.
+   - Names chosen to avoid collisions with existing keyframes.
+*/
+
+/* --- @property lane declarations (add once) --- */
+@property --right_bottom_drop-tx1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-ty1   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-rot1  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_bottom_drop-sx1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-sy1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-op1   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-blur1 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-stroke1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-bright1{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* next-free motion lanes (ty2 for vertical motion, op2 for fade, sx2/sy2 for depth scale) */
+@property --right_bottom_drop-tx2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-ty2   { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-rot2  { syntax: "<angle>";  inherits: false; initial-value: 0deg; }
+@property --right_bottom_drop-sx2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-sy2   { syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-op2   { syntax: "<number>"; inherits: false; initial-value: 0; }
+@property --right_bottom_drop-blur2 { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --right_bottom_drop-stroke2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+@property --right_bottom_drop-bright2{ syntax: "<number>"; inherits: false; initial-value: 1; }
+
+/* --- keyframes: only mutate custom properties (no direct transform/filter values) --- */
+/* Deep depth fade: 0 -> 0.78 -> 0 */
+@keyframes right_bottom_drop_depth_fade_opacity_v1 {
+  0%   { --right_bottom_drop-op2: 0; }
+  50%  { --right_bottom_drop-op2: 0.78; }
+  100% { --right_bottom_drop-op2: 0; }
+}
+
+/* Vertical travel: 0px -> 9px -> 0px */
+@keyframes right_bottom_drop_depth_fall_translate_v1 {
+  0%   { --right_bottom_drop-ty2: 0px; }
+  50%  { --right_bottom_drop-ty2: 9px; }
+  100% { --right_bottom_drop-ty2: 0px; }
+}
+
+/* Slight depth scale: 1.00 -> 0.98 -> 1.00 (peak appears slightly smaller to imply distance/weight) */
+@keyframes right_bottom_drop_depth_scale_v1 {
+  0%   { --right_bottom_drop-sx2: 1;    --right_bottom_drop-sy2: 1; }
+  50%  { --right_bottom_drop-sx2: 0.98; --right_bottom_drop-sy2: 0.98; }
+  100% { --right_bottom_drop-sx2: 1;    --right_bottom_drop-sy2: 1; }
+}
+
+/* --- composer rule for .right_bottom_drop (added once) ---
+   - transform-origin anchored to the drop group's data-center-relative on the 64×64 viewBox.
+   - Compose transform from lanes (motion in ty2, scale in sx2/sy2). Opacity reads op2 with fallback to op1.
+*/
+.right_bottom_drop {
+  transform-box: fill-box;
+  transform-origin: 39.9% 49.1%;
+
+  /* Compose transform from lanes; keyframes never write 'transform' directly. */
+  transform:
+    translate(var(--right_bottom_drop-tx1, 0px), var(--right_bottom_drop-ty2, 0px))
+    rotate(var(--right_bottom_drop-rot1, 0deg))
+    scale(var(--right_bottom_drop-sx2, 1), var(--right_bottom_drop-sy2, 1));
+
+  /* Opacity driven by the motion lane op2; fallback to op1 for robustness. */
+  opacity: var(--right_bottom_drop-op2, var(--right_bottom_drop-op1, 1));
+
+  will-change: transform, opacity;
+
+  /* Start lanes together. Indexes aligned across longhand animation-* lists for compositor friendliness. */
+  animation-name: right_bottom_drop_depth_fade_opacity_v1, right_bottom_drop_depth_fall_translate_v1, right_bottom_drop_depth_scale_v1;
+  animation-duration: 1.6s, 1.6s, 1.6s;
+  animation-timing-function: ease-in-out, ease-in-out, ease-in-out;
+  animation-delay: 0.7s, 0.7s, 0.7s;
+  animation-iteration-count: infinite, infinite, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+}
+
+/* Coherence note:
+   - Lanes-only keyframes ensure no layout thrash and avoid collisions with cloud/lightning/drops.
+   - Timing (1.6s / 0.7s delay) places this drop as the slowest/faintest layer beneath others for depth.
+   - The small scale change reinforces perceived distance without adding heavy paint work.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg aria-hidden="true" class="iconify iconify--emojione" height="800px" preserveaspectratio="xMidYMid meet" role="img" viewbox="0 0 64 64" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="left_top_drop-group" data-bounds="-4.2,-6.9,10.8,42.9" data-center="3.30,18.00" data-center-relative="7.50,24.90" data-logical-parent="rain" data-paint-order="0" data-semantic-type="left_top_drop">
+     <path class="iconify iconify--emojione group left_top_drop" d="M10.8 42.9c-.5 1.5-.1 3 1 3.4c1.1.4 2.4-.5 3-2c.6-1.8.7-4.1.2-6.9c-2.1 1.9-3.6 3.8-4.2 5.5" fill="#75d6ff" id="target_element_137213461478784">
+     </path>
+    </g>
+    <g class="left_bottom_drop-group-0" data-bounds="-4.2,-6.9,13.2,57.4" data-center="4.50,25.25" data-center-relative="8.70,32.15" data-logical-parent="rain" data-paint-order="1" data-semantic-type="left_bottom_drop" data-split="true">
+     <path class="iconify iconify--emojione group left_bottom_drop" d="M13.2 57.4c.6-1.8.7-4.1.2-6.9c-2.1 1.8-3.6 3.7-4.2 5.5c-.5 1.5-.1 3 1 3.4c1.1.4 2.5-.5 3-2" fill="#75d6ff" id="target_element_137213461477024">
+     </path>
+    </g>
+    <g class="right_top_drop-group" data-bounds="-4.2,-6.9,51.5,37.4" data-center="23.65,15.25" data-center-relative="27.85,22.15" data-logical-parent="rain" data-paint-order="2" data-semantic-type="right_top_drop">
+     <path class="iconify iconify--emojione group right_top_drop" d="M51.5 37.4c-2.1 1.8-3.6 3.7-4.2 5.5c-.5 1.5-.1 3 1 3.4c1.1.4 2.4-.5 3-2c.5-1.7.6-4.1.2-6.9" fill="#75d6ff" id="target_element_137213461475824">
+     </path>
+    </g>
+    <g class="right_mid_drop-group" data-bounds="-4.2,-6.9,38.2,55.9" data-center="17.00,24.50" data-center-relative="21.20,31.40" data-logical-parent="rain" data-paint-order="3" data-semantic-type="right_mid_drop">
+     <path class="iconify iconify--emojione group right_mid_drop" d="M38.2 55.9c-.5 1.5-.1 3 1 3.4s2.4-.5 3-2c.6-1.8.7-4.1.2-6.9c-2 1.9-3.5 3.8-4.2 5.5" fill="#75d6ff" id="target_element_137213461476384">
+     </path>
+    </g>
+    <g class="right_bottom_drop-group" data-bounds="-4.2,-6.9,46.9,55.9" data-center="21.35,24.50" data-center-relative="25.55,31.40" data-logical-parent="rain" data-paint-order="4" data-semantic-type="right_bottom_drop">
+     <path class="iconify iconify--emojione group right_bottom_drop" d="M46.9 55.9c-.5 1.5-.1 3 1 3.4s2.4-.5 3-2c.6-1.8.7-4.1.2-6.9c-2.1 1.9-3.6 3.8-4.2 5.5" fill="#75d6ff" id="target_element_137213461065984">
+     </path>
+    </g>
+    <g class="left_bottom_drop-group-1" data-bounds="-4.2,-6.9,18.6,55.9" data-center="7.20,24.50" data-center-relative="11.40,31.40" data-logical-parent="rain" data-paint-order="5" data-semantic-type="left_bottom_drop" data-split="true">
+     <path class="iconify iconify--emojione group left_bottom_drop" d="M18.6 55.9c-.5 1.5-.1 3 1 3.4s2.4-.5 3-2c.6-1.8.7-4.1.2-6.9c-2.1 1.9-3.6 3.8-4.2 5.5" fill="#75d6ff" id="target_element_137213461057904">
+     </path>
+    </g>
+    <g class="lightning_bolt-group" data-bounds="-20.2,-9.9,62.0,32.5" data-center="20.90,11.30" data-center-relative="41.10,21.20" data-logical-parent="lightning" data-paint-order="6" data-semantic-type="lightning_bolt">
+     <path class="iconify iconify--emojione lightning_bolt" d="M24.5 31.9l-4.9 16.2h12.5L27.9 62l16.5-20.2H32.5l2.9-9.9z" fill="#ffce31" id="target_element_137213461058304">
+     </path>
+    </g>
+    <g class="cloud_main-group" data-bounds="-7.5,-7.2,18.2,47.7" data-center="5.35,20.25" data-center-relative="12.85,27.45" data-logical-parent="cloud" data-paint-order="7" data-semantic-type="cloud_main">
+     <path class="iconify iconify--emojione cloud_main" d="M18.2 32.5c-.8 0-1.6-.1-2.4-.4c-3.1-1-5.3-3.9-5.3-7.2c0-2.2 1-4.3 2.6-5.7c.4-.4.9-.7 1.4-1l.5-1.8c1.3-4.4 5.4-7.5 10-7.5c.5 0 .9 0 1.5.1c.4.1.8.1 1.2.3l.2-.4c1.9-3.3 5.4-5.4 9.2-5.4C43 3.5 47.7 8.2 47.7 14v1c.4.2.9.4 1.3.6c2.8 1.6 4.5 4.6 4.5 7.8c0 4.2-2.9 7.8-7 8.8c-.7.2-1.4.2-2 .2H18.2z" fill="#ffffff" id="target_element_137213461067744">
+     </path>
+    </g>
+    <g class="cloud_outline-group" data-bounds="-11.4,-10.3,37.1,49.2" data-center="12.85,19.45" data-center-relative="24.25,29.75" data-logical-parent="cloud" data-paint-order="8" data-semantic-type="cloud_outline">
+     <path class="iconify iconify--emojione cloud_outline" d="M37.1 5c5 0 9 4 9 8.9v.7c-2.1.2-4 1-5.4 2.3c1.1-.6 2.4-1 3.7-1c.5 0 1 .1 1.5.1c.8.2 1.6.5 2.3.9c2.3 1.3 3.8 3.7 3.8 6.5c0 3.6-2.5 6.5-5.8 7.3c-.7.2-1.2.3-1.8.3H18.2c-.7 0-1.3-.1-1.9-.3c-2.4-.8-4.2-3.1-4.2-5.8c0-1.8.8-3.5 2.1-4.6c.6-.5 1.3-.9 2-1.2c.6-.2 1.3-.3 2-.3c2 0 3.7.9 4.9 2.4h.1c-1.3-2.4-3.7-4.1-6.6-4.3c1.1-3.7 4.5-6.4 8.5-6.4c.4 0 .9 0 1.3.1c.8.1 1.6.3 2.3.7c2.7 1.2 4.7 3.7 5.1 6.8V18c0-3.4-1.8-6.5-4.5-8.3C30.8 6.9 33.8 5 37.1 5m0-3C33 2 29.2 4.1 27 7.6h-.3c-.6-.1-1.2-.1-1.7-.1c-5.3 0-10 3.5-11.4 8.6l-.3 1.2c-.4.2-.7.5-1.1.8c-2 1.7-3.1 4.2-3.1 6.9c0 4 2.5 7.4 6.3 8.7c.9.3 1.9.5 2.9.5h26.2c.8 0 1.6-.1 2.4-.3c4.8-1.1 8.2-5.3 8.2-10.3c0-3.8-2-7.3-5.3-9.1c-.2-.1-.3-.2-.5-.3v-.1C49.2 7.4 43.8 2 37.1 2z" fill="#b6c1d1" id="target_element_137213460803040">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

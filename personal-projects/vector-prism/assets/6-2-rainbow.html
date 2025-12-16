@@ -1,0 +1,2389 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /*
+      Ground base entrance animation (self-contained).
+      - Follows "lanes" pattern using custom properties (no 'transform' inside @keyframes).
+      - Two coordinated animations:
+          1) gb_ground_base_pop: lift + fade + soft overscale (cubic-bezier(0.22,1,0.36,1))
+          2) gb_ground_base_wobble: subtle rotation wobble (small, 3% -> -1deg -> 0deg)
+      - Transform origin chosen relative to the SVG geometry: center bottom (so the ground feels anchored).
+      - Performance: only animates custom properties and opacity. The element's transform is computed once per frame
+        from those properties. will-change hints provided for transform + opacity.
+      - These @property blocks provide proper typed interpolation and initial values that match the requested
+        "initial state" (so the SVG paints in the start pose before animations run).
+    */
+
+    /* Typed custom properties (lanes). Added ONCE for the .ground_base composer. */
+    @property --ground_base-tx1 {
+      syntax: '<length>';
+      inherits: false;
+      initial-value: 0px;
+    }
+    @property --ground_base-ty1 {
+      syntax: '<length>';
+      inherits: false;
+      /* initial = element start translated down 60px per spec */
+      initial-value: 60px;
+    }
+    @property --ground_base-rot1 {
+      syntax: '<angle>';
+      inherits: false;
+      initial-value: 0deg;
+    }
+    @property --ground_base-sx1 {
+      syntax: '<number>';
+      inherits: false;
+      /* initial slight compressed scale per spec */
+      initial-value: 0.98;
+    }
+    @property --ground_base-sy1 {
+      syntax: '<number>';
+      inherits: false;
+      initial-value: 0.98;
+    }
+    @property --ground_base-op1 {
+      syntax: '<number>';
+      inherits: false;
+      initial-value: 0;
+    }
+
+    /*
+      Primary pop keyframes: animate translationY, scale, opacity via custom properties.
+      NOTE: we never set 'transform' here; only custom properties are animated.
+    */
+    @keyframes gb_ground_base_pop {
+      0% {
+        --ground_base-ty1: 60px;
+        --ground_base-sx1: 0.98;
+        --ground_base-sy1: 0.98;
+        --ground_base-op1: 0;
+      }
+      /* overshoot at 70% */
+      70% {
+        --ground_base-ty1: 0px;
+        --ground_base-sx1: 1.02;
+        --ground_base-sy1: 1.02;
+        --ground_base-op1: 1;
+      }
+      100% {
+        --ground_base-ty1: 0px;
+        --ground_base-sx1: 1;
+        --ground_base-sy1: 1;
+        --ground_base-op1: 1;
+      }
+    }
+
+    /*
+      Subtle wobble: tiny rotation to avoid perfectly rigid motion.
+      - 3% -> -1deg (quick tilt), rest returns to 0deg by 100%.
+      - Kept small to be unobtrusive.
+    */
+    @keyframes gb_ground_base_wobble {
+      0% {
+        --ground_base-rot1: 0deg;
+      }
+      3% {
+        --ground_base-rot1: -1deg;
+      }
+      100% {
+        --ground_base-rot1: 0deg;
+      }
+    }
+
+    /*
+      Composer rule for the SVG element with class 'ground_base'.
+      - Sets transform using the animated custom properties.
+      - transform-box + transform-origin are set so the origin matches the visible shape (center bottom).
+      - Both animations are declared using longhand properties, aligned by index.
+    */
+    .ground_base {
+      /* ensure initial visual state matches the @property initial-values (helps first paint) */
+      --ground_base-tx1: 0px;
+      --ground_base-ty1: 60px;
+      --ground_base-rot1: 0deg;
+      --ground_base-sx1: 0.98;
+      --ground_base-sy1: 0.98;
+      --ground_base-op1: 0;
+
+      /* Use transform-box so transforms reference the element's fill-box geometry inside the SVG */
+      transform-box: fill-box;
+      transform-origin: 50% 100%; /* center bottom - anchors the lift to the bottom edge */
+
+      /* Compose the transform from the custom-property lanes (no transform in keyframes). */
+      transform:
+        translate(var(--ground_base-tx1, 0px), var(--ground_base-ty1, 0px))
+        rotate(var(--ground_base-rot1, 0deg))
+        scale(var(--ground_base-sx1, 1), var(--ground_base-sy1, 1));
+
+      /* Opacity follows the lane var; keep the real opacity in the rule so paints update */
+      opacity: var(--ground_base-op1, 1);
+
+      /* Hints for the browser: transform + opacity are the animated properties (keeps it performant) */
+      will-change: transform, opacity;
+
+      /*
+        Two animations applied simultaneously.
+        Index alignment:
+          - animation-name:            pop,              wobble
+          - animation-duration:        700ms,            700ms
+          - animation-timing-function: cubic-bezier(...), cubic-bezier(...)
+          - animation-delay:           0ms,              0ms
+          - animation-iteration-count: 1,                1
+          - animation-fill-mode:       forwards,         forwards
+      */
+      animation-name: gb_ground_base_pop, gb_ground_base_wobble;
+      animation-duration: 700ms, 700ms;
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), cubic-bezier(0.22, 1, 0.36, 1);
+      animation-delay: 0ms, 0ms;
+      animation-iteration-count: 1, 1;
+      animation-fill-mode: forwards, forwards;
+      animation-direction: normal, normal;
+      animation-play-state: running, running;
+    }
+
+    /* Additional note:
+       - If other animations exist for .ground_base, these lanes were placed on the next free lanes:
+         ty1, sx1, sy1, rot1, op1. If later expansions are needed (e.g., a second translation lane),
+         follow the same naming convention (--ground_base-tx2, --ground_base-ty2, etc.).
+    */
+
+/* 
+  Animations for the small center-bottom plant (.foreground_plant_center).
+  - Uses the "lanes" pattern: custom properties (typed via @property) are animated in @keyframes.
+  - No 'transform' inside keyframes — the transform is composed in the element rule from the lanes.
+  - This block is self-contained and will animate on page load; no runtime classes required.
+  - Timing is staggered relative to .ground_base (ground_base starts immediately; this plant is delayed 120ms).
+*/
+
+/* Typed custom properties for the plant. Added once for this composer. */
+@property --foreground_plant_center-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --foreground_plant_center-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial state: rendered translated down 36px (so it can "pop" into place) */
+  initial-value: 36px;
+}
+@property --foreground_plant_center-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --foreground_plant_center-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial compressed scale (0.6) per design */
+  initial-value: 0.6;
+}
+@property --foreground_plant_center-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.6;
+}
+@property --foreground_plant_center-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* 
+  Pop-and-bounce keyframes.
+  - Animates ty1 (vertical lane), sx1/sy1 (scale lanes), op1 (opacity lane).
+  - Sequence follows the plan: scale 0.6 -> 1.12 (55%) -> 0.98 (85%) -> 1 (100%).
+  - Vertical lane includes a tiny upward overshoot (negative ty) and a soft settle bounce
+    so the motion feels organic. Opacity fades in to 1.
+*/
+@keyframes fpc_pop {
+  0% {
+    --foreground_plant_center-ty1: 36px;
+    --foreground_plant_center-sx1: 0.6;
+    --foreground_plant_center-sy1: 0.6;
+    --foreground_plant_center-op1: 0;
+  }
+  /* early climb + beginning of scale-up */
+  30% {
+    --foreground_plant_center-ty1: 6px;    /* rising toward final position */
+    --foreground_plant_center-sx1: 0.9;
+    --foreground_plant_center-sy1: 0.9;
+    --foreground_plant_center-op1: 0.6;
+  }
+  /* peak of bounce / slight upward overshoot to add liveliness */
+  55% {
+    --foreground_plant_center-ty1: -6px;   /* small upward overshoot */
+    --foreground_plant_center-sx1: 1.12;
+    --foreground_plant_center-sy1: 1.12;
+    --foreground_plant_center-op1: 1;
+  }
+  /* recoil slightly below resting point */
+  85% {
+    --foreground_plant_center-ty1: 4px;
+    --foreground_plant_center-sx1: 0.98;
+    --foreground_plant_center-sy1: 0.98;
+    --foreground_plant_center-op1: 1;
+  }
+  /* final settled pose */
+  100% {
+    --foreground_plant_center-ty1: 0px;
+    --foreground_plant_center-sx1: 1;
+    --foreground_plant_center-sy1: 1;
+    --foreground_plant_center-op1: 1;
+  }
+}
+
+/* 
+  Subtle rotation wobble to avoid rigid motion.
+  - Very small angle changes that finish at 0deg.
+  - Kept subtle so the plant reads natural with other nearby motion (ground wobble).
+*/
+@keyframes fpc_wobble {
+  0% {
+    --foreground_plant_center-rot1: 0deg;
+  }
+  25% {
+    --foreground_plant_center-rot1: -3deg;
+  }
+  60% {
+    --foreground_plant_center-rot1: 1.2deg;
+  }
+  100% {
+    --foreground_plant_center-rot1: 0deg;
+  }
+}
+
+/* Composer rule for the plant element. 
+   - Uses the lanes produced above to compute the actual transform and opacity.
+   - transform-box + transform-origin chosen so the plant lifts from its bottom center.
+   - Animation timing is intentionally staggered (delay: 120ms) so the plant follows the ground_base entrance.
+*/
+.foreground_plant_center {
+  /* ensure initial visual state matches the @property initial-values (helps first paint) */
+  --foreground_plant_center-tx1: 0px;
+  --foreground_plant_center-ty1: 36px;
+  --foreground_plant_center-rot1: 0deg;
+  --foreground_plant_center-sx1: 0.6;
+  --foreground_plant_center-sy1: 0.6;
+  --foreground_plant_center-op1: 0;
+
+  /* Make transforms relative to the plant's fill geometry and anchor at its bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose transform from lanes (no transform in keyframes) */
+  transform:
+    translate(var(--foreground_plant_center-tx1, 0px), var(--foreground_plant_center-ty1, 0px))
+    rotate(var(--foreground_plant_center-rot1, 0deg))
+    scale(var(--foreground_plant_center-sx1, 1), var(--foreground_plant_center-sy1, 1));
+
+  opacity: var(--foreground_plant_center-op1, 1);
+
+  /* Performance hint: only transform & opacity change. */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations: pop (motion + opacity) + wobble (tiny rotation) */
+  animation-name: fpc_pop, fpc_wobble;
+  animation-duration: 520ms, 520ms;
+  animation-timing-function: cubic-bezier(0.17, 0.9, 0.32, 1), ease-in-out;
+  animation-delay: 120ms, 120ms; /* staggered after ground_base (which starts immediately) */
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Notes:
+   - Lane names used: ty1, sx1, sy1, rot1, op1 (placed on the first available lanes for this element).
+   - This plant's animation intentionally starts 120ms after .ground_base's entrance to create a natural cascade.
+   - The keyframes animate only custom properties (lanes). The computed transform in the composer rule keeps animation work efficient.
+*/
+
+/* Foreground plant (left) entrance — lanes pattern, self-contained.
+   - Matches the style and performance constraints used for other plants (foreground_plant_center).
+   - Uses typed @property custom properties (lanes). Keyframes animate only these vars;
+     the element's rule composes the real transform from the lanes (no transform inside keyframes).
+   - Timing chosen to sit harmoniously with existing elements:
+       duration: 620ms, delay: 160ms (so it follows ground_base and the center plant).
+   - Small horizontal micro-shift (-6px → 0) gives this left plant a slightly different feel.
+   - Wobble animation included as a second lane (tiny rotation) to avoid rigid motion.
+   - Lane names placed on the first available lanes for this element: tx1, ty1, rot1, sx1, sy1, op1.
+   - This block is safe to drop into the existing stylesheet — it does NOT modify existing rules.
+*/
+
+/* Typed custom properties (lanes) for .foreground_plant_left (add ONCE). */
+@property --foreground_plant_left-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -6px; /* initial micro-offset to the left */
+}
+@property --foreground_plant_left-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 44px; /* element starts translated down 44px */
+}
+@property --foreground_plant_left-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --foreground_plant_left-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.56; /* initial compressed scale */
+}
+@property --foreground_plant_left-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.56;
+}
+@property --foreground_plant_left-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* starts invisible */
+}
+
+/* Pop motion: vertical lane, horizontal micro-shift, scale lanes and opacity.
+   IMPORTANT: no 'transform' written here — only the lane properties are animated. */
+@keyframes fpl_pop {
+  0% {
+    --foreground_plant_left-ty1: 44px;
+    --foreground_plant_left-tx1: -6px;
+    --foreground_plant_left-sx1: 0.56;
+    --foreground_plant_left-sy1: 0.56;
+    --foreground_plant_left-op1: 0;
+  }
+  30% {
+    /* rising and beginning of scale-up; appear gradually */
+    --foreground_plant_left-ty1: 12px;
+    --foreground_plant_left-tx1: -3.2px;
+    --foreground_plant_left-sx1: 0.9;
+    --foreground_plant_left-sy1: 0.9;
+    --foreground_plant_left-op1: 0.6;
+  }
+  55% {
+    /* soft upward overshoot + scale overshoot for a bouncy pop */
+    --foreground_plant_left-ty1: -4px;
+    --foreground_plant_left-tx1: -1px;
+    --foreground_plant_left-sx1: 1.05;
+    --foreground_plant_left-sy1: 1.05;
+    --foreground_plant_left-op1: 1;
+  }
+  85% {
+    /* settle slightly below final to make the motion organic */
+    --foreground_plant_left-ty1: 4px;
+    --foreground_plant_left-tx1: -0.25px;
+    --foreground_plant_left-sx1: 0.98;
+    --foreground_plant_left-sy1: 0.98;
+    --foreground_plant_left-op1: 1;
+  }
+  100% {
+    /* final pose: anchored at the element's bottom center */
+    --foreground_plant_left-ty1: 0px;
+    --foreground_plant_left-tx1: 0px;
+    --foreground_plant_left-sx1: 1;
+    --foreground_plant_left-sy1: 1;
+    --foreground_plant_left-op1: 1;
+  }
+}
+
+/* Tiny rotation wobble so the plant doesn't look mechanically rigid.
+   Leaves final rotation at 0deg. */
+@keyframes fpl_wobble {
+  0% {
+    --foreground_plant_left-rot1: 0deg;
+  }
+  25% {
+    --foreground_plant_left-rot1: -2.2deg;
+  }
+  60% {
+    --foreground_plant_left-rot1: 1deg;
+  }
+  100% {
+    --foreground_plant_left-rot1: 0deg;
+  }
+}
+
+/* Composer rule for the SVG element with class 'foreground_plant_left'.
+   - Composes the transform from the lane variables (single place to update transform).
+   - Uses transform-box: fill-box and transform-origin: center bottom so the plant lifts naturally.
+   - Animations declared using longhand with aligned indices for multiple animations.
+*/
+.foreground_plant_left {
+  /* make sure the element paints in the declared initial pose (helps first paint) */
+  --foreground_plant_left-tx1: -6px;
+  --foreground_plant_left-ty1: 44px;
+  --foreground_plant_left-rot1: 0deg;
+  --foreground_plant_left-sx1: 0.56;
+  --foreground_plant_left-sy1: 0.56;
+  --foreground_plant_left-op1: 0;
+
+  /* transforms reference the element's fill geometry and anchor at bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from the lanes (no transform inside keyframes). */
+  transform:
+    translate(var(--foreground_plant_left-tx1, 0px), var(--foreground_plant_left-ty1, 0px))
+    rotate(var(--foreground_plant_left-rot1, 0deg))
+    scale(var(--foreground_plant_left-sx1, 1), var(--foreground_plant_left-sy1, 1));
+
+  opacity: var(--foreground_plant_left-op1, 1);
+
+  /* Hint to the browser for optimal compositing */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations:
+     Index alignment (pop, wobble)
+     - names
+     - durations: same for both to keep timing predictable
+     - timing functions aligned: pop uses the requested cubic-bezier, wobble uses softer ease
+     - delays: 160ms for both (staggered after center plant which used 120ms)
+  */
+  animation-name: fpl_pop, fpl_wobble;
+  animation-duration: 620ms, 620ms;
+  animation-timing-function: cubic-bezier(0.17, 0.9, 0.32, 1), ease-in-out;
+  animation-delay: 160ms, 160ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Notes:
+   - This block intentionally mirrors the same lane-based approach used for foreground_plant_center,
+     so all plant animations stay consistent and efficient.
+   - The horizontal micro-shift is small and returns to zero at 100% to avoid any long-term layout drift.
+   - All heavy paint/stroke/blur effects are avoided; only transform & opacity are animated for best performance.
+*/
+
+/* foreground_plant_right — lane-based entrance animation
+   - Self-contained: adds typed @property lanes and composer rule ONCE for .foreground_plant_right.
+   - Mirrors the left plant's motion but with a small positive horizontal micro-shift (6px → 0).
+   - Timing chosen to sit harmoniously with other elements:
+       duration: 600ms, delay: 180ms (so it follows ground and other plants).
+   - Performance: keyframes animate only custom properties (lanes). The composed transform is in the composer rule.
+   - Collision avoidance: small vertical/horizontal values and transform-origin center-bottom keep motion local
+     so the plant doesn't clip or collide with larger shapes (hills/ground).
+*/
+
+/* Typed lanes for foreground_plant_right (add ONCE). We use the "first free lanes":
+   tx1, ty1, rot1, sx1, sy1, op1
+*/
+@property --foreground_plant_right-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 6px; /* small positive micro-shift to the right as described */
+}
+@property --foreground_plant_right-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 40px; /* starts translated down 40px */
+}
+@property --foreground_plant_right-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --foreground_plant_right-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.58; /* initial compressed scale */
+}
+@property --foreground_plant_right-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.58;
+}
+@property --foreground_plant_right-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* starts invisible */
+}
+
+/* Pop / bounce keyframes for the right plant.
+   NOTE: we only animate the custom properties (lanes). Never write 'transform' here.
+   The timing curve for the main pop matches other plants: cubic-bezier(...) for a snappy organic pop.
+*/
+@keyframes fpr_pop {
+  0% {
+    --foreground_plant_right-ty1: 40px;
+    --foreground_plant_right-tx1: 6px;
+    --foreground_plant_right-sx1: 0.58;
+    --foreground_plant_right-sy1: 0.58;
+    --foreground_plant_right-op1: 0;
+  }
+  30% {
+    /* rising and beginning of scale-up; appear gradually */
+    --foreground_plant_right-ty1: 12px;
+    --foreground_plant_right-tx1: 3.2px;
+    --foreground_plant_right-sx1: 0.9;
+    --foreground_plant_right-sy1: 0.9;
+    --foreground_plant_right-op1: 0.6;
+  }
+  55% {
+    /* soft upward overshoot + scale overshoot for a bouncy pop */
+    --foreground_plant_right-ty1: -4px;
+    --foreground_plant_right-tx1: 1px;
+    --foreground_plant_right-sx1: 1.05;
+    --foreground_plant_right-sy1: 1.05;
+    --foreground_plant_right-op1: 1;
+  }
+  85% {
+    /* settle slightly below final to make the motion organic */
+    --foreground_plant_right-ty1: 4px;
+    --foreground_plant_right-tx1: 0.25px;
+    --foreground_plant_right-sx1: 0.98;
+    --foreground_plant_right-sy1: 0.98;
+    --foreground_plant_right-op1: 1;
+  }
+  100% {
+    /* final anchored pose (center bottom origin) */
+    --foreground_plant_right-ty1: 0px;
+    --foreground_plant_right-tx1: 0px;
+    --foreground_plant_right-sx1: 1;
+    --foreground_plant_right-sy1: 1;
+    --foreground_plant_right-op1: 1;
+  }
+}
+
+/* Small rotation wobble to avoid rigid motion; very subtle and finishes at 0deg.
+   Kept separate so we maintain fine control and can keep keyframe complexity low.
+*/
+@keyframes fpr_wobble {
+  0%   { --foreground_plant_right-rot1: 0deg; }
+  25%  { --foreground_plant_right-rot1: -2.0deg; }
+  60%  { --foreground_plant_right-rot1: 1deg; }
+  100% { --foreground_plant_right-rot1: 0deg; }
+}
+
+/* Composer rule for the .foreground_plant_right SVG element.
+   - Ensures initial paint state matches @property initial-values.
+   - Composes transform from lanes (so no transform appears in keyframes).
+   - Uses transform-box: fill-box and transform-origin: center bottom so the plant lifts naturally.
+   - Two coordinated animations applied with aligned indexes: pop (motion + opacity), wobble (rotation).
+*/
+.foreground_plant_right {
+  /* match the @property initial values for first-paint correctness */
+  --foreground_plant_right-tx1: 6px;
+  --foreground_plant_right-ty1: 40px;
+  --foreground_plant_right-rot1: 0deg;
+  --foreground_plant_right-sx1: 0.58;
+  --foreground_plant_right-sy1: 0.58;
+  --foreground_plant_right-op1: 0;
+
+  /* Transforms reference the element's fill geometry and anchor at bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from lanes (single source of truth for runtime transforms). */
+  transform:
+    translate(var(--foreground_plant_right-tx1, 0px), var(--foreground_plant_right-ty1, 0px))
+    rotate(var(--foreground_plant_right-rot1, 0deg))
+    scale(var(--foreground_plant_right-sx1, 1), var(--foreground_plant_right-sy1, 1));
+
+  /* Opacity follows the lane variable so it is animated without painting extra properties */
+  opacity: var(--foreground_plant_right-op1, 1);
+
+  /* Hint the browser for efficient compositing */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations (index-aligned):
+     1) fpr_pop  — motion + opacity (600ms, cubic-bezier(...), delayed 180ms)
+     2) fpr_wobble — small rotation (600ms, ease-in-out, delayed 180ms)
+  */
+  animation-name: fpr_pop, fpr_wobble;
+  animation-duration: 600ms, 600ms;
+  animation-timing-function: cubic-bezier(0.17, 0.9, 0.32, 1), ease-in-out;
+  animation-delay: 180ms, 180ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Notes:
+   - This block intentionally mirrors the left plant's behaviour but mirrored horizontally (positive tx → 0)
+     so the three small plants read as a cohesive group with staggered entrances (center at 120ms, left at 160ms, right at 180ms).
+   - We animate only lightweight properties (custom properties mapped to transform & opacity) for best performance.
+   - If additional motion lanes are needed later (e.g., secondary micro-bounce), follow the existing naming pattern
+     (--foreground_plant_right-tx2, --foreground_plant_right-ty2, etc.) and compose them in the same single transform rule.
+*/
+
+/* hill_left — lane-based entrance animation
+   - Purpose: slide-and-rise with a soft skew + subtle overscale bounce so the left turquoise hill
+     reads as a lively background element without colliding with foreground plants or ground.
+   - Timing: 760ms duration, starts at 260ms (stagger further by +40ms per extra left-subshape if needed).
+   - Easing: cubic-bezier(0.2, 0.9, 0.2, 1) (snappy but smooth).
+   - Performance: keyframes animate only typed custom properties (lanes). The actual transform is composed
+     once in the .hill_left composer rule (no 'transform' inside @keyframes).
+   - Transform origin: center bottom (so the hill rises from ground level and does not visually slip).
+   - Notes on collision avoidance: translate/scale/skew values are modest and anchored to the element's
+     fill-box. This keeps motion local (no layout shifts) and avoids clipping with foreground plants / ground.
+*/
+
+/* Typed lanes for .hill_left (add ONCE).
+   - We place new motion lanes on the first free lanes for this element:
+     tx1, ty1, rot1, sx1, sy1, skew1, op1
+*/
+@property --hill_left-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hill_left-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial state: pushed down so it can slide up into place */
+  initial-value: 80px;
+}
+@property --hill_left-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --hill_left-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial slightly reduced scale */
+  initial-value: 0.9;
+}
+@property --hill_left-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.9;
+}
+@property --hill_left-skew1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* soft initial skewX to add a subtle perspective */
+  initial-value: -2deg;
+}
+@property --hill_left-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Main pop/bounce animation (only animates lane vars).
+   - Sequence:
+     0%: offscreen-ish (ty1=80px), small scale (0.9), invisible
+     60%: near final vertical position with overscale (1.03) and slight upward overshoot (negative ty1)
+     85%: recoil to slightly underscale (0.99)
+     100%: settle at neutral scale 1, ty1=0, fully visible
+*/
+@keyframes hill_left_pop_760 {
+  0% {
+    --hill_left-ty1: 80px;
+    --hill_left-sx1: 0.9;
+    --hill_left-sy1: 0.9;
+    --hill_left-op1: 0;
+  }
+  40% {
+    /* moving up and becoming visible */
+    --hill_left-ty1: 20px;
+    --hill_left-sx1: 0.98;
+    --hill_left-sy1: 0.98;
+    --hill_left-op1: 0.6;
+  }
+  60% {
+    /* gentle overshoot and largest scale */
+    --hill_left-ty1: -8px;      /* tiny upward overshoot to feel lively */
+    --hill_left-sx1: 1.03;      /* overscale for bounce feeling */
+    --hill_left-sy1: 1.03;
+    --hill_left-op1: 1;
+  }
+  85% {
+    /* recoil slightly smaller than final to simulate settling */
+    --hill_left-ty1: 4px;
+    --hill_left-sx1: 0.99;
+    --hill_left-sy1: 0.99;
+    --hill_left-op1: 1;
+  }
+  100% {
+    --hill_left-ty1: 0px;
+    --hill_left-sx1: 1;
+    --hill_left-sy1: 1;
+    --hill_left-op1: 1;
+  }
+}
+
+/* Soft skew unwind so the hill doesn't look rigid.
+   - Very small skew animation from -2deg -> small positive -> 0deg for a natural settling.
+   - Kept separate so the pop keyframe remains focused on position/scale/opacity.
+*/
+@keyframes hill_left_skew_760 {
+  0% {
+    --hill_left-skew1: -2deg;
+  }
+  35% {
+    --hill_left-skew1: -0.6deg;
+  }
+  70% {
+    --hill_left-skew1: 0.5deg;
+  }
+  100% {
+    --hill_left-skew1: 0deg;
+  }
+}
+
+/* Composer rule for the .hill_left SVG element.
+   - Composes the final transform from the lane variables (single source of truth).
+   - transform-box: fill-box ensures transforms are relative to the element's shape inside the SVG.
+   - transform-origin anchored at bottom-center to avoid drifting relative to the ground.
+   - Two coordinated animations (pop + skew) applied with aligned indices.
+*/
+.hill_left {
+  /* ensure element paints in the declared initial pose to avoid flicker on first paint */
+  --hill_left-tx1: 0px;
+  --hill_left-ty1: 80px;
+  --hill_left-rot1: 0deg;
+  --hill_left-sx1: 0.9;
+  --hill_left-sy1: 0.9;
+  --hill_left-skew1: -2deg;
+  --hill_left-op1: 0;
+
+  /* Make transforms relative to the element's geometry and anchor at its bottom center
+     so the hill rises from the same baseline as the foreground plants and ground. */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from lanes (no transform inside keyframes). 
+     Note: skewX is used for the soft perspective; rotate lane is available for future uses. */
+  transform:
+    translate(var(--hill_left-tx1, 0px), var(--hill_left-ty1, 0px))
+    skewX(var(--hill_left-skew1, 0deg))
+    rotate(var(--hill_left-rot1, 0deg))
+    scale(var(--hill_left-sx1, 1), var(--hill_left-sy1, 1));
+
+  /* Opacity follows the lane so fade-in is GPU-friendly. */
+  opacity: var(--hill_left-op1, 1);
+
+  /* Hint to the browser which properties will change. Keep this tight for better compositing. */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations:
+     Index alignment:
+       - 0: pop (position/scale/opacity)
+       - 1: skew (tiny perspective settle)
+     Delay: base 260ms to follow ground and plants. If you have multiple left-subshapes
+     and want a small cascading effect, increase the delay per element by ~40ms
+     (e.g. 260ms, 300ms, 340ms ...). See note below.
+  */
+  animation-name: hill_left_pop_760, hill_left_skew_760;
+  animation-duration: 760ms, 760ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1), cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation-delay: 260ms, 260ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Stagger hint (optional):
+   If your SVG contains multiple left-subshapes and you want them to appear with a 40ms cascade,
+   add rules like the following (uncomment/adapt as needed):
+
+   .hill_left:nth-of-type(2) { animation-delay: 300ms, 300ms; }
+   .hill_left:nth-of-type(3) { animation-delay: 340ms, 340ms; }
+
+   This keeps the core animation self-contained while enabling a small organic stagger when needed.
+*/
+
+/* hill_front — lane-based, self-contained entrance animation
+   - Purpose: strong pop for the dominant foreground hill (translateY + pronounced scale bounce),
+     with a small rotation settle during the final 20% so the hill reads natural and not mechanically perfect.
+   - Timing selected to sit after other elements:
+       duration: 820ms, delay: 320ms (follows ground_base, small plants, hill_left).
+   - Performance: keyframes animate ONLY typed custom properties (lanes). The .hill_front composer composes
+     the actual transform from those lanes (no 'transform' inside keyframes).
+   - Transform origin: center bottom so the hill rises from the same baseline as other ground elements.
+   - Animations run automatically on page load (no runtime classes required).
+   - Unique keyframe names chosen to avoid conflicts.
+*/
+
+/* Typed custom properties (lanes) for .hill_front — add ONCE */
+@property --hill_front-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hill_front-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: pushed down so it can spring up into place */
+  initial-value: 100px;
+}
+@property --hill_front-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* gentle initial tilt so the final settle to 0deg reads intentional */
+  initial-value: 2deg;
+}
+@property --hill_front-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.88;
+}
+@property --hill_front-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.88;
+}
+@property --hill_front-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Pop & bounce keyframes (only animate lane vars).
+   Sequence mirrors plan:
+     0%   : ty=100px, scale=0.88, opacity=0
+     55%  : arrive with an overscale (1.08) + slight upward overshoot to convey energy
+     85%  : soft recoil to 0.98
+     100% : settle at scale 1, ty=0, opacity=1
+   Note: values chosen to avoid visual collision with foreground plants and hill_left (kept modest).
+*/
+@keyframes hf_pop_820 {
+  0% {
+    --hill_front-ty1: 100px;
+    --hill_front-sx1: 0.88;
+    --hill_front-sy1: 0.88;
+    --hill_front-op1: 0;
+  }
+  35% {
+    /* moving up and becoming visible */
+    --hill_front-ty1: 36px;
+    --hill_front-sx1: 0.96;
+    --hill_front-sy1: 0.96;
+    --hill_front-op1: 0.6;
+  }
+  55% {
+    /* strong pop / overscale (emphasizes depth) and small upward overshoot */
+    --hill_front-ty1: -10px;
+    --hill_front-sx1: 1.08;
+    --hill_front-sy1: 1.08;
+    --hill_front-op1: 1;
+  }
+  85% {
+    /* recoil slightly below final for organic settle */
+    --hill_front-ty1: 6px;
+    --hill_front-sx1: 0.98;
+    --hill_front-sy1: 0.98;
+    --hill_front-op1: 1;
+  }
+  100% {
+    --hill_front-ty1: 0px;
+    --hill_front-sx1: 1;
+    --hill_front-sy1: 1;
+    --hill_front-op1: 1;
+  }
+}
+
+/* Small rotation settle: hold the gentle 2deg tilt until the very end, then unwind to 0deg
+   across the final 20% to produce a natural settling motion.
+   Kept separate so we don't complicate the main pop timeline.
+*/
+@keyframes hf_settle_rot_820 {
+  0% {
+    --hill_front-rot1: 2deg;
+  }
+  80% {
+    --hill_front-rot1: 2deg;
+  }
+  100% {
+    --hill_front-rot1: 0deg;
+  }
+}
+
+/* Composer rule for .hill_front
+   - Ensures first paint matches @property initial-values.
+   - Composes the final transform from the lane variables (single place to update transform).
+   - transform-box: fill-box + transform-origin: center bottom (anchored to baseline).
+   - Two coordinated animations applied using longhand with aligned indexes.
+*/
+.hill_front {
+  /* Mirror the @property initial-values so the element paints in the declared start pose */
+  --hill_front-tx1: 0px;
+  --hill_front-ty1: 100px;
+  --hill_front-rot1: 2deg;
+  --hill_front-sx1: 0.88;
+  --hill_front-sy1: 0.88;
+  --hill_front-op1: 0;
+
+  /* Make transforms relative to the element's fill geometry and anchor at its bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from lanes (no transform inside keyframes) */
+  transform:
+    translate(var(--hill_front-tx1, 0px), var(--hill_front-ty1, 0px))
+    rotate(var(--hill_front-rot1, 0deg))
+    scale(var(--hill_front-sx1, 1), var(--hill_front-sy1, 1));
+
+  /* Opacity driven from lane var (keeps animated properties GPU friendly) */
+  opacity: var(--hill_front-op1, 1);
+
+  /* Performance hint: only transform & opacity are animated */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations:
+     - Index 0: hf_pop_820  — motion + opacity (primary)
+     - Index 1: hf_settle_rot_820 — small rotation settle
+     Both start after hill_left (260ms) with an additional offset so the foreground hill arrives slightly later.
+  */
+  animation-name: hf_pop_820, hf_settle_rot_820;
+  animation-duration: 820ms, 820ms;
+  animation-timing-function: cubic-bezier(0.2, 1, 0.22, 1), ease-in-out;
+  animation-delay: 320ms, 320ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Notes on collision avoidance & coherence:
+   - translateY and scale values are chosen to be modest and anchored to the bottom center so the hill
+     doesn't intersect foreground plants or the ground during animation.
+   - The pop timing (820ms, delayed 320ms) follows the other entrance animations (ground + plants + hill_left)
+     so the composition reads as a cohesive staged arrival.
+   - Only custom properties and opacity are animated; the computed transform is applied in one place (the composer rule).
+     This keeps the animation performant even in complex SVGs.
+*/
+
+/* hill_left_highlight — self-contained lane-based reveal
+   - Role: subtle mint diagonal highlight that sweeps into place across the left hill.
+   - Approach: animate typed custom properties (lanes) only; compose the real transform in the composer rule.
+   - Behavior: scaleY from 0 -> 1 (reveal from bottom), opacity 0 -> 0.95, plus a small horizontal slide (6px -> 0)
+     from the side opposite the hill curvature to create a soft sweeping motion.
+   - Timing: duration 420ms, delay 520ms (this follows .hill_left which uses 260ms base; the extra 260ms
+     separation keeps the highlight arriving after the hill_pop).
+   - Performance: only custom properties + opacity are animated; no `transform` inside keyframes to allow
+     the browser to optimize (the computed transform is applied once per frame in the composer rule).
+   - Collision avoidance: values are modest (6px slide, gentle overshoot in scaleY); transform-origin is
+     anchored center bottom and transform-box is fill-box so the highlight won't drift or collide with foreground elements.
+*/
+
+/* Typed lanes for hill_left_highlight (add ONCE). These lanes use the "first free lanes" naming convention. */
+@property --hill_left_highlight-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 6px; /* slide in from the right (opposite the left hill curvature) */
+}
+@property --hill_left_highlight-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hill_left_highlight-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --hill_left_highlight-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* keep horizontal scale unchanged */
+}
+@property --hill_left_highlight-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* start collapsed vertically (scaleY = 0) to hide highlight */
+}
+@property --hill_left_highlight-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* start invisible */
+}
+
+/* Main reveal keyframes
+   - Only animates the custom-property lanes (tx1, sy1, op1) — no transform here.
+   - Includes a small overshoot in sy1 to make the reveal feel organic, then settles to 1.
+   - The opacity target is 0.95 to keep the highlight subtle and to avoid pure-white glare.
+*/
+@keyframes hill_left_highlight_reveal_420 {
+  0% {
+    --hill_left_highlight-tx1: 6px;
+    --hill_left_highlight-sy1: 0;
+    --hill_left_highlight-op1: 0;
+  }
+  /* mid-reveal: mostly visible and slightly overscaled vertically for a lively feel */
+  60% {
+    --hill_left_highlight-tx1: 1.6px;
+    --hill_left_highlight-sy1: 1.06;
+    --hill_left_highlight-op1: 0.95;
+  }
+  /* small settle back so the highlight doesn't feel springy forever */
+  90% {
+    --hill_left_highlight-tx1: 0.2px;
+    --hill_left_highlight-sy1: 0.98;
+    --hill_left_highlight-op1: 0.95;
+  }
+  100% {
+    --hill_left_highlight-tx1: 0px;
+    --hill_left_highlight-sy1: 1;
+    --hill_left_highlight-op1: 0.95;
+  }
+}
+
+/* Composer rule for the SVG element with class 'hill_left_highlight'.
+   - Composes the real transform from the animated lanes (single source of truth).
+   - transform-box: fill-box and transform-origin: 50% 100% anchor the reveal to the hill baseline so it grows upward.
+   - Animation uses longhand properties with aligned indexes (single animation in this case).
+*/
+.hill_left_highlight {
+  /* ensure first-paint matches @property initial-values to avoid flicker */
+  --hill_left_highlight-tx1: 6px;
+  --hill_left_highlight-ty1: 0px;
+  --hill_left_highlight-rot1: 0deg;
+  --hill_left_highlight-sx1: 1;
+  --hill_left_highlight-sy1: 0;
+  --hill_left_highlight-op1: 0;
+
+  /* transforms reference the element's fill geometry and anchor at bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from lanes (no transform inside keyframes). This gives one place the browser needs to evaluate. */
+  transform:
+    translate(var(--hill_left_highlight-tx1, 0px), var(--hill_left_highlight-ty1, 0px))
+    rotate(var(--hill_left_highlight-rot1, 0deg))
+    scale(var(--hill_left_highlight-sx1, 1), var(--hill_left_highlight-sy1, 1));
+
+  /* Opacity follows the lane var (keeps actual animated properties lightweight) */
+  opacity: var(--hill_left_highlight-op1, 1);
+
+  /* Hint to the browser for efficient compositing */
+  will-change: transform, opacity;
+
+  /* Single coordinated reveal animation:
+     - name: hill_left_highlight_reveal_420
+     - duration: 420ms
+     - easing: ease-out (soft stop)
+     - delay: 520ms to follow .hill_left (which animates starting at 260ms)
+     - fill-mode: forwards so the highlight stays visible at the final pose
+  */
+  animation-name: hill_left_highlight_reveal_420;
+  animation-duration: 420ms;
+  animation-timing-function: ease-out;
+  animation-delay: 520ms;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-direction: normal;
+  animation-play-state: running;
+}
+
+/* Notes on coherence & collision avoidance:
+   - The highlight is anchored to the hill's bottom center (transform-origin: 50% 100%) so the vertical stretch
+     does not slide the shape around the composition baseline.
+   - The horizontal slide is modest (6px -> 0) and moves from the right side toward the left hill body,
+     which visually reads as a sweeping catch-light without intersecting foreground plants or ground.
+   - Only typed custom properties and opacity are animated: this keeps GPU-friendly compositing and reduces layout cost.
+   - Keyframe names are unique and do not touch existing animation rules.
+*/
+
+/* hill_front_highlight — lane-based reveal + subtle gleam
+   - Self-contained; adds typed @property lanes ONCE and a composer rule that composes the real transform.
+   - Behavior:
+       * Primary reveal: scaleX 0.92 -> 1 (gentle horizontal wipe from left),
+         scaleY 0 -> 1 (vertical growth), opacity 0 -> 1
+         Duration: 480ms, Delay: 560ms, Easing: cubic-bezier(0.22,1,0.36,1)
+       * Secondary gleam: faint, slightly-blurred white glow that fades in after 120ms to give a soft sheen.
+         Duration: 120ms fade-in, starts 120ms after the main reveal start (i.e. delay = 560ms + 120ms = 680ms).
+   - Performance notes:
+       * No 'transform' inside @keyframes — only typed custom properties ("lanes") are animated.
+       * The .hill_front_highlight composer composes transform once per frame from lane values.
+       * will-change hints include transform, opacity, filter.
+   - Collision avoidance:
+       * transform-box: fill-box and transform-origin: left center anchor the wipe to the left edge of the highlight,
+         keeping motion local to the front hill shape and preventing visual slip relative to other hills/plants.
+       * Values are intentionally modest; the glow (gleam) uses low alpha so it doesn't visually collide with foreground detail.
+*/
+
+/* Typed lanes for .hill_front_highlight (add ONCE). These follow the project's naming pattern.
+   We place motion on the first free lanes: tx1, ty1, rot1, sx1, sy1, op1 for the main reveal,
+   plus op2 and blur2 for the secondary gleam effect.
+*/
+@property --hill_front_highlight-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hill_front_highlight-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hill_front_highlight-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --hill_front_highlight-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial horizontal scale per spec (0.92) so the reveal reads as a left-to-right wipe */
+  initial-value: 0.92;
+}
+@property --hill_front_highlight-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial collapsed vertically (0 = hidden) */
+  initial-value: 0;
+}
+@property --hill_front_highlight-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Gleam lanes (secondary, subtle glow)
+   - op2: controls strength/alpha of the glow
+   - blur2: controls the radius of the glow (used in filter: drop-shadow)
+*/
+@property --hill_front_highlight-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --hill_front_highlight-blur2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Primary reveal keyframes (ONLY animates lane variables).
+   - No transform inside keyframes; the composer rule will build the transform from lanes.
+   - Uses a small overshoot in mid-frame to make the wipe feel organic, then settles to final values.
+*/
+@keyframes hill_front_highlight_reveal_480 {
+  0% {
+    --hill_front_highlight-sx1: 0.92;
+    --hill_front_highlight-sy1: 0;
+    --hill_front_highlight-op1: 0;
+  }
+  55% {
+    /* soft overshoot to give a tactile sweep feel */
+    --hill_front_highlight-sx1: 0.995;
+    --hill_front_highlight-sy1: 1.06;
+    --hill_front_highlight-op1: 1;
+  }
+  100% {
+    /* final settled pose */
+    --hill_front_highlight-sx1: 1;
+    --hill_front_highlight-sy1: 1;
+    --hill_front_highlight-op1: 1;
+  }
+}
+
+/* Gleam fade-in keyframes (subtle white glow)
+   - Only animates op2 and blur2 lanes.
+   - Short 120ms fade-in that begins slightly after the main reveal starts to add a soft catch-light.
+   - We intentionally leave the gleam present (fill-mode: forwards) at low alpha so it reads as a soft sheen.
+*/
+@keyframes hill_front_highlight_gleam_120 {
+  0% {
+    --hill_front_highlight-op2: 0;
+    --hill_front_highlight-blur2: 0px;
+  }
+  100% {
+    /* gentle glow: low alpha + modest blur for a diffuse sheen */
+    --hill_front_highlight-op2: 0.32;
+    --hill_front_highlight-blur2: 4px;
+  }
+}
+
+/* Composer rule for the SVG element with class 'hill_front_highlight'.
+   - Composes the actual transform (single place) from the animated lanes.
+   - transform-box: fill-box and transform-origin: left center anchor the wipe to the left edge of the shape,
+     which matches the artwork's geometry (highlight sweeps left→right across the large front hill).
+   - Applies a subtle drop-shadow as the "gleam" using the blur2 + op2 lanes; this avoids requiring extra DOM
+     and keeps everything on the single element while remaining performant.
+*/
+.hill_front_highlight {
+  /* Ensure first-paint matches @property initial-values to avoid flicker */
+  --hill_front_highlight-tx1: 0px;
+  --hill_front_highlight-ty1: 0px;
+  --hill_front_highlight-rot1: 0deg;
+  --hill_front_highlight-sx1: 0.92;
+  --hill_front_highlight-sy1: 0;
+  --hill_front_highlight-op1: 0;
+  --hill_front_highlight-op2: 0;
+  --hill_front_highlight-blur2: 0px;
+
+  /* Anchor the reveal to the left center of the highlight path so the wipe reads correctly */
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+
+  /* Compose the final transform from lanes (no transform in keyframes). */
+  transform:
+    translate(var(--hill_front_highlight-tx1, 0px), var(--hill_front_highlight-ty1, 0px))
+    rotate(var(--hill_front_highlight-rot1, 0deg))
+    scale(var(--hill_front_highlight-sx1, 1), var(--hill_front_highlight-sy1, 1));
+
+  /* Element opacity follows the primary reveal lane (keeps GPU-friendly) */
+  opacity: var(--hill_front_highlight-op1, 1);
+
+  /* Subtle glow applied via drop-shadow whose blur radius and alpha are driven by lanes op2 & blur2.
+     Using drop-shadow(0 0 <radius> rgba(255,255,255,<alpha>)) produces a soft catch-light without extra DOM.
+     Note: some user agents may composite filters differently; this is intentionally low-cost and low-alpha. */
+  filter: drop-shadow(0 0 var(--hill_front_highlight-blur2, 0px)
+                       rgba(255,255,255, var(--hill_front_highlight-op2, 0)));
+
+  /* Performance hint: transform, opacity and filter are the only changing properties. Keep will-change tight. */
+  will-change: transform, opacity, filter;
+
+  /* Two coordinated animations:
+     - Index 0: reveal (primary) — duration 480ms, delay 560ms (per design)
+     - Index 1: gleam (secondary) — duration 120ms, delay 680ms (starts 120ms after reveal start)
+     Index alignment ensures the lanes animated in each keyframe map to the correct animation.
+  */
+  animation-name: hill_front_highlight_reveal_480, hill_front_highlight_gleam_120;
+  animation-duration: 480ms, 120ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), ease-out;
+  animation-delay: 560ms, 680ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - The reveal delay (560ms) places this highlight after the main front-hill pop (which in the stylesheet uses 320ms delay)
+     and hill_left highlight timings, so the catch-light reads as a finishing detail for the front hill.
+   - The left-center transform origin ensures the wipe doesn't visually slide relative to the hill baseline — it grows
+     from the left curvature in a way that avoids collisions with foreground plants and the ground.
+   - All animated lanes use typed @property declarations so interpolation is smooth and performant.
+*/
+
+/* Rainbow outer entrance — lane-based, self-contained animation for .rainbow_outer
+   - Pattern: typed @property lanes + keyframes animate ONLY those lanes (no 'transform' inside keyframes).
+   - Composer rule (.rainbow_outer) composes the real transform once per frame from the lanes.
+   - Timing: duration 520ms, delay 720ms (arrives after hills/front-ground). Easing: cubic-bezier(0.18,0.9,0.32,1).
+   - Visual intent: scaleY from 0 -> 1 with a brief overshoot (1.06) while translateY 40px -> 0 and opacity 0 -> 1.
+   - Transform origin: center bottom (50% 100%) so the arc grows upward from behind the hills and does not visually slip.
+   - Performance: only transform & opacity will change; will-change hints included. Keyframe names chosen to avoid collisions.
+   - Notes on collision avoidance: translateY (40px) and overshoot values are modest and anchored to the element's fill-box.
+     This prevents the rainbow from intersecting foreground hills during the motion. If you need extra stagger for inner arcs,
+     start them slightly later than this rule (this outer arc intentionally begins earlier to create depth).
+*/
+
+/* Typed custom properties (lanes) for .rainbow_outer — add ONCE */
+@property --rainbow_outer-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --rainbow_outer-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: pushed down 40px so it can "grow" up into place behind hills */
+  initial-value: 40px;
+}
+@property --rainbow_outer-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --rainbow_outer-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --rainbow_outer-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial collapsed vertically */
+  initial-value: 0;
+}
+@property --rainbow_outer-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Primary pop keyframes (only animate lanes).
+   - 0%: collapsed (sy=0), lowered (ty=40px), invisible (op=0)
+   - 70%: arrive with slight overshoot (sy=1.06), ty=0, fully visible
+   - 100%: settle at sy=1, ty=0, op=1
+   Note: no 'transform' is written here; the composer rule composes the transform from the lanes.
+*/
+@keyframes ro_pop_520 {
+  0% {
+    --rainbow_outer-ty1: 40px;
+    --rainbow_outer-sy1: 0;
+    --rainbow_outer-op1: 0;
+  }
+  50% {
+    /* mid-rise - become visible */
+    --rainbow_outer-ty1: 8px;
+    --rainbow_outer-sy1: 0.92;
+    --rainbow_outer-op1: 0.7;
+  }
+  70% {
+    /* lively overshoot to read energetic but subtle (1.06) */
+    --rainbow_outer-ty1: 0px;
+    --rainbow_outer-sy1: 1.06;
+    --rainbow_outer-op1: 1;
+  }
+  100% {
+    /* final settled pose */
+    --rainbow_outer-ty1: 0px;
+    --rainbow_outer-sy1: 1;
+    --rainbow_outer-op1: 1;
+  }
+}
+
+/* Gentle rotation unwind/wobble so the arc doesn't feel perfectly rigid.
+   - Very small angles; finishes at 0deg to avoid long-term tilt.
+   - Kept separate to keep the main pop focused on scale/position/opacity.
+*/
+@keyframes ro_wobble_520 {
+  0% {
+    --rainbow_outer-rot1: 0deg;
+  }
+  18% {
+    --rainbow_outer-rot1: -1.2deg;
+  }
+  55% {
+    --rainbow_outer-rot1: 0.6deg;
+  }
+  100% {
+    --rainbow_outer-rot1: 0deg;
+  }
+}
+
+/* Composer rule for the SVG element with class 'rainbow_outer'.
+   - Ensures the element paints the declared initial pose (matches @property initial-values) to avoid flicker.
+   - transform is composed from the lanes (single place to update runtime transform).
+   - transform-box: fill-box + transform-origin: 50% 100% anchors growth to the baseline where hills sit.
+   - Two coordinated animations applied with index alignment:
+       0: ro_pop_520  (520ms, cubic-bezier(0.18,0.9,0.32,1), delay 720ms)
+       1: ro_wobble_520 (520ms, ease-in-out, delay 720ms)
+*/
+.rainbow_outer {
+  /* match @property initial-values so first paint is correct */
+  --rainbow_outer-tx1: 0px;
+  --rainbow_outer-ty1: 40px;
+  --rainbow_outer-rot1: 0deg;
+  --rainbow_outer-sx1: 1;
+  --rainbow_outer-sy1: 0;
+  --rainbow_outer-op1: 0;
+
+  /* Make transforms relative to the element's fill geometry and anchor at center-bottom
+     so the arc grows naturally from behind the hills without visual sliding. */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from lanes (no 'transform' inside @keyframes). */
+  transform:
+    translate(var(--rainbow_outer-tx1, 0px), var(--rainbow_outer-ty1, 0px))
+    rotate(var(--rainbow_outer-rot1, 0deg))
+    scale(var(--rainbow_outer-sx1, 1), var(--rainbow_outer-sy1, 1));
+
+  /* Opacity driven from lane var for GPU-friendly compositing */
+  opacity: var(--rainbow_outer-op1, 1);
+
+  /* Hint the browser which properties will change */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations (index-aligned).
+     - Using longhand so it's explicit and robust across browsers */
+  animation-name: ro_pop_520, ro_wobble_520;
+  animation-duration: 520ms, 520ms;
+  animation-timing-function: cubic-bezier(0.18, 0.9, 0.32, 1), ease-in-out;
+  animation-delay: 720ms, 720ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - Delay (720ms) places the outer arc after hills and foreground elements have arrived (their delays in the stylesheet
+     are: hill_left 260ms / hill_front 320ms / hill highlights 520-560ms). The outer rainbow begins slightly earlier than
+     the inner arcs (if any) so it reads as being farther back.
+   - Values chosen (translateY 40px initially, slight overshoot 1.06) are modest to avoid intersecting foreground hills
+     during animation. Transform-origin anchors the motion so there is no baseline drift.
+   - By animating only typed custom properties and opacity, the runtime work is minimal (the browser composes a single
+     transform from lanes each frame) — this keeps the animation performant in complex SVG compositions.
+*/
+
+/* rainbow_pink — middle arc entrance (lane-based, self-contained)
+   - Role: middle pink arc. Motion matches the existing rainbow_outer pattern but is shorter/snappier.
+   - Timing chosen to sit harmoniously with the rest of the scene:
+       * duration: 460ms
+       * delay: 760ms (slightly after .rainbow_outer which starts at 720ms so the arcs cascade naturally)
+       * easing: ease-out with a small elastic feel (cubic-bezier tuned for a snappy but soft pop)
+   - Performance: keyframes only animate typed custom properties (lanes). The composer rule composes the real transform
+     from those lanes (no 'transform' inside @keyframes) so the browser can optimize compositing.
+   - Transform origin: center bottom (50% 100%) so arc grows from the same baseline as hills/rainbow.
+   - Collision avoidance: vertical translate and scale values are modest and anchored to the element's fill-box
+     so the pink arc will not intersect or clip foreground hills while animating.
+*/
+
+/* Typed lanes for .rainbow_pink — add ONCE (kept minimal and numeric/typed for smooth interpolation) */
+@property --rainbow_pink-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --rainbow_pink-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: pushed down so it can "grow" up into place behind hills (per plan) */
+  initial-value: 44px;
+}
+@property --rainbow_pink-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* We'll introduce a small micro-rotation to break symmetry (-1.5deg -> 0deg) */
+  initial-value: 0deg;
+}
+@property --rainbow_pink-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --rainbow_pink-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  /* start collapsed vertically so the arc sweeps up */
+  initial-value: 0;
+}
+@property --rainbow_pink-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Primary pop keyframes (ONLY animate the custom-property lanes).
+   - Sequence is shortened and snappier than outer arc to give the middle arc a lively arrival.
+   - No 'transform' inside keyframes; the composer rule below composes the actual transform.
+*/
+@keyframes rainbow_pink_pop_460 {
+  0% {
+    --rainbow_pink-ty1: 44px;
+    --rainbow_pink-sy1: 0;
+    --rainbow_pink-sx1: 1;
+    --rainbow_pink-op1: 0;
+  }
+  45% {
+    /* rise into view quickly */
+    --rainbow_pink-ty1: 10px;
+    --rainbow_pink-sy1: 0.88;
+    --rainbow_pink-op1: 0.7;
+  }
+  75% {
+    /* small lively overshoot for tactile bounce */
+    --rainbow_pink-ty1: 0px;
+    --rainbow_pink-sy1: 1.06;
+    --rainbow_pink-op1: 1;
+  }
+  100% {
+    /* settle into final pose */
+    --rainbow_pink-ty1: 0px;
+    --rainbow_pink-sy1: 1;
+    --rainbow_pink-sx1: 1;
+    --rainbow_pink-op1: 1;
+  }
+}
+
+/* Micro-rotation wobble to avoid mechanical symmetry.
+   - Very small angles; finishes at 0deg. Kept separate to keep the pop focused on scale/position/opacity.
+   - Note: we declare rotation here only as a lane so the computed transform stays in one place.
+*/
+@keyframes rainbow_pink_wobble_460 {
+  0% {
+    --rainbow_pink-rot1: -1.5deg;
+  }
+  30% {
+    --rainbow_pink-rot1: 0.6deg;
+  }
+  100% {
+    --rainbow_pink-rot1: 0deg;
+  }
+}
+
+/* Composer rule for the .rainbow_pink SVG element.
+   - Ensures first-paint matches @property initial-values to avoid flicker.
+   - Composes the final transform from the lanes (single source-of-truth).
+   - Uses transform-box: fill-box + transform-origin: 50% 100% (center bottom baseline).
+   - Two coordinated animations (index-aligned): pop (position/scale/opacity) + wobble (micro-rotation).
+*/
+.rainbow_pink {
+  /* match @property initial-values to ensure correct first paint */
+  --rainbow_pink-tx1: 0px;
+  --rainbow_pink-ty1: 44px;
+  --rainbow_pink-rot1: 0deg;
+  --rainbow_pink-sx1: 1;
+  --rainbow_pink-sy1: 0;
+  --rainbow_pink-op1: 0;
+
+  /* Make transforms relative to the element's fill geometry and anchor at the bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose transform from the lanes (no transform in keyframes). This keeps runtime work minimal. */
+  transform:
+    translate(var(--rainbow_pink-tx1, 0px), var(--rainbow_pink-ty1, 0px))
+    rotate(var(--rainbow_pink-rot1, 0deg))
+    scale(var(--rainbow_pink-sx1, 1), var(--rainbow_pink-sy1, 1));
+
+  /* Opacity follows the lane so the browser can composite this efficiently */
+  opacity: var(--rainbow_pink-op1, 1);
+
+  /* Hints for the UA: only transform & opacity change (keeps compositing efficient) */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations applied using longhand with aligned indices:
+     - 0: pop (primary)   — duration: 460ms, easing: cubic-bezier tuned for a soft elastic ease-out
+     - 1: wobble (rotate) — duration: 460ms, easing: ease-in-out (subtle)
+     Both start at 760ms so the middle arc follows the outer arc in a natural cascade (outer: 720ms).
+  */
+  animation-name: rainbow_pink_pop_460, rainbow_pink_wobble_460;
+  animation-duration: 460ms, 460ms;
+  /* ease-out with a mild elastic curve to feel snappy but not jarring */
+  animation-timing-function: cubic-bezier(0.22, 1.18, 0.36, 1), ease-in-out;
+  animation-delay: 760ms, 760ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - Delay (760ms) intentionally places the pink arc just after .rainbow_outer (720ms) so the three rainbow bands
+     read as a coherent, layered appearance from back → front.
+   - Vertical translate + scale values are modest and anchored to the element's fill-box (transform-box: fill-box,
+     transform-origin: 50% 100%) to avoid intersecting foreground hills and to keep the motion local to the arcs.
+   - All animation work is done on typed custom properties (lanes). The single transform in the composer rule
+     converts those lanes to a real transform each frame — this is optimal for complex SVG scenes.
+*/
+
+/* rainbow_blue — inner arc entrance (lane-based, self-contained)
+   - Adds typed @property lanes ONCE and a composer rule that composes the real transform.
+   - Animation plan (per spec):
+       * duration: 420ms
+       * delay: 800ms
+       * easing: cubic-bezier(0.22, 1, 0.36, 1)
+       * transform-origin: center bottom (50% 100%)
+       * behavior: scaleY 0 -> 1 with small overshoot, translateY 48px -> 0, opacity 0 -> 1
+   - Performance & collision-avoidance:
+       * Keyframes animate only typed custom properties (lanes). No 'transform' inside @keyframes.
+       * The .rainbow_blue rule composes transform once per frame from the lanes (single source of truth).
+       * transform-box: fill-box + transform-origin: 50% 100% anchors growth to the rainbow baseline
+         making the motion local and preventing visible baseline drift or collisions with foreground hills.
+   - Naming: all keyframe names are unique to avoid conflicts with existing rules.
+   - Two coordinated animations applied:
+       1) rb_pop_420   — motion + opacity (primary)
+       2) rb_wobble_420 — tiny rotation settle (subtle, keeps arc from looking rigid)
+*/
+
+/* Typed lanes for .rainbow_blue (add ONCE).
+   Using the "first free lanes" naming convention for this element:
+   tx1, ty1, rot1, sx1, sy1, op1
+*/
+@property --rainbow_blue-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --rainbow_blue-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: pushed down so arc can rise into place (per plan) */
+  initial-value: 48px;
+}
+@property --rainbow_blue-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* start neutral; tiny wobble will animate from here */
+  initial-value: 0deg;
+}
+@property --rainbow_blue-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --rainbow_blue-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial collapsed vertically so the arc scales up in Y */
+  initial-value: 0;
+}
+@property --rainbow_blue-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Primary pop keyframes
+   - Animate ONLY the custom-property lanes (translateY, scaleY, opacity).
+   - Sequence:
+       0%  : ty = 48px, sy = 0, opacity = 0
+       60% : ty ~ 6px, sy ~ 1.08 (overshoot), opacity ~ 1
+       85% : ty ~ 2.5px, sy ~ 0.98 (recoil)
+       100%: ty = 0, sy = 1, opacity = 1
+   - No 'transform' inside keyframes (keeps animation compositor-friendly).
+*/
+@keyframes rb_pop_420 {
+  0% {
+    --rainbow_blue-ty1: 48px;
+    --rainbow_blue-sy1: 0;
+    --rainbow_blue-op1: 0;
+  }
+  40% {
+    /* rising into view */
+    --rainbow_blue-ty1: 18px;
+    --rainbow_blue-sy1: 0.88;
+    --rainbow_blue-op1: 0.7;
+  }
+  60% {
+    /* small upbeat overshoot for a crisp pop */
+    --rainbow_blue-ty1: 6px;
+    --rainbow_blue-sy1: 1.08;
+    --rainbow_blue-op1: 1;
+  }
+  85% {
+    /* gentle settle/recoil */
+    --rainbow_blue-ty1: 2.5px;
+    --rainbow_blue-sy1: 0.98;
+    --rainbow_blue-op1: 1;
+  }
+  100% {
+    /* final settled pose */
+    --rainbow_blue-ty1: 0px;
+    --rainbow_blue-sy1: 1;
+    --rainbow_blue-op1: 1;
+  }
+}
+
+/* Tiny rotation wobble so the arc doesn't feel perfectly mechanical.
+   - Very small angles; finishes at 0deg so there is no long-term tilt.
+   - Kept subtle to avoid visual distraction and to maintain coherence with other rainbow arcs.
+*/
+@keyframes rb_wobble_420 {
+  0% {
+    --rainbow_blue-rot1: 0deg;
+  }
+  25% {
+    --rainbow_blue-rot1: -1.2deg;
+  }
+  60% {
+    --rainbow_blue-rot1: 0.5deg;
+  }
+  100% {
+    --rainbow_blue-rot1: 0deg;
+  }
+}
+
+/* Composer rule for the .rainbow_blue SVG element.
+   - Ensures the element paints in the declared initial pose to avoid flicker on first paint.
+   - Composes the real transform from the animated lanes (single place to update transform).
+   - transform-box: fill-box and transform-origin: 50% 100% anchor the arc to the rainbow baseline so the motion
+     remains local and avoids intersecting foreground hills during animation.
+   - Two coordinated animations (index-aligned) applied with animation longhand for clarity.
+*/
+.rainbow_blue {
+  /* match the @property initial-values for first-paint correctness */
+  --rainbow_blue-tx1: 0px;
+  --rainbow_blue-ty1: 48px;
+  --rainbow_blue-rot1: 0deg;
+  --rainbow_blue-sx1: 1;
+  --rainbow_blue-sy1: 0;
+  --rainbow_blue-op1: 0;
+
+  /* Reference transforms to the element's fill geometry and anchor at center-bottom */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from the lanes (no transform inside keyframes) */
+  transform:
+    translate(var(--rainbow_blue-tx1, 0px), var(--rainbow_blue-ty1, 0px))
+    rotate(var(--rainbow_blue-rot1, 0deg))
+    scale(var(--rainbow_blue-sx1, 1), var(--rainbow_blue-sy1, 1));
+
+  /* Opacity follows the lane variable for efficient compositing */
+  opacity: var(--rainbow_blue-op1, 1);
+
+  /* Performance hint: keep will-change tight to the properties that will animate */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations (index-aligned):
+       0: rb_pop_420   — primary pop (position / scaleY / opacity)
+       1: rb_wobble_420 — tiny rotation settle
+     Duration: 420ms for both, Delay: 800ms for both (staggered relative to other rainbow arcs in the scene).
+     Easing: cubic-bezier(0.22,1,0.36,1) for the pop (snappy organic), ease-in-out for the wobble.
+  */
+  animation-name: rb_pop_420, rb_wobble_420;
+  animation-duration: 420ms, 420ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1), ease-in-out;
+  animation-delay: 800ms, 800ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - Delay (800ms) and the modest translateY (48px -> 0) were chosen to sit harmoniously with the other rainbow arcs:
+     rainbow_outer (720ms), rainbow_pink (760ms) — this small stagger (~40ms between arcs) yields a pleasing cascade.
+   - Values for translateY and overshoot are intentionally modest so the inner arc rises up behind hills without
+     visually colliding with foreground shapes. Anchoring at the bottom center via transform-origin keeps the arc's
+     baseline stable.
+   - Only typed custom properties and opacity are animated; the computed transform is applied in one place (the composer rule),
+     which minimizes work the browser must do per frame and yields smooth animations even in complex SVG documents.
+*/
+
+/* sun_core — lane-based entrance + radial pulse
+   - Self-contained. Adds typed @property lanes ONCE and a composer rule that composes the real transform.
+   - Behavior (per spec):
+       * gentle pop: scale 0.6 -> 1.12 (60%) -> 0.98 -> 1
+       * micro vertical motion: start slightly down, brief upward overshoot (~-6px at peak) to read like a sunrise
+       * opacity: 0 -> 1
+       * very soft radial glow at the pop peak that quickly fades
+       * duration: 480ms, delay: 860ms, easing: cubic-bezier(0.2,1,0.22,1)
+       * transform-origin: center bottom (so the sun rises from the baseline)
+   - Performance notes:
+       * Keyframes animate ONLY typed custom properties (lanes). No `transform` inside @keyframes.
+       * The single composer rule builds transform from lanes once per frame.
+       * will-change kept tight: transform, opacity, filter.
+   - Collision avoidance:
+       * translate/scale/blur values are modest and anchored to the element's fill-box so the sun doesn't intersect foreground hills.
+       * Keyframe names are unique and do not conflict with existing rules in the stylesheet.
+*/
+
+/* Typed lanes for .sun_core — add ONCE */
+@property --sun_core-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sun_core-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* start slightly lower so the pop reads as a rise; will animate to small negative overshoot at peak */
+  initial-value: 6px;
+}
+@property --sun_core-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --sun_core-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.6;
+}
+@property --sun_core-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.6;
+}
+@property --sun_core-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Glow lanes (secondary pulse) */
+@property --sun_core-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+@property --sun_core-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Primary pop keyframes (ONLY animates custom-property lanes — no `transform` here).
+   - Unique name to avoid conflicts.
+*/
+@keyframes sc_pop_480 {
+  0% {
+    --sun_core-ty1: 6px;
+    --sun_core-sx1: 0.6;
+    --sun_core-sy1: 0.6;
+    --sun_core-op1: 0;
+  }
+  /* peak with brief upward overshoot and scale overshoot */
+  60% {
+    --sun_core-ty1: -6px;        /* small upward overshoot to feel like a sunrise */
+    --sun_core-sx1: 1.12;
+    --sun_core-sy1: 1.12;
+    --sun_core-op1: 1;
+  }
+  /* soft recoil below final to make the motion organic */
+  85% {
+    --sun_core-ty1: 2px;
+    --sun_core-sx1: 0.98;
+    --sun_core-sy1: 0.98;
+    --sun_core-op1: 1;
+  }
+  /* final settled pose anchored to baseline */
+  100% {
+    --sun_core-ty1: 0px;
+    --sun_core-sx1: 1;
+    --sun_core-sy1: 1;
+    --sun_core-op1: 1;
+  }
+}
+
+/* Secondary glow/pulse keyframes (only animates glow lanes: op2 + blur1).
+   - Glow peaks near the visual pop (slightly before/at 60%) and quickly fades.
+   - Kept separate so the pop timeline remains focused on position/scale/opacity.
+*/
+@keyframes sc_glow_480 {
+  0% {
+    --sun_core-op2: 0;
+    --sun_core-blur1: 0px;
+  }
+  /* glow peak timed with pop; low alpha & modest blur for a soft radial catch-light */
+  55% {
+    --sun_core-op2: 0.64;        /* subtle, not a white glare */
+    --sun_core-blur1: 6px;
+  }
+  /* quick fade so the glow reads like a pulse rather than persistent bloom */
+  75% {
+    --sun_core-op2: 0.12;
+    --sun_core-blur1: 2px;
+  }
+  100% {
+    --sun_core-op2: 0;
+    --sun_core-blur1: 0px;
+  }
+}
+
+/* Composer rule for the .sun_core SVG element.
+   - Ensures first-paint matches @property initial-values to avoid flicker.
+   - Composes the real transform from lanes (single place to update transform).
+   - transform-box: fill-box and transform-origin: 50% 100% anchor the sun to the baseline so it "rises" naturally.
+   - Two coordinated animations applied (pop + glow) using longhand with aligned indexes.
+*/
+.sun_core {
+  /* initial lane values (mirror @property initial-values for correct first paint) */
+  --sun_core-tx1: 0px;
+  --sun_core-ty1: 6px;
+  --sun_core-rot1: 0deg;
+  --sun_core-sx1: 0.6;
+  --sun_core-sy1: 0.6;
+  --sun_core-op1: 0;
+  --sun_core-op2: 0;
+  --sun_core-blur1: 0px;
+
+  /* make transforms relative to the element's fill geometry and anchor at bottom center */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose transform from lanes (no 'transform' inside keyframes) */
+  transform:
+    translate(var(--sun_core-tx1, 0px), var(--sun_core-ty1, 0px))
+    rotate(var(--sun_core-rot1, 0deg))
+    scale(var(--sun_core-sx1, 1), var(--sun_core-sy1, 1));
+
+  /* primary opacity controlled by op1 lane */
+  opacity: var(--sun_core-op1, 1);
+
+  /* soft radial glow implemented with drop-shadow whose blur & alpha are driven by lanes.
+     Using a white color close to the sun fill (#f0f4f6) keeps the glow coherent. */
+  filter: drop-shadow(0 0 var(--sun_core-blur1, 0px) rgba(240,244,246, var(--sun_core-op2, 0)));
+
+  /* Hint the browser to optimize for the small set of animated properties */
+  will-change: transform, opacity, filter;
+
+  /* Two coordinated animations applied with aligned indexes:
+     - 0: sc_pop_480  (primary pop: translateY/scale/opacity)
+     - 1: sc_glow_480 (secondary radial pulse: glow opacity + blur)
+     Timing chosen to sync with the rainbow arcs (these start at ~720-800ms in the stylesheet),
+     so the sun arrives slightly after the rainbow animations begin.
+  */
+  animation-name: sc_pop_480, sc_glow_480;
+  animation-duration: 480ms, 480ms;
+  animation-timing-function: cubic-bezier(0.2, 1, 0.22, 1), cubic-bezier(0.2, 1, 0.22, 1);
+  animation-delay: 860ms, 860ms;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - Delay (860ms) is intentionally placed after the rainbow arcs (outer ~720ms, others ~760-800ms),
+     so the sun feels like it follows the rainbow reveal and settles into the scene.
+   - translateY, scale and blur values are modest and anchored to the element's fill-box to avoid collisions
+     with foreground hills and plants while animating.
+   - All animations operate on typed custom properties only (lanes) so the browser can efficiently composite the final transform.
+*/
+
+/* cloud_top_right — lane-based entrance + gentle infinite bob
+   - Self-contained: typed @property lanes + keyframes animate ONLY those lanes.
+   - Composer rule composes the real transform from the lanes (no `transform` inside @keyframes).
+   - Entrance: translateX 36px -> 0, translateY -28px -> 0, scale 0.94 -> 1, opacity 0 -> 0.98.
+     Slight rotation during entrance: 0deg -> 1.5deg -> 0deg by 50% to soften the path.
+     Duration: 640ms, Delay: 980ms, Easing: cubic-bezier(0.25, 0.8, 0.25, 1).
+   - Bob: subtle vertical loop (0 -> -6px -> 0) to add life after entrance completes.
+     Duration: 3000ms, infinite, very low amplitude.
+   - Transform-origin chosen as center (50% 50%) so the cloud moves/rotates around its visually-central point.
+   - Performance: keyframes animate only custom properties and opacity. The computed transform is assembled once
+     in the composer rule; will-change hints provided.
+   - Collision avoidance:
+     * Entrance translate values are modest and anchored to the element's fill-box so the cloud arrives
+       from outside the right/top while avoiding collisions with the rainbow/hills.
+     * Bob uses only a separate vertical lane (--cloud_top_right-ty2) composed as a second translate so the
+       entrance and idle motion are orthogonal and easy to reason about.
+*/
+
+/* Typed lanes for cloud_top_right (add ONCE) */
+@property --cloud_top_right-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: shifted right 36px so it floats in from the right edge of the composition */
+  initial-value: 36px;
+}
+@property --cloud_top_right-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: shifted up -28px so it floats in from above */
+  initial-value: -28px;
+}
+@property --cloud_top_right-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --cloud_top_right-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial slight shrink so the entrance feels airy */
+  initial-value: 0.94;
+}
+@property --cloud_top_right-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.94;
+}
+@property --cloud_top_right-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Idle / bob lane (separate lane so entrance + idle compose cleanly) */
+@property --cloud_top_right-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Primary entrance keyframes (ONLY animate custom properties).
+   - No 'transform' here — we animate lanes and compose later in the .cloud_top_right rule.
+   - Unique name to avoid collisions.
+*/
+@keyframes ctr_cloud_top_right_pop_640 {
+  0% {
+    --cloud_top_right-tx1: 36px;
+    --cloud_top_right-ty1: -28px;
+    --cloud_top_right-sx1: 0.94;
+    --cloud_top_right-sy1: 0.94;
+    --cloud_top_right-rot1: 0deg;
+    --cloud_top_right-op1: 0;
+  }
+  50% {
+    /* arrive near final position with a tiny rotation to soften the path */
+    --cloud_top_right-tx1: 6px;
+    --cloud_top_right-ty1: -6px;
+    --cloud_top_right-sx1: 0.995;
+    --cloud_top_right-sy1: 0.995;
+    --cloud_top_right-rot1: 1.5deg; /* subtle tilt mid-flight */
+    --cloud_top_right-op1: 0.72;
+  }
+  85% {
+    /* settle into place */
+    --cloud_top_right-tx1: 0px;
+    --cloud_top_right-ty1: 2px;
+    --cloud_top_right-sx1: 1;
+    --cloud_top_right-sy1: 1;
+    --cloud_top_right-rot1: 0.35deg;
+    --cloud_top_right-op1: 0.98;
+  }
+  100% {
+    --cloud_top_right-tx1: 0px;
+    --cloud_top_right-ty1: 0px;
+    --cloud_top_right-sx1: 1;
+    --cloud_top_right-sy1: 1;
+    --cloud_top_right-rot1: 0deg;
+    --cloud_top_right-op1: 0.98;
+  }
+}
+
+/* Subtle infinite bob — only animates the second vertical lane (ty2).
+   - Using a long duration (3s) and small amplitude (-6px) so the motion is unobtrusive.
+   - Starts after the entrance completes (animation-delay calc to align with entrance delay+duration).
+   - We keep keyframe simple: 0% -> 50% -> 100%.
+*/
+@keyframes ctr_cloud_top_right_bob_3000 {
+  0% {
+    --cloud_top_right-ty2: 0px;
+  }
+  50% {
+    --cloud_top_right-ty2: -6px;
+  }
+  100% {
+    --cloud_top_right-ty2: 0px;
+  }
+}
+
+/* Composer rule for the .cloud_top_right SVG element.
+   - Mirrors @property initial-values to ensure correct first paint (avoid flicker).
+   - Composes the runtime transform from all lanes (entrance lanes + idle lane) in one place.
+   - transform-box: fill-box + transform-origin: center so motion is visually coherent with the cloud artwork.
+   - Two coordinated animations applied with index-alignment:
+       0: ctr_cloud_top_right_pop_640  (entrance)
+       1: ctr_cloud_top_right_bob_3000 (idle bob)
+*/
+.cloud_top_right {
+  /* ensure first-paint matches @property initial-values */
+  --cloud_top_right-tx1: 36px;
+  --cloud_top_right-ty1: -28px;
+  --cloud_top_right-rot1: 0deg;
+  --cloud_top_right-sx1: 0.94;
+  --cloud_top_right-sy1: 0.94;
+  --cloud_top_right-op1: 0;
+  --cloud_top_right-ty2: 0px;
+
+  /* Make transforms relative to the element's fill geometry and anchor visually at its center */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose the final transform from the lanes.
+     - translate(tx1, ty1) handles entrance translation
+     - translate(0, ty2) is the idle bob applied on top
+     - rotate + scale lanes are composed here as well.
+     Keeping composition in one rule avoids transforms in keyframes and helps the UA optimize. */
+  transform:
+    translate(var(--cloud_top_right-tx1, 0px), var(--cloud_top_right-ty1, 0px))
+    translate(0px, var(--cloud_top_right-ty2, 0px))
+    rotate(var(--cloud_top_right-rot1, 0deg))
+    scale(var(--cloud_top_right-sx1, 1), var(--cloud_top_right-sy1, 1));
+
+  /* Opacity follows the primary lane so it can be composited efficiently */
+  opacity: var(--cloud_top_right-op1, 1);
+
+  /* Hint to the browser: transform & opacity are animated (keeps compositing fast) */
+  will-change: transform, opacity;
+
+  /* Two coordinated animations applied with longhand and aligned indices.
+     - Index 0 (entrance): single-run, forwards to hold final pose.
+     - Index 1 (bob): infinite, starts after entrance completes using calc(entrance-delay + entrance-duration).
+       Using calc keeps the timing explicit and tied to the entrance timing in this rule.
+  */
+  animation-name: ctr_cloud_top_right_pop_640, ctr_cloud_top_right_bob_3000;
+  animation-duration: 640ms, 3000ms;
+  animation-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1), ease-in-out;
+  animation-delay: 980ms, calc(980ms + 640ms);
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: forwards, both;
+  animation-direction: normal, normal;
+  animation-play-state: running, running;
+}
+
+/* Coherence notes:
+   - Delay (980ms) makes this cloud the last major element to arrive, matching the scene staging (cloud arrives after sun/rainbow/hills).
+   - Entrance values are intentionally gentle so the cloud doesn't intersect the rainbow/hills while moving into place.
+   - Idle bob is low amplitude and long-period to provide life without being distracting.
+   - All work is performed on typed custom properties (lanes); the computed transform is assembled in one place (composer rule)
+     keeping runtime overhead minimal even in complex SVGs.
+*/
+
+/* decorative_shadow_under_hills — subtle fade + blur entrance (self-contained)
+   - Role: faint overlapping shadows where hills meet the ground.
+   - Behavior: opacity 0 -> 0.45, translateY 12px -> 0, blur 6px -> 2px
+   - Timing: 420ms duration, 420ms delay (staged shortly after hills begin).
+   - Easing: ease-out. Transform-origin anchored to the baseline so the shadow reads as contact with the hills.
+   - Performance: keyframes animate ONLY typed custom properties (lanes). The composer rule composes the final transform
+     once per frame. will-change hints kept tight (transform, opacity, filter).
+   - Collision avoidance: modest translateY and blur values, anchored to center-bottom (50% 100%) so the shadow
+     doesn't visually slip relative to the hills or ground during animation.
+   - This block is safe to drop into the existing stylesheet and runs automatically on page load.
+*/
+
+/* Typed custom-property lanes for .decorative_shadow_under_hills — add ONCE */
+@property --decorative_shadow_under_hills-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --decorative_shadow_under_hills-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial vertical offset: pushed down 12px so it can "settle" into contact */
+  initial-value: 12px;
+}
+@property --decorative_shadow_under_hills-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --decorative_shadow_under_hills-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --decorative_shadow_under_hills-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --decorative_shadow_under_hills-op1 {
+  syntax: '<number>';
+  inherits: false;
+  /* initial fully invisible */
+  initial-value: 0;
+}
+@property --decorative_shadow_under_hills-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial blur to keep the entrance soft */
+  initial-value: 6px;
+}
+
+/* Primary reveal keyframes (ONLY animate the lanes; no 'transform' here) */
+@keyframes dsu_hills_reveal_420 {
+  0% {
+    --decorative_shadow_under_hills-ty1: 12px;
+    --decorative_shadow_under_hills-op1: 0;
+    --decorative_shadow_under_hills-blur1: 6px;
+    --decorative_shadow_under_hills-sx1: 1;
+    --decorative_shadow_under_hills-sy1: 1;
+    --decorative_shadow_under_hills-rot1: 0deg;
+    --decorative_shadow_under_hills-tx1: 0px;
+  }
+  70% {
+    /* most of the fade-in and settling happen before the final soft settle */
+    --decorative_shadow_under_hills-ty1: 2.8px;
+    --decorative_shadow_under_hills-op1: 0.38;
+    --decorative_shadow_under_hills-blur1: 3px;
+  }
+  100% {
+    /* final subtle contact pose: low opacity and reduced blur */
+    --decorative_shadow_under_hills-ty1: 0px;
+    --decorative_shadow_under_hills-op1: 0.45;
+    --decorative_shadow_under_hills-blur1: 2px;
+  }
+}
+
+/* Composer rule for the SVG element with class 'decorative_shadow_under_hills'
+   - Ensures first paint matches @property initial-values to avoid flicker.
+   - Composes the real transform from the lanes (single place for transforms; no transform in keyframes).
+   - transform-box: fill-box and transform-origin: 50% 100% anchor the shadow to the hills' baseline.
+   - Uses filter: blur(...) driven by the blur lane to produce a soft, GPU-friendly shadow blur.
+*/
+.decorative_shadow_under_hills {
+  /* mirror the @property initial-values so the element paints in the intended start pose */
+  --decorative_shadow_under_hills-tx1: 0px;
+  --decorative_shadow_under_hills-ty1: 12px;
+  --decorative_shadow_under_hills-rot1: 0deg;
+  --decorative_shadow_under_hills-sx1: 1;
+  --decorative_shadow_under_hills-sy1: 1;
+  --decorative_shadow_under_hills-op1: 0;
+  --decorative_shadow_under_hills-blur1: 6px;
+
+  /* Make transforms relative to the element's fill geometry and anchor at the baseline (center-bottom)
+     so the shadow settles under the hills without sliding relative to the ground. */
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+
+  /* Compose the transform from the animated lanes (no transform inside keyframes). */
+  transform:
+    translate(var(--decorative_shadow_under_hills-tx1, 0px), var(--decorative_shadow_under_hills-ty1, 0px))
+    rotate(var(--decorative_shadow_under_hills-rot1, 0deg))
+    scale(var(--decorative_shadow_under_hills-sx1, 1), var(--decorative_shadow_under_hills-sy1, 1));
+
+  /* Opacity follows the lane so the browser can composite it efficiently */
+  opacity: var(--decorative_shadow_under_hills-op1, 1);
+
+  /* Soft blur driven by the blur lane. This keeps the shadow edges gentle and avoids harsh lines. */
+  filter: blur(var(--decorative_shadow_under_hills-blur1, 0px));
+
+  /* Hint the UA to optimize for these properties only */
+  will-change: transform, opacity, filter;
+
+  /* Single coordinated entrance animation:
+     - name: dsu_hills_reveal_420
+     - duration: 420ms
+     - timing-function: ease-out (soft stop to feel natural)
+     - delay: 420ms (staged shortly after hills begin: hill_left ~260ms, hill_front ~320ms)
+     - fill-mode: forwards so the subtle shadow remains at its final pose
+  */
+  animation-name: dsu_hills_reveal_420;
+  animation-duration: 420ms;
+  animation-timing-function: ease-out;
+  animation-delay: 420ms;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-direction: normal;
+  animation-play-state: running;
+}
+
+/* Coherence notes:
+   - Delay (420ms) places this reveal after the main hill pops (hill_left starts 260ms, hill_front 320ms), so the shadows
+     appear once the hills have largely settled — this avoids visual overlap while pitching the shadow as a "contact" accent.
+   - Values are intentionally modest (ty 12px -> 0, opacity up to 0.45, blur 6px -> 2px) to avoid heavy contrast or collisions
+     with foreground details (plants, ground). Anchoring to the bottom-center ensures the shadow remains visually tied to the hills.
+   - The animation only updates custom properties and opacity/filter; no 'transform' is declared inside keyframes per the project's
+     collision-avoidance guidelines. This keeps runtime work light and renders smoothly even in complex SVG scenes.
+*/
+
+/* static_background — intentionally static / no-animation composer
+   Role & rationale:
+     - The design calls for a visually stable background that does not compete with foreground motion.
+     - To be explicit and future-proof we declare typed "lane" custom-properties (using @property)
+       and a single composer rule that composes the element's transform/filter from those lanes.
+     - IMPORTANT: by design we do NOT attach any animation to .static_background here.
+       This keeps the background visually stable so entrance animations on ground, hills, plants,
+       rainbow and sun remain the focal point and avoid visual collisions.
+     - The lanes exist so a later iteration can animate the background using the same performant
+       pattern used elsewhere ( animate ONLY the custom properties; compose transform in one rule ).
+     - transform-box + transform-origin chosen so the background's geometry stays visually anchored
+       (center of the SVG). The background sits behind other layers and therefore uses center anchoring
+       to avoid baseline drift with foreground elements.
+     - No @keyframes are defined below for this class (per the "no animation planned" instruction).
+*/
+
+/* Typed lane declarations (ADD ONCE). Using the lane names requested.
+   These are intentionally neutral (identity) so the element paints exactly as authored.
+*/
+@property --static_background-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --static_background-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --static_background-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --static_background-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --static_background-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --static_background-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --static_background-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --static_background-bright1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer rule — single place that composes transform/filter/opacity from lanes.
+   - Matches the "lanes" pattern used across the stylesheet.
+   - No animation-* properties declared here: the background remains static on page load.
+   - transform-box: fill-box ensures transforms (if later used) reference the element geometry inside the SVG.
+   - transform-origin: 50% 50% (center) chosen because the background is a canvas layer and should remain centered
+     relative to the whole composition so foreground entrances (which are anchored at bottom-center) don't
+     visually collide with any background motion.
+*/
+.static_background {
+  /* Mirror the @property initial-values so the element paints as authored on first paint. */
+  --static_background-tx1: 0px;
+  --static_background-ty1: 0px;
+  --static_background-rot1: 0deg;
+  --static_background-sx1: 1;
+  --static_background-sy1: 1;
+  --static_background-op1: 1;
+  --static_background-blur1: 0px;
+  --static_background-bright1: 1;
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose the runtime transform from lanes (no transform in keyframes per collision-avoidance guideline). */
+  transform:
+    translate(var(--static_background-tx1, 0px), var(--static_background-ty1, 0px))
+    rotate(var(--static_background-rot1, 0deg))
+    scale(var(--static_background-sx1, 1), var(--static_background-sy1, 1));
+
+  /* Opacity / subtle visual tuning come from lanes so they can be animated later if desired. */
+  opacity: var(--static_background-op1, 1);
+
+  /* Gentle visual effect support (driven by lanes). Kept identity here to avoid any runtime work. */
+  filter: blur(var(--static_background-blur1, 0px)) brightness(var(--static_background-bright1, 1));
+
+  /* Intentionally do NOT set will-change or animation properties — leave this element composited normally.
+     This avoids forcing the UA to create compositing layers for a layer that should remain visually stable. */
+}
+
+/* Coherence notes:
+   - Existing entrance animations (ground_base, plants, hills, rainbow, sun, clouds) begin immediately or are staggered
+     between 0ms and ~980ms. Keeping the background static prevents any perceived competition for attention and
+     reduces the chance of visual overlap or clipping during the staged arrivals.
+   - If in the future you want a tiny background ambient effect (very low amplitude parallax / breath),
+     add keyframes that animate ONLY the typed lanes above (for example: --static_background-ty1 and --static_background-bright1),
+     and reference them in the .static_background rule using animation longhand with properly aligned indexes.
+     Remember: never put `transform` inside @keyframes — animate the lanes only and compose transform in the rule above.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg height="800px" viewbox="0 0 64 64" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="group">
+    <path class="rainbow_outer" d="M52.84,34.2c.21-1.22,.31-2.46,.31-3.69,0-3.51-.83-6.97-2.42-10.09l-13.72-11.3c-1.99-.57-4.04-.85-6.11-.85-10.27,0-19.21,7.03-21.63,17.02,0,0,.76,16.51,21.52,15.67,20.77-.84,22.04-6.74,22.04-6.74Z" fill="#fdc99c" fill-rule="evenodd" id="target_element_1462732094048">
+    </path>
+    <path class="rainbow_pink" d="M48.35,31.31c.01-.27,.02-.53,.02-.8,0-3.62-1.12-7.14-3.21-10.09l-5.74-5.16c-2.61-1.46-5.54-2.22-8.53-2.22-7.8,0-14.66,5.17-16.8,12.68,0,0,2.33,17.06,17.06,15.05,14.74-2.01,17.2-9.45,17.2-9.45Z" fill="#ffa6c5" fill-rule="evenodd" id="target_element_1462732086128">
+    </path>
+    <path class="rainbow_blue" d="M43.53,29.69c-.24-3.68-2.07-7.08-5.01-9.3l-7.36-2.55c-.09,0-.17,0-.26,0-5.63,0-10.59,3.72-12.16,9.13,0,0,1.44,8.71,11.75,10.48,10.3,1.78,13.05-7.77,13.05-7.77Z" fill="#62d9fa" fill-rule="evenodd" id="target_element_1462732082608">
+    </path>
+    <path class="sun_core" d="M23.39,29.35c.57-3.7,3.76-6.44,7.51-6.44s6.79,2.6,7.46,6.18c0,0,.97,8.56-8.24,7.41-9.21-1.15-6.74-7.16-6.74-7.16Z" fill="#f0f4f6" fill-rule="evenodd" id="target_element_1462732092528">
+    </path>
+    <path class="hill_left" d="M9.01,25.28c-3.97,.01-4.01,2.33-4.01,3.79v19.03L25.64,31.11s-5.6-5.86-16.62-5.83Z" fill="#6df4c0" fill-rule="evenodd" id="target_element_1462731282032">
+    </path>
+    <path class="ground_base" d="M5,48.11v5.89c0,1.96,1.58,3.54,3.54,3.54H55.46c1.96,0,3.54-1.58,3.54-3.54v-5.87l-23.47-4.97-30.53,4.96Z" fill="#feccba" fill-rule="evenodd" id="target_element_1462731281072">
+    </path>
+    <path class="cloud_top_right" d="M56,6.47c1.43,0,2.58,1.15,2.58,2.58s-1.15,2.58-2.58,2.58h-2.56c-1,0-1.8,.81-1.8,1.81s.8,1.81,1.8,1.81h.83c1.43,0,2.58,1.15,2.58,2.58s-1.15,2.58-2.58,2.58h-20.54c-1.43,0-2.58-1.15-2.58-2.58s1.15-2.58,2.58-2.58h6.95c1,0,1.81-.81,1.81-1.81s-.81-1.81-1.81-1.81h-1.1c-1.43,0-2.58-1.15-2.58-2.58s1.15-2.58,2.58-2.58h16.42Z" fill="#d1f1f4" fill-rule="evenodd" id="target_element_1462731291552">
+    </path>
+    <path class="hill_front" d="M59,48.12c0-1.88-.01-4.85-.42-5.87-1.61-4.04-6.84-13.17-21.1-13.17s-28.35,10.35-31.29,14.2c-.99,1.29-1.19,3.45-1.19,4.83H59Z" fill="#9af6d3" fill-rule="evenodd" id="target_element_1462731286752">
+    </path>
+    <path class="hill_front" d="M37.48,29.08c-12.33,1.02-17.02,9.29-18.54,13.07-.4,1.02-1.25,3.98-1.25,5.86l.17,.1H59c0-1.87-.01-4.84-.42-5.86-1.61-4.04-6.84-13.18-21.1-13.18Z" fill="#6df4c0" fill-rule="evenodd" id="target_element_1462731282832">
+    </path>
+    <path class="foreground_plant_right" d="M54.37,43.77c-.55,0-1,.45-1,1v.65c-.33-.17-.74-.39-.74-.39-.53-.13-1.08,.2-1.21,.73-.13,.53,.2,1.08,.73,1.21,0,0,.87,.12,1.26,1.42,.13,.42,.52,.71,.96,.71s.83-.29,.96-.71c.4-1.3,1.26-1.42,1.26-1.42,.53-.13,.86-.68,.73-1.21-.13-.53-.68-.86-1.21-.73,0,0-.41,.21-.74,.38v-.65c0-.55-.45-1-1-1Z" fill="#49cc8c" fill-rule="evenodd" id="target_element_1462731285792">
+    </path>
+    <path class="foreground_plant_center" d="M36.24,43.77c-.55,0-1,.45-1,1v.65c-.33-.17-.74-.38-.74-.38-.53-.13-1.08,.2-1.21,.73-.02,.08-.03,.16-.03,.24,0,.46,.32,.86,.76,.97,0,0,.87,.12,1.26,1.42,.13,.42,.52,.71,.96,.71s.83-.29,.96-.71c.4-1.3,1.26-1.42,1.26-1.42,.53-.13,.86-.68,.73-1.21-.13-.53-.68-.86-1.21-.73,0,0-.41,.21-.74,.39v-.65c0-.55-.45-1-1-1Z" fill="#49cc8c" fill-rule="evenodd" id="target_element_1462731286272">
+    </path>
+    <path class="foreground_plant_right" d="M46.76,53.19c-.55,0-1,.45-1,1v.65c-.33-.17-.74-.38-.74-.38-.53-.13-1.08,.2-1.21,.73-.13,.53,.2,1.08,.73,1.21,0,0,.86,.12,1.26,1.43,.13,.42,.52,.71,.96,.71s.83-.29,.96-.71c.4-1.3,1.26-1.43,1.26-1.43,.53-.13,.86-.68,.73-1.21-.13-.53-.68-.86-1.21-.73,0,0-.41,.21-.74,.39v-.65c0-.55-.45-1-1-1Z" fill="#49cc8c" fill-rule="evenodd" id="target_element_1462731276352">
+    </path>
+    <path class="foreground_plant_center" d="M24.9,53.19c-.55,0-1,.45-1,1v.65c-.33-.17-.74-.39-.74-.39-.53-.13-1.08,.2-1.21,.73-.13,.53,.2,1.08,.73,1.21,0,0,.87,.12,1.26,1.43,.13,.42,.52,.71,.96,.71s.83-.29,.96-.71c.4-1.3,1.26-1.43,1.26-1.43,.53-.13,.86-.68,.73-1.21-.13-.53-.68-.86-1.21-.73,0,0-.41,.21-.74,.38v-.65c0-.55-.45-1-1-1Z" fill="#49cc8c" fill-rule="evenodd" id="target_element_1462731279952">
+    </path>
+   </g>
+  </svg>
+ </body>
+</html>

@@ -1,0 +1,1607 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+
+@property --background_circle-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --background_circle-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --background_circle-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --background_circle-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --background_circle-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --background_circle-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --background_circle-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.background_circle,
+.background_circle > * {
+
+  --background_circle-tx1: 0px;
+  --background_circle-tx2: 0px;
+  --background_circle-ty1: 0px;
+  --background_circle-ty2: 0px;
+  --background_circle-rot1: 0deg;
+  --background_circle-rot2: 0deg;
+  --background_circle-sx1: 1;
+  --background_circle-sx2: 1;
+  --background_circle-sy1: 1;
+  --background_circle-sy2: 1;
+  --background_circle-op1: 1;
+  --background_circle-op2: 1;
+  --background_circle-blur1: 0px;
+  --background_circle-blur2: 0px;
+  --background_circle-stroke1: 0;
+  --background_circle-stroke2: 0;
+  --background_circle-bright1: 1;
+  --background_circle-bright2: 1;
+
+  transform-box: fill-box; 
+  transform-origin: 49.6875% 50%;
+
+  transform:
+    translate(var(--background_circle-tx1)) translateY(var(--background_circle-ty1))
+    rotate(var(--background_circle-rot1))
+    scale(var(--background_circle-sx1), var(--background_circle-sy1));
+
+  filter: blur(var(--background_circle-blur1));
+  opacity: var(--background_circle-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes background_circle-hold {
+  0% {
+    --background_circle-tx1: 0px;
+    --background_circle-ty1: 0px;
+    --background_circle-rot1: 0deg;
+    --background_circle-sx1: 1;
+    --background_circle-sy1: 1;
+    --background_circle-op1: 1;
+    --background_circle-blur1: 0px;
+    --background_circle-stroke1: 0;
+    --background_circle-bright1: 1;
+  }
+  100% {
+
+    --background_circle-tx1: 0px;
+    --background_circle-ty1: 0px;
+    --background_circle-rot1: 0deg;
+    --background_circle-sx1: 1;
+    --background_circle-sy1: 1;
+    --background_circle-op1: 1;
+    --background_circle-blur1: 0px;
+    --background_circle-stroke1: 0;
+    --background_circle-bright1: 1;
+  }
+}
+
+.background_circle {
+
+  animation-name: background_circle-hold;
+  animation-duration: 1ms;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+  animation-delay: 0s;
+}
+
+  @property --plus_button_foreground-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+  @property --plus_button_foreground-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+  @property --plus_button_foreground-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --plus_button_foreground-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+  @property --plus_button_foreground-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+  @property --plus_button_foreground-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --plus_button_foreground-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+  .plus_button_foreground,
+  .plus_button_foreground > * {
+
+    --plus_button_foreground-tx1: 0px;
+    --plus_button_foreground-tx2: 0px;
+    --plus_button_foreground-ty1: 0px;
+    --plus_button_foreground-ty2: 0px;
+    --plus_button_foreground-rot1: 0deg;
+    --plus_button_foreground-rot2: 0deg;
+    --plus_button_foreground-sx1: 1;
+    --plus_button_foreground-sx2: 1;
+    --plus_button_foreground-sy1: 1;
+    --plus_button_foreground-sy2: 1;
+    --plus_button_foreground-op1: 1;
+    --plus_button_foreground-op2: 1;
+    --plus_button_foreground-blur1: 0px;
+    --plus_button_foreground-blur2: 0px;
+    --plus_button_foreground-stroke1: 0;
+    --plus_button_foreground-stroke2: 0;
+    --plus_button_foreground-bright1: 1;
+    --plus_button_foreground-bright2: 1;
+
+    transform-box: fill-box;
+
+    transform-origin: 32.8125% 34.375%;
+
+    transform:
+      translateX(var(--plus_button_foreground-tx1))
+      translateY(var(--plus_button_foreground-ty1))
+      rotate(var(--plus_button_foreground-rot1))
+      scale(var(--plus_button_foreground-sx1), var(--plus_button_foreground-sy1));
+
+    filter: blur(var(--plus_button_foreground-blur1)) brightness(var(--plus_button_foreground-bright1));
+
+    opacity: var(--plus_button_foreground-op1);
+
+    will-change: transform, filter, opacity;
+  }
+
+  @keyframes plus_button_foreground-press {
+
+    0% {
+      --plus_button_foreground-ty1: 0px;
+      --plus_button_foreground-sx1: 1;
+      --plus_button_foreground-sy1: 1;
+      --plus_button_foreground-bright1: 1;
+    }
+
+    2% {
+      --plus_button_foreground-ty1: 6px;
+      --plus_button_foreground-sx1: 1.05;
+      --plus_button_foreground-sy1: 0.92;
+      --plus_button_foreground-bright1: 1.06; 
+    }
+
+    5% {
+      --plus_button_foreground-ty1: 8px;
+      --plus_button_foreground-sx1: 1.08;
+      --plus_button_foreground-sy1: 0.90;
+      --plus_button_foreground-bright1: 1.06;
+    }
+
+    9% {
+      --plus_button_foreground-ty1: -6px;
+      --plus_button_foreground-sx1: 0.98;
+      --plus_button_foreground-sy1: 1.05;
+      --plus_button_foreground-bright1: 1.02; 
+    }
+
+    20% {
+      --plus_button_foreground-ty1: 0px;
+      --plus_button_foreground-sx1: 1;
+      --plus_button_foreground-sy1: 1;
+      --plus_button_foreground-bright1: 1;
+    }
+
+    100% {
+      --plus_button_foreground-ty1: 0px;
+      --plus_button_foreground-sx1: 1;
+      --plus_button_foreground-sy1: 1;
+      --plus_button_foreground-bright1: 1;
+    }
+  }
+
+  .plus_button_foreground {
+    animation-name: plus_button_foreground-press;
+    animation-duration: 3.6s; 
+    animation-timing-function: cubic-bezier(.22, .9, .35, 1);
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+    animation-delay: 0s;
+    animation-direction: normal;
+  }
+
+@property --plus_button_shadow-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --plus_button_shadow-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --plus_button_shadow-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --plus_button_shadow-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --plus_button_shadow-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --plus_button_shadow-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --plus_button_shadow-op1  { syntax: '<number>'; inherits: true; initial-value: 0.65; }
+@property --plus_button_shadow-op2  { syntax: '<number>'; inherits: true; initial-value: 0.65; }
+@property --plus_button_shadow-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --plus_button_shadow-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --plus_button_shadow-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --plus_button_shadow-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --plus_button_shadow-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.plus_button_shadow,
+.plus_button_shadow > * {
+
+  --plus_button_shadow-tx1: 0px;
+  --plus_button_shadow-tx2: 0px;
+  --plus_button_shadow-ty1: 0px;
+  --plus_button_shadow-ty2: 0px;
+  --plus_button_shadow-rot1: 0deg;
+  --plus_button_shadow-rot2: 0deg;
+  --plus_button_shadow-sx1: 1;
+  --plus_button_shadow-sx2: 1;
+  --plus_button_shadow-sy1: 1;
+  --plus_button_shadow-sy2: 1;
+  --plus_button_shadow-op1: 0.65;
+  --plus_button_shadow-op2: 0.65;
+  --plus_button_shadow-blur1: 0px;
+  --plus_button_shadow-blur2: 0px;
+  --plus_button_shadow-stroke1: 0;
+  --plus_button_shadow-stroke2: 0;
+  --plus_button_shadow-bright1: 1;
+  --plus_button_shadow-bright2: 1;
+
+  transform-box: fill-box;
+
+  transform-origin: 32.8125% 36%;
+
+  transform:
+    translateX(var(--plus_button_shadow-tx1))
+    translateY(var(--plus_button_shadow-ty1))
+    rotate(var(--plus_button_shadow-rot1))
+    scale(var(--plus_button_shadow-sx1), var(--plus_button_shadow-sy1));
+
+  filter: blur(var(--plus_button_shadow-blur1)) brightness(var(--plus_button_shadow-bright1));
+  opacity: var(--plus_button_shadow-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes plus_button_shadow-follow {
+
+  0% {
+    --plus_button_shadow-ty1: 0px;
+    --plus_button_shadow-sx1: 1;
+    --plus_button_shadow-op1: 0.65;
+  }
+
+  2% {
+    --plus_button_shadow-ty1: 6px;
+    --plus_button_shadow-sx1: 0.96;
+    --plus_button_shadow-op1: 0.55;
+  }
+
+  5% {
+    --plus_button_shadow-ty1: 10px;
+    --plus_button_shadow-sx1: 0.92;
+    --plus_button_shadow-op1: 0.45;
+  }
+
+  9% {
+    --plus_button_shadow-ty1: 2px;
+    --plus_button_shadow-sx1: 1.02;
+    --plus_button_shadow-op1: 0.60;
+  }
+
+  20% {
+    --plus_button_shadow-ty1: 0px;
+    --plus_button_shadow-sx1: 1;
+    --plus_button_shadow-op1: 0.65;
+  }
+
+  100% {
+    --plus_button_shadow-ty1: 0px;
+    --plus_button_shadow-sx1: 1;
+    --plus_button_shadow-op1: 0.65;
+  }
+}
+
+.plus_button_shadow {
+  animation-name: plus_button_shadow-follow;
+  animation-duration: 3.6s;
+
+  animation-timing-function: cubic-bezier(.22,.9,.35,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0s;
+  animation-direction: normal;
+}
+
+@property --minus_button_foreground-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --minus_button_foreground-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --minus_button_foreground-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_foreground-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --minus_button_foreground-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --minus_button_foreground-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_foreground-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.minus_button_foreground,
+.minus_button_foreground > * {
+
+  --minus_button_foreground-tx1: 0px;
+  --minus_button_foreground-tx2: 0px;
+  --minus_button_foreground-ty1: 0px;
+  --minus_button_foreground-ty2: 0px;
+  --minus_button_foreground-rot1: 0deg;
+  --minus_button_foreground-rot2: 0deg;
+  --minus_button_foreground-sx1: 1;
+  --minus_button_foreground-sx2: 1;
+  --minus_button_foreground-sy1: 1;
+  --minus_button_foreground-sy2: 1;
+  --minus_button_foreground-op1: 1;
+  --minus_button_foreground-op2: 1;
+  --minus_button_foreground-blur1: 0px;
+  --minus_button_foreground-blur2: 0px;
+  --minus_button_foreground-stroke1: 0;
+  --minus_button_foreground-stroke2: 0;
+  --minus_button_foreground-bright1: 1;
+  --minus_button_foreground-bright2: 1;
+
+  transform-box: fill-box;
+  transform-origin: 68.75% 40.625%;
+
+  transform:
+    translateX(var(--minus_button_foreground-tx1))
+    translateY(var(--minus_button_foreground-ty1))
+    rotate(var(--minus_button_foreground-rot1))
+    scale(var(--minus_button_foreground-sx1), var(--minus_button_foreground-sy1));
+
+  filter: blur(var(--minus_button_foreground-blur1)) brightness(var(--minus_button_foreground-bright1));
+  opacity: var(--minus_button_foreground-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes minus_button_foreground-press {
+
+  0% {
+    --minus_button_foreground-ty1: 0px;
+    --minus_button_foreground-sx1: 1;
+    --minus_button_foreground-sy1: 1;
+    --minus_button_foreground-bright1: 1;
+  }
+
+  1.51% {
+    --minus_button_foreground-ty1: 5px;
+    --minus_button_foreground-sx1: 1.04;
+    --minus_button_foreground-sy1: 0.93;
+    --minus_button_foreground-bright1: 0.99;
+  }
+
+  4.16% {
+    --minus_button_foreground-ty1: 7px;
+    --minus_button_foreground-sx1: 1.06;
+    --minus_button_foreground-sy1: 0.90;
+    --minus_button_foreground-bright1: 0.96; 
+  }
+
+  8.31% {
+    --minus_button_foreground-ty1: -5px;
+    --minus_button_foreground-sx1: 0.99;
+    --minus_button_foreground-sy1: 1.04;
+    --minus_button_foreground-bright1: 0.99;
+  }
+
+  18.8889% {
+    --minus_button_foreground-ty1: 0px;
+    --minus_button_foreground-sx1: 1;
+    --minus_button_foreground-sy1: 1;
+    --minus_button_foreground-bright1: 1;
+  }
+
+  100% {
+    --minus_button_foreground-ty1: 0px;
+    --minus_button_foreground-sx1: 1;
+    --minus_button_foreground-sy1: 1;
+    --minus_button_foreground-bright1: 1;
+  }
+}
+
+.minus_button_foreground {
+  animation-name: minus_button_foreground-press;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.2,.85,.32,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both; 
+  animation-delay: 0.18s;    
+  animation-direction: normal;
+}
+
+@property --minus_button_shadow-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --minus_button_shadow-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --minus_button_shadow-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_shadow-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_shadow-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_shadow-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_shadow-op1  { syntax: '<number>'; inherits: true; initial-value: 0.6; }
+@property --minus_button_shadow-op2  { syntax: '<number>'; inherits: true; initial-value: 0.6; }
+@property --minus_button_shadow-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --minus_button_shadow-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --minus_button_shadow-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --minus_button_shadow-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --minus_button_shadow-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.minus_button_shadow,
+.minus_button_shadow > * {
+
+  --minus_button_shadow-tx1: 0px;
+  --minus_button_shadow-tx2: 0px;
+  --minus_button_shadow-ty1: 0px;
+  --minus_button_shadow-ty2: 0px;
+  --minus_button_shadow-rot1: 0deg;
+  --minus_button_shadow-rot2: 0deg;
+  --minus_button_shadow-sx1: 1;
+  --minus_button_shadow-sx2: 1;
+  --minus_button_shadow-sy1: 1;
+  --minus_button_shadow-sy2: 1;
+  --minus_button_shadow-op1: 0.6;    
+  --minus_button_shadow-op2: 0.6;
+  --minus_button_shadow-blur1: 0px;
+  --minus_button_shadow-blur2: 0px;
+  --minus_button_shadow-bright1: 1;
+  --minus_button_shadow-bright2: 1;
+  --minus_button_shadow-stroke1: 0;
+  --minus_button_shadow-stroke2: 0;
+
+  transform-box: fill-box;
+
+  transform-origin: 68.75% 42%;
+
+  transform:
+    translateX(var(--minus_button_shadow-tx1))
+    translateY(var(--minus_button_shadow-ty1))
+    rotate(var(--minus_button_shadow-rot1))
+    scale(var(--minus_button_shadow-sx1), var(--minus_button_shadow-sy1));
+
+  filter: blur(var(--minus_button_shadow-blur1)) brightness(var(--minus_button_shadow-bright1));
+  opacity: var(--minus_button_shadow-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes minus_button_shadow-sync {
+
+  0% {
+    --minus_button_shadow-ty1: 0px;
+    --minus_button_shadow-sx1: 1;
+    --minus_button_shadow-op1: 0.6;
+    --minus_button_shadow-blur1: 0px;
+  }
+
+  8% {
+    --minus_button_shadow-ty1: 9px;
+    --minus_button_shadow-sx1: 0.9;
+    --minus_button_shadow-op1: 0.42;
+    --minus_button_shadow-blur1: 0px; 
+  }
+
+  22% {
+
+    --minus_button_shadow-ty1: 9px;
+    --minus_button_shadow-sx1: 0.9;
+    --minus_button_shadow-op1: 0.42;
+    --minus_button_shadow-blur1: 0px;
+  }
+
+  44% {
+    --minus_button_shadow-ty1: 2px;
+    --minus_button_shadow-sx1: 1.03;
+    --minus_button_shadow-op1: 0.58;
+    --minus_button_shadow-blur1: 0.0px;
+  }
+
+  100% {
+    --minus_button_shadow-ty1: 0px;
+    --minus_button_shadow-sx1: 1;
+    --minus_button_shadow-op1: 0.6;
+    --minus_button_shadow-blur1: 0px;
+  }
+}
+
+.minus_button_shadow {
+  animation-name: minus_button_shadow-sync;
+  animation-duration: 3.6s;
+  animation-timing-function: cubic-bezier(.2,.85,.32,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0.18s;
+  animation-direction: normal;
+}
+
+@property --multiply_button_foreground-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --multiply_button_foreground-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --multiply_button_foreground-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --multiply_button_foreground-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --multiply_button_foreground-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --multiply_button_foreground-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --multiply_button_foreground-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.multiply_button_foreground,
+.multiply_button_foreground > * {
+
+  --multiply_button_foreground-tx1: 0px;
+  --multiply_button_foreground-tx2: 0px;
+  --multiply_button_foreground-ty1: 0px;
+  --multiply_button_foreground-ty2: 0px;
+  --multiply_button_foreground-rot1: 0deg;
+  --multiply_button_foreground-rot2: 0deg;
+  --multiply_button_foreground-sx1: 1;
+  --multiply_button_foreground-sx2: 1;
+  --multiply_button_foreground-sy1: 1;
+  --multiply_button_foreground-sy2: 1;
+  --multiply_button_foreground-op1: 1;
+  --multiply_button_foreground-op2: 1;
+  --multiply_button_foreground-blur1: 0px;
+  --multiply_button_foreground-blur2: 0px;
+  --multiply_button_foreground-stroke1: 0;
+  --multiply_button_foreground-stroke2: 0;
+  --multiply_button_foreground-bright1: 1;
+  --multiply_button_foreground-bright2: 1;
+
+  transform-box: fill-box;
+
+  transform-origin: 31.25% 68.75%;
+
+  transform:
+    translateX(var(--multiply_button_foreground-tx1))
+    translateY(var(--multiply_button_foreground-ty1))
+    rotate(var(--multiply_button_foreground-rot1))
+    scale(var(--multiply_button_foreground-sx1), var(--multiply_button_foreground-sy1));
+
+  filter: blur(var(--multiply_button_foreground-blur1)) brightness(var(--multiply_button_foreground-bright1));
+  opacity: var(--multiply_button_foreground-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes multiply_button_foreground-press {
+
+  0% {
+    --multiply_button_foreground-ty1: 0px;
+    --multiply_button_foreground-rot1: 0deg;
+    --multiply_button_foreground-sx1: 1;
+    --multiply_button_foreground-sy1: 1;
+    --multiply_button_foreground-bright1: 1;
+    --multiply_button_foreground-blur1: 0px;
+  }
+
+  2.1111% {
+    --multiply_button_foreground-ty1: 7px;
+    --multiply_button_foreground-rot1: -8deg;
+    --multiply_button_foreground-sx1: 1.06;
+    --multiply_button_foreground-sy1: 0.90;
+    --multiply_button_foreground-bright1: 0.98; 
+    --multiply_button_foreground-blur1: 0.0px;
+  }
+
+  5.4889% {
+    --multiply_button_foreground-ty1: 9px;
+    --multiply_button_foreground-rot1: -10deg;
+    --multiply_button_foreground-sx1: 1.08;
+    --multiply_button_foreground-sy1: 0.88;
+    --multiply_button_foreground-bright1: 0.95; 
+    --multiply_button_foreground-blur1: 0.0px;
+  }
+
+  10.1333% {
+    --multiply_button_foreground-ty1: -7px;
+    --multiply_button_foreground-rot1: 4deg;
+    --multiply_button_foreground-sx1: 0.97;
+    --multiply_button_foreground-sy1: 1.06;
+    --multiply_button_foreground-bright1: 1.01;
+    --multiply_button_foreground-blur1: 0.0px;
+  }
+
+  21.1111% {
+    --multiply_button_foreground-ty1: 0px;
+    --multiply_button_foreground-rot1: 0deg;
+    --multiply_button_foreground-sx1: 1;
+    --multiply_button_foreground-sy1: 1;
+    --multiply_button_foreground-bright1: 1;
+    --multiply_button_foreground-blur1: 0px;
+  }
+
+  100% {
+    --multiply_button_foreground-ty1: 0px;
+    --multiply_button_foreground-rot1: 0deg;
+    --multiply_button_foreground-sx1: 1;
+    --multiply_button_foreground-sy1: 1;
+    --multiply_button_foreground-bright1: 1;
+    --multiply_button_foreground-blur1: 0px;
+  }
+}
+
+.multiply_button_foreground {
+  animation-name: multiply_button_foreground-press;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.22,.86,.3,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both; 
+  animation-delay: 0.36s;    
+  animation-direction: normal;
+}
+
+  @property --multiply_button_shadow-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+  @property --multiply_button_shadow-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+  @property --multiply_button_shadow-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --multiply_button_shadow-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --multiply_button_shadow-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --multiply_button_shadow-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --multiply_button_shadow-op1  { syntax: '<number>'; inherits: true; initial-value: 0.63; }
+  @property --multiply_button_shadow-op2  { syntax: '<number>'; inherits: true; initial-value: 0.63; }
+  @property --multiply_button_shadow-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+  @property --multiply_button_shadow-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+  @property --multiply_button_shadow-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+  @property --multiply_button_shadow-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+  @property --multiply_button_shadow-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+  .multiply_button_shadow,
+  .multiply_button_shadow > * {
+
+    --multiply_button_shadow-tx1: 0px;
+    --multiply_button_shadow-tx2: 0px;
+    --multiply_button_shadow-ty1: 0px;
+    --multiply_button_shadow-ty2: 0px;
+    --multiply_button_shadow-rot1: 0deg;
+    --multiply_button_shadow-rot2: 0deg;
+    --multiply_button_shadow-sx1: 1;
+    --multiply_button_shadow-sx2: 1;
+    --multiply_button_shadow-sy1: 1;
+    --multiply_button_shadow-sy2: 1;
+    --multiply_button_shadow-op1: 0.63;
+    --multiply_button_shadow-op2: 0.63;
+    --multiply_button_shadow-blur1: 0px;
+    --multiply_button_shadow-blur2: 0px;
+    --multiply_button_shadow-bright1: 1;
+    --multiply_button_shadow-bright2: 1;
+    --multiply_button_shadow-stroke1: 0;
+    --multiply_button_shadow-stroke2: 0;
+
+    transform-box: fill-box;
+
+    transform-origin: 31.25% 71%;
+
+    transform:
+      translateX(var(--multiply_button_shadow-tx1))
+      translateY(var(--multiply_button_shadow-ty1))
+      rotate(var(--multiply_button_shadow-rot1))
+      scale(var(--multiply_button_shadow-sx1), var(--multiply_button_shadow-sy1));
+
+    filter: blur(var(--multiply_button_shadow-blur1)) brightness(var(--multiply_button_shadow-bright1));
+    opacity: var(--multiply_button_shadow-op1);
+
+    will-change: transform, filter, opacity;
+  }
+
+  @keyframes multiply_button_shadow-follow {
+
+    0% {
+      --multiply_button_shadow-ty1: 0px;
+      --multiply_button_shadow-sx1: 1;
+      --multiply_button_shadow-sy1: 1;
+      --multiply_button_shadow-op1: 0.63;
+      --multiply_button_shadow-rot1: 0deg;
+      --multiply_button_shadow-blur1: 0px;
+    }
+
+    2.1111% {
+      --multiply_button_shadow-ty1: 8px;
+      --multiply_button_shadow-sx1: 0.94; 
+      --multiply_button_shadow-sy1: 0.92;
+      --multiply_button_shadow-op1: 0.52;
+      --multiply_button_shadow-rot1: -3deg; 
+      --multiply_button_shadow-blur1: 0.0px;
+    }
+
+    5.4889% {
+      --multiply_button_shadow-ty1: 12px;
+      --multiply_button_shadow-sx1: 0.88; 
+      --multiply_button_shadow-sy1: 0.88;
+      --multiply_button_shadow-op1: 0.40;  
+      --multiply_button_shadow-rot1: -6deg; 
+      --multiply_button_shadow-blur1: 0.0px;
+    }
+
+    10.1333% {
+      --multiply_button_shadow-ty1: 3px;
+      --multiply_button_shadow-sx1: 1.04; 
+      --multiply_button_shadow-sy1: 1.03;
+      --multiply_button_shadow-op1: 0.60;
+      --multiply_button_shadow-rot1: 3deg; 
+      --multiply_button_shadow-blur1: 0.0px;
+    }
+
+    21.1111% {
+      --multiply_button_shadow-ty1: 0px;
+      --multiply_button_shadow-sx1: 1;
+      --multiply_button_shadow-sy1: 1;
+      --multiply_button_shadow-op1: 0.63;
+      --multiply_button_shadow-rot1: 0deg;
+      --multiply_button_shadow-blur1: 0px;
+    }
+
+    100% {
+      --multiply_button_shadow-ty1: 0px;
+      --multiply_button_shadow-sx1: 1;
+      --multiply_button_shadow-sy1: 1;
+      --multiply_button_shadow-op1: 0.63;
+      --multiply_button_shadow-rot1: 0deg;
+      --multiply_button_shadow-blur1: 0px;
+    }
+  }
+
+  .multiply_button_shadow {
+    animation-name: multiply_button_shadow-follow;
+    animation-duration: 3.6s;
+    animation-timing-function: cubic-bezier(.22,.86,.3,1);
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+    animation-delay: 0.36s;
+    animation-direction: normal;
+  }
+
+@property --divide_button_bar-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_bar-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_bar-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bar-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_bar-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_bar-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bar-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.divide_button_bar,
+.divide_button_bar > * {
+
+  --divide_button_bar-tx1: 0px;
+  --divide_button_bar-tx2: 0px;
+  --divide_button_bar-ty1: 0px;
+  --divide_button_bar-ty2: 0px;
+  --divide_button_bar-rot1: 0deg;
+  --divide_button_bar-rot2: 0deg;
+  --divide_button_bar-sx1: 1;
+  --divide_button_bar-sx2: 1;
+  --divide_button_bar-sy1: 1;
+  --divide_button_bar-sy2: 1;
+  --divide_button_bar-op1: 1;
+  --divide_button_bar-op2: 1;
+  --divide_button_bar-blur1: 0px;
+  --divide_button_bar-blur2: 0px;
+  --divide_button_bar-stroke1: 0;
+  --divide_button_bar-stroke2: 0;
+  --divide_button_bar-bright1: 1;
+  --divide_button_bar-bright2: 1;
+
+  transform-box: fill-box;
+
+  transform-origin: 68.75% 67.1875%;
+
+  transform:
+    translateX(var(--divide_button_bar-tx1))
+    translateY(var(--divide_button_bar-ty1))
+    rotate(var(--divide_button_bar-rot1))
+    scale(var(--divide_button_bar-sx1), var(--divide_button_bar-sy1));
+
+  filter: blur(var(--divide_button_bar-blur1)) brightness(var(--divide_button_bar-bright1));
+  opacity: var(--divide_button_bar-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes divide_button_bar-press {
+
+  0% {
+    --divide_button_bar-ty1: 0px;
+    --divide_button_bar-sx1: 1;
+    --divide_button_bar-sy1: 1;
+    --divide_button_bar-bright1: 1;
+  }
+
+  2.3333% {
+    --divide_button_bar-ty1: 6px;
+    --divide_button_bar-sx1: 1.03;
+    --divide_button_bar-sy1: 0.92;
+    --divide_button_bar-bright1: 0.99;
+  }
+
+  5.4444% {
+    --divide_button_bar-ty1: 8px;
+    --divide_button_bar-sx1: 1.05;
+    --divide_button_bar-sy1: 0.90;
+    --divide_button_bar-bright1: 0.96; 
+  }
+
+  9.7222% {
+    --divide_button_bar-ty1: -5px;
+    --divide_button_bar-sx1: 0.98;
+    --divide_button_bar-sy1: 1.04;
+    --divide_button_bar-bright1: 0.99;
+  }
+
+  19.4444% {
+    --divide_button_bar-ty1: 0px;
+    --divide_button_bar-sx1: 1;
+    --divide_button_bar-sy1: 1;
+    --divide_button_bar-bright1: 1;
+  }
+
+  100% {
+    --divide_button_bar-ty1: 0px;
+    --divide_button_bar-sx1: 1;
+    --divide_button_bar-sy1: 1;
+    --divide_button_bar-bright1: 1;
+  }
+}
+
+.divide_button_bar {
+  animation-name: divide_button_bar-press;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.2,.85,.3,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0.54s; 
+  animation-direction: normal;
+}
+
+@property --divide_button_top_dot-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_top_dot-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_top_dot-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_top_dot-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_top_dot-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_top_dot-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_top_dot-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.divide_button_top_dot,
+.divide_button_top_dot > * {
+
+  --divide_button_top_dot-tx1: 0px;
+  --divide_button_top_dot-tx2: 0px;
+  --divide_button_top_dot-ty1: 0px;
+  --divide_button_top_dot-ty2: 0px;
+  --divide_button_top_dot-rot1: 0deg;
+  --divide_button_top_dot-rot2: 0deg;
+  --divide_button_top_dot-sx1: 1;
+  --divide_button_top_dot-sx2: 1;
+  --divide_button_top_dot-sy1: 1;
+  --divide_button_top_dot-sy2: 1;
+  --divide_button_top_dot-op1: 1;
+  --divide_button_top_dot-op2: 1;
+  --divide_button_top_dot-blur1: 0px;
+  --divide_button_top_dot-blur2: 0px;
+  --divide_button_top_dot-bright1: 1;
+  --divide_button_top_dot-bright2: 1;
+  --divide_button_top_dot-stroke1: 0;
+  --divide_button_top_dot-stroke2: 0;
+
+  transform-box: fill-box;
+
+  transform-origin: 68.75% 57.8125%;
+
+  transform:
+    translateX(var(--divide_button_top_dot-tx1))
+    translateY(var(--divide_button_top_dot-ty1))
+    rotate(var(--divide_button_top_dot-rot1))
+    scale(var(--divide_button_top_dot-sx1), var(--divide_button_top_dot-sy1));
+
+  filter: blur(var(--divide_button_top_dot-blur1)) brightness(var(--divide_button_top_dot-bright1));
+  opacity: var(--divide_button_top_dot-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes divide_button_top_dot-press {
+
+  0% {
+    --divide_button_top_dot-ty1: 0px;
+    --divide_button_top_dot-sx1: 1;
+    --divide_button_top_dot-sy1: 1;
+  }
+
+  2.1333% {
+    --divide_button_top_dot-ty1: 5px;
+    --divide_button_top_dot-sx1: 0.96;
+    --divide_button_top_dot-sy1: 0.96;
+  }
+
+  4.9778% {
+    --divide_button_top_dot-ty1: 6.8px;
+    --divide_button_top_dot-sx1: 0.95;
+    --divide_button_top_dot-sy1: 0.95;
+  }
+
+  7.8222% {
+    --divide_button_top_dot-ty1: -4px;
+    --divide_button_top_dot-sx1: 1.02;
+    --divide_button_top_dot-sy1: 1.02;
+  }
+
+  17.7778% {
+    --divide_button_top_dot-ty1: 0px;
+    --divide_button_top_dot-sx1: 1;
+    --divide_button_top_dot-sy1: 1;
+  }
+
+  100% {
+    --divide_button_top_dot-ty1: 0px;
+    --divide_button_top_dot-sx1: 1;
+    --divide_button_top_dot-sy1: 1;
+  }
+}
+
+.divide_button_top_dot {
+  animation-name: divide_button_top_dot-press;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.25,.9,.35,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0.54s; 
+  animation-direction: normal;
+}
+
+@property --divide_button_bottom_dot-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_bottom_dot-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_bottom_dot-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_bottom_dot-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_bottom_dot-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_bottom_dot-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_bottom_dot-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.divide_button_bottom_dot,
+.divide_button_bottom_dot > * {
+
+  --divide_button_bottom_dot-tx1: 0px;
+  --divide_button_bottom_dot-tx2: 0px;
+  --divide_button_bottom_dot-ty1: 0px;
+  --divide_button_bottom_dot-ty2: 0px;
+  --divide_button_bottom_dot-rot1: 0deg;
+  --divide_button_bottom_dot-rot2: 0deg;
+  --divide_button_bottom_dot-sx1: 1;
+  --divide_button_bottom_dot-sx2: 1;
+  --divide_button_bottom_dot-sy1: 1;
+  --divide_button_bottom_dot-sy2: 1;
+  --divide_button_bottom_dot-op1: 1;
+  --divide_button_bottom_dot-op2: 1;
+  --divide_button_bottom_dot-blur1: 0px;
+  --divide_button_bottom_dot-blur2: 0px;
+  --divide_button_bottom_dot-bright1: 1;
+  --divide_button_bottom_dot-bright2: 1;
+  --divide_button_bottom_dot-stroke1: 0;
+  --divide_button_bottom_dot-stroke2: 0;
+
+  transform-box: fill-box;
+
+  transform-origin: 68.75% 76.5625%;
+
+  transform:
+    translateX(var(--divide_button_bottom_dot-tx1))
+    translateY(var(--divide_button_bottom_dot-ty1))
+    rotate(var(--divide_button_bottom_dot-rot1))
+    scale(var(--divide_button_bottom_dot-sx1), var(--divide_button_bottom_dot-sy1));
+
+  filter: blur(var(--divide_button_bottom_dot-blur1)) brightness(var(--divide_button_bottom_dot-bright1));
+  opacity: var(--divide_button_bottom_dot-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes divide_button_bottom_dot-press {
+  0% {
+    --divide_button_bottom_dot-ty1: 0px;
+    --divide_button_bottom_dot-sx1: 1;
+    --divide_button_bottom_dot-sy1: 1;
+  }
+
+  2.4% {
+    --divide_button_bottom_dot-ty1: 7px;
+    --divide_button_bottom_dot-sx1: 0.94;
+    --divide_button_bottom_dot-sy1: 0.94;
+  }
+
+  5.6% {
+    --divide_button_bottom_dot-ty1: 9px;
+    --divide_button_bottom_dot-sx1: 0.92;
+    --divide_button_bottom_dot-sy1: 0.92;
+  }
+
+  10.4% {
+    --divide_button_bottom_dot-ty1: -3px;
+    --divide_button_bottom_dot-sx1: 1.015;
+    --divide_button_bottom_dot-sy1: 1.015;
+  }
+
+  20% {
+    --divide_button_bottom_dot-ty1: 0px;
+    --divide_button_bottom_dot-sx1: 1;
+    --divide_button_bottom_dot-sy1: 1;
+  }
+
+  100% {
+    --divide_button_bottom_dot-ty1: 0px;
+    --divide_button_bottom_dot-sx1: 1;
+    --divide_button_bottom_dot-sy1: 1;
+  }
+}
+
+.divide_button_bottom_dot {
+  animation-name: divide_button_bottom_dot-press;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.22,.88,.33,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0.54s; 
+  animation-direction: normal;
+}
+
+@property --divide_button_shadow-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_shadow-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --divide_button_shadow-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_shadow-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_shadow-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_shadow-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_shadow-op1  { syntax: '<number>'; inherits: true; initial-value: 0.62; }
+@property --divide_button_shadow-op2  { syntax: '<number>'; inherits: true; initial-value: 0.62; }
+@property --divide_button_shadow-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --divide_button_shadow-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_shadow-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --divide_button_shadow-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --divide_button_shadow-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.divide_button_shadow,
+.divide_button_shadow > * {
+
+  --divide_button_shadow-tx1: 0px;
+  --divide_button_shadow-tx2: 0px;
+  --divide_button_shadow-ty1: 0px;
+  --divide_button_shadow-ty2: 0px;
+  --divide_button_shadow-rot1: 0deg;
+  --divide_button_shadow-rot2: 0deg;
+  --divide_button_shadow-sx1: 1;
+  --divide_button_shadow-sx2: 1;
+  --divide_button_shadow-sy1: 1;
+  --divide_button_shadow-sy2: 1;
+  --divide_button_shadow-op1: 0.62;
+  --divide_button_shadow-op2: 0.62;
+  --divide_button_shadow-blur1: 0px;
+  --divide_button_shadow-blur2: 0px;
+  --divide_button_shadow-bright1: 1;
+  --divide_button_shadow-bright2: 1;
+  --divide_button_shadow-stroke1: 0;
+  --divide_button_shadow-stroke2: 0;
+
+  transform-box: fill-box;
+
+  transform-origin: 68.75% 67.1875%;
+
+  transform:
+    translateX(var(--divide_button_shadow-tx1))
+    translateY(var(--divide_button_shadow-ty1))
+    rotate(var(--divide_button_shadow-rot1))
+    scale(var(--divide_button_shadow-sx1), var(--divide_button_shadow-sy1));
+
+  filter: blur(var(--divide_button_shadow-blur1)) brightness(var(--divide_button_shadow-bright1));
+  opacity: var(--divide_button_shadow-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes divide_button_shadow-unified {
+
+  0% {
+    --divide_button_shadow-ty1: 0px;
+    --divide_button_shadow-sx1: 1;
+    --divide_button_shadow-op1: 0.62;
+    --divide_button_shadow-blur1: 0px;
+  }
+
+  12% {
+    --divide_button_shadow-ty1: 11px;
+    --divide_button_shadow-sx1: 0.87;
+    --divide_button_shadow-op1: 0.42;
+    --divide_button_shadow-blur1: 0.0px;
+  }
+
+  28% {
+
+    --divide_button_shadow-ty1: 11px;
+    --divide_button_shadow-sx1: 0.87;
+    --divide_button_shadow-op1: 0.42;
+    --divide_button_shadow-blur1: 0.0px;
+  }
+
+  50% {
+    --divide_button_shadow-ty1: 2px;
+    --divide_button_shadow-sx1: 1.03;
+    --divide_button_shadow-op1: 0.60;
+    --divide_button_shadow-blur1: 0.0px;
+  }
+
+  100% {
+    --divide_button_shadow-ty1: 0px;
+    --divide_button_shadow-sx1: 1;
+    --divide_button_shadow-op1: 0.62;
+    --divide_button_shadow-blur1: 0px;
+  }
+}
+
+.divide_button_shadow {
+  animation-name: divide_button_shadow-unified;
+  animation-duration: 3.6s; 
+  animation-timing-function: cubic-bezier(.22,.88,.33,1);
+  animation-iteration-count: infinite;
+  animation-fill-mode: both; 
+  animation-delay: 0.54s;    
+  animation-direction: normal;
+}
+
+@property --global_sequence_and_timing-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --global_sequence_and_timing-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --global_sequence_and_timing-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --global_sequence_and_timing-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --global_sequence_and_timing-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --global_sequence_and_timing-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --global_sequence_and_timing-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.global_sequence_and_timing,
+.global_sequence_and_timing > * {
+
+  --global_sequence_and_timing-tx1: 0px;
+  --global_sequence_and_timing-tx2: 0px;
+  --global_sequence_and_timing-ty1: 0px;
+  --global_sequence_and_timing-ty2: 0px;
+  --global_sequence_and_timing-rot1: 0deg;
+  --global_sequence_and_timing-rot2: 0deg;
+  --global_sequence_and_timing-sx1: 1;
+  --global_sequence_and_timing-sx2: 1;
+  --global_sequence_and_timing-sy1: 1;
+  --global_sequence_and_timing-sy2: 1;
+  --global_sequence_and_timing-op1: 1;
+  --global_sequence_and_timing-op2: 1;
+  --global_sequence_and_timing-blur1: 0px;
+  --global_sequence_and_timing-blur2: 0px;
+  --global_sequence_and_timing-stroke1: 0;
+  --global_sequence_and_timing-stroke2: 0;
+  --global_sequence_and_timing-bright1: 1;
+  --global_sequence_and_timing-bright2: 1;
+
+  transform-box: view-box;
+
+  transform-origin: 50% 50%;
+
+  transform:
+    translateX(var(--global_sequence_and_timing-tx1))
+    translateY(var(--global_sequence_and_timing-ty1))
+    rotate(var(--global_sequence_and_timing-rot1))
+    scale(var(--global_sequence_and_timing-sx1), var(--global_sequence_and_timing-sy1));
+
+  filter: blur(var(--global_sequence_and_timing-blur1)) brightness(var(--global_sequence_and_timing-bright1));
+  opacity: var(--global_sequence_and_timing-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes global_sequence_and_timing-sequence {
+
+  0% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+    --global_sequence_and_timing-rot1: 0deg;
+  }
+
+  1% {
+    --global_sequence_and_timing-ty1: 4px;
+    --global_sequence_and_timing-sx1: 1.02;
+    --global_sequence_and_timing-sy1: 0.98;
+  }
+  3% {
+    --global_sequence_and_timing-ty1: -2px;     
+    --global_sequence_and_timing-sx1: 0.995;
+    --global_sequence_and_timing-sy1: 1.01;
+  }
+  5% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+  }
+
+  4% {
+    --global_sequence_and_timing-ty1: 2px;
+    --global_sequence_and_timing-sx1: 1.01;
+    --global_sequence_and_timing-sy1: 0.995;
+  }
+  5% {
+    --global_sequence_and_timing-ty1: 5px;
+    --global_sequence_and_timing-sx1: 1.025;
+    --global_sequence_and_timing-sy1: 0.975;
+  }
+  7% {
+    --global_sequence_and_timing-ty1: -1.5px;
+    --global_sequence_and_timing-sx1: 0.998;
+    --global_sequence_and_timing-sy1: 1.007;
+  }
+  8% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+  }
+
+  9% {
+    --global_sequence_and_timing-ty1: 2px;
+    --global_sequence_and_timing-rot1: -1.5deg;
+    --global_sequence_and_timing-sx1: 1.015;
+    --global_sequence_and_timing-sy1: 0.99;
+  }
+  10% {
+    --global_sequence_and_timing-ty1: 6px;
+    --global_sequence_and_timing-rot1: -2.5deg;
+    --global_sequence_and_timing-sx1: 1.03;
+    --global_sequence_and_timing-sy1: 0.97;
+  }
+  12% {
+    --global_sequence_and_timing-ty1: -2px;
+    --global_sequence_and_timing-rot1: 1deg;
+    --global_sequence_and_timing-sx1: 0.99;
+    --global_sequence_and_timing-sy1: 1.02;
+  }
+  13% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-rot1: 0deg;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+  }
+
+  14% {
+    --global_sequence_and_timing-ty1: 3px;
+    --global_sequence_and_timing-sx1: 1.01;
+    --global_sequence_and_timing-sy1: 0.995;
+  }
+  15% {
+    --global_sequence_and_timing-ty1: 5px;
+    --global_sequence_and_timing-sx1: 1.02;
+    --global_sequence_and_timing-sy1: 0.98;
+  }
+  17% {
+    --global_sequence_and_timing-ty1: -1px;
+    --global_sequence_and_timing-sx1: 0.998;
+    --global_sequence_and_timing-sy1: 1.006;
+  }
+  20% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+    --global_sequence_and_timing-rot1: 0deg;
+  }
+
+  100% {
+    --global_sequence_and_timing-ty1: 0px;
+    --global_sequence_and_timing-sx1: 1;
+    --global_sequence_and_timing-sy1: 1;
+    --global_sequence_and_timing-rot1: 0deg;
+  }
+}
+
+.global_sequence_and_timing {
+  animation-name: global_sequence_and_timing-sequence;
+  animation-duration: 3.6s;
+  animation-timing-function: cubic-bezier(.22,.9,.35,1);
+  animation-iteration-count: 1; 
+  animation-fill-mode: both;    
+  animation-delay: 0s;
+  animation-direction: normal;
+}
+
+@property --notes_on_implementation-tx1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-tx2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-ty1  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-ty2  { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-rot1 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --notes_on_implementation-rot2 { syntax: '<angle>';  inherits: true; initial-value: 0deg; }
+@property --notes_on_implementation-sx1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-sx2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-sy1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-sy2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-op1  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-op2  { syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-blur1 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-blur2 { syntax: '<length>'; inherits: true; initial-value: 0px; }
+@property --notes_on_implementation-stroke1{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --notes_on_implementation-stroke2{ syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --notes_on_implementation-bright1{ syntax: '<number>'; inherits: true; initial-value: 1; }
+@property --notes_on_implementation-bright2{ syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.notes_on_implementation,
+.notes_on_implementation > * {
+
+  --notes_on_implementation-tx1: 0px;
+  --notes_on_implementation-tx2: 0px;
+  --notes_on_implementation-ty1: 0px;
+  --notes_on_implementation-ty2: 0px;
+  --notes_on_implementation-rot1: 0deg;
+  --notes_on_implementation-rot2: 0deg;
+  --notes_on_implementation-sx1: 1;
+  --notes_on_implementation-sx2: 1;
+  --notes_on_implementation-sy1: 1;
+  --notes_on_implementation-sy2: 1;
+  --notes_on_implementation-op1: 1;
+  --notes_on_implementation-op2: 1;
+  --notes_on_implementation-blur1: 0px;
+  --notes_on_implementation-bright1: 1;
+  --notes_on_implementation-stroke1: 0;
+
+  transform-box: fill-box;
+
+  transform-origin: 50% 50%;
+
+  transform:
+    translateX(var(--notes_on_implementation-tx1))
+    translateY(var(--notes_on_implementation-ty1))
+    rotate(var(--notes_on_implementation-rot1))
+    scale(var(--notes_on_implementation-sx1), var(--notes_on_implementation-sy1));
+
+  filter: blur(var(--notes_on_implementation-blur1)) brightness(var(--notes_on_implementation-bright1)) saturate(1.02);
+  opacity: var(--notes_on_implementation-op1);
+
+  will-change: transform, filter, opacity;
+}
+
+@keyframes notes_on_implementation-press-sequence {
+
+  0% {
+    --notes_on_implementation-ty1: 0px;
+    --notes_on_implementation-sx1: 1;
+    --notes_on_implementation-sy1: 1;
+    --notes_on_implementation-blur1: 0px;
+    --notes_on_implementation-bright1: 1;
+    --notes_on_implementation-op1: 1;
+  }
+
+  2% {
+    --notes_on_implementation-ty1: 4px;
+    --notes_on_implementation-sx1: 1.03;
+    --notes_on_implementation-sy1: 0.97;
+    --notes_on_implementation-blur1: 0.0px;
+    --notes_on_implementation-bright1: 1.035; 
+  }
+
+  5% {
+    --notes_on_implementation-ty1: 6.5px;
+    --notes_on_implementation-sx1: 1.06;
+    --notes_on_implementation-sy1: 0.94;
+    --notes_on_implementation-blur1: 0.0px;
+    --notes_on_implementation-bright1: 1.06; 
+  }
+
+  9% {
+    --notes_on_implementation-ty1: -3px;
+    --notes_on_implementation-sx1: 0.985;
+    --notes_on_implementation-sy1: 1.03;
+    --notes_on_implementation-blur1: 0.0px;
+    --notes_on_implementation-bright1: 1.02;
+  }
+
+  20% {
+    --notes_on_implementation-ty1: 0px;
+    --notes_on_implementation-sx1: 1;
+    --notes_on_implementation-sy1: 1;
+    --notes_on_implementation-blur1: 0px;
+    --notes_on_implementation-bright1: 1;
+  }
+
+  100% {
+    --notes_on_implementation-ty1: 0px;
+    --notes_on_implementation-sx1: 1;
+    --notes_on_implementation-sy1: 1;
+    --notes_on_implementation-blur1: 0px;
+    --notes_on_implementation-bright1: 1;
+  }
+}
+
+@keyframes notes_on_implementation-micro-pulse {
+  0% {
+    --notes_on_implementation-sx2: 1;
+    --notes_on_implementation-sy2: 1;
+    --notes_on_implementation-op2: 1;
+  }
+  5% {
+    --notes_on_implementation-sx2: 1.01;
+    --notes_on_implementation-sy2: 0.995;
+    --notes_on_implementation-op2: 0.995;
+  }
+  12% {
+    --notes_on_implementation-sx2: 0.997;
+    --notes_on_implementation-sy2: 1.003;
+    --notes_on_implementation-op2: 1;
+  }
+  20% {
+    --notes_on_implementation-sx2: 1;
+    --notes_on_implementation-sy2: 1;
+    --notes_on_implementation-op2: 1;
+  }
+  100% {
+    --notes_on_implementation-sx2: 1;
+    --notes_on_implementation-sy2: 1;
+    --notes_on_implementation-op2: 1;
+  }
+}
+
+.notes_on_implementation {
+  animation-name: notes_on_implementation-press-sequence, notes_on_implementation-micro-pulse;
+  animation-duration: 3.6s, 3.6s;
+  animation-timing-function: cubic-bezier(.22,.9,.35,1), ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-fill-mode: both, both;
+  animation-delay: 0.72s, 0.72s;
+  animation-direction: normal, normal;
+}
+
+  </style>
+ </head>
+ <body>
+  <svg height="800px" version="1.1" viewbox="0 0 64 64" width="800px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg">
+   <style type="text/css">
+    .st0{fill:#4F5D73;}
+	.st1{opacity:0.2;}
+	.st2{fill:#231F20;}
+	.st3{fill:#E0E0D1;}
+	.st4{fill:#F5CF87;}
+	.st5{fill:#E0995E;}
+	.st6{fill:#76C2AF;}
+   </style>
+   <g class="group" id="Layer_1">
+    <g class="background_circle" id="target_element_2365057418560">
+     <circle class="st0" cx="31.8" cy="32" r="32">
+     </circle>
+    </g>
+    <g class="st1 group" id="target_element_2365057430880">
+     <g class="group" id="target_element_2365057432000">
+      <circle class="st2 divide_button_top_dot" cx="44" cy="39" id="target_element_2365057427920" r="2">
+      </circle>
+     </g>
+     <g class="background_circle" id="target_element_2365057432560">
+      <circle class="st2" cx="44" cy="51" r="2">
+      </circle>
+     </g>
+     <g class="group" id="target_element_2365057428800">
+      <path class="st2 plus_button_foreground" d="M26,22h-4v-4c0-1.1-0.9-2-2-2s-2,0.9-2,2v4h-4c-1.1,0-2,0.9-2,2c0,1.1,0.9,2,2,2h4v4c0,1.1,0.9,2,2,2     s2-0.9,2-2v-4h4c1.1,0,2-0.9,2-2C28,22.9,27.1,22,26,22z" id="target_element_2365057432480">
+      </path>
+     </g>
+     <g class="group" id="target_element_2365057421760">
+      <path class="st2 minus_button_foreground" d="M38,26h12c1.1,0,2-0.9,2-2c0-1.1-0.9-2-2-2H38c-1.1,0-2,0.9-2,2C36,25.1,36.9,26,38,26z" id="target_element_2365057420160">
+      </path>
+     </g>
+     <g class="group" id="target_element_2365057428480">
+      <path class="st2 divide_button_bar" d="M50,43H38c-1.1,0-2,0.9-2,2c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2C52,43.9,51.1,43,50,43z" id="target_element_2365057429360">
+      </path>
+     </g>
+     <g class="group" id="target_element_2365057418400">
+      <path class="st2 multiply_button_foreground" d="M26.8,39.2c-0.8-0.8-2-0.8-2.8,0l-4,4l-4-4c-0.8-0.8-2-0.8-2.8,0c-0.8,0.8-0.8,2,0,2.8l4,4l-4,4     c-0.8,0.8-0.8,2,0,2.8s2,0.8,2.8,0l4-4l4,4c0.8,0.8,2,0.8,2.8,0s0.8-2,0-2.8l-4-4l4-4C27.6,41.2,27.6,40,26.8,39.2z" id="target_element_2365057430160">
+      </path>
+     </g>
+    </g>
+    <g class="divide_button_top_dot" id="target_element_2365057418320">
+     <circle class="st3" cx="44" cy="37" r="2">
+     </circle>
+    </g>
+    <g class="divide_button_top_dot" id="target_element_2365057417280">
+     <circle class="st3" cx="44" cy="49" r="2">
+     </circle>
+    </g>
+    <g class="plus_button_foreground" id="target_element_2365057430240">
+     <path class="st4" d="M28,22c0,1.1-0.9,2-2,2H14c-1.1,0-2-0.9-2-2l0,0c0-1.1,0.9-2,2-2h12C27.1,20,28,20.9,28,22L28,22z">
+     </path>
+    </g>
+    <g class="minus_button_foreground" id="target_element_2365057428560">
+     <path class="st5" d="M52,22c0,1.1-0.9,2-2,2H38c-1.1,0-2-0.9-2-2l0,0c0-1.1,0.9-2,2-2h12C51.1,20,52,20.9,52,22L52,22z">
+     </path>
+    </g>
+    <g class="plus_button_foreground" id="target_element_2365057426880">
+     <path class="st4" d="M20,30c-1.1,0-2-0.9-2-2V16c0-1.1,0.9-2,2-2l0,0c1.1,0,2,0.9,2,2v12C22,29.1,21.1,30,20,30L20,30z">
+     </path>
+    </g>
+    <g class="divide_button_bar" id="target_element_2365057429440">
+     <path class="st3" d="M52,43c0,1.1-0.9,2-2,2H38c-1.1,0-2-0.9-2-2l0,0c0-1.1,0.9-2,2-2h12C51.1,41,52,41.9,52,43L52,43z">
+     </path>
+    </g>
+    <g class="multiply_button_foreground" id="target_element_2365057421600">
+     <path class="st6" d="M26.8,50.8c-0.8,0.8-2,0.8-2.8,0L13.2,40c-0.8-0.8-0.8-2,0-2.8l0,0c0.8-0.8,2-0.8,2.8,0L26.8,48    C27.6,48.8,27.6,50,26.8,50.8L26.8,50.8z">
+     </path>
+    </g>
+    <g class="multiply_button_foreground" id="target_element_2365057428720">
+     <path class="st6" d="M13.2,50.8c-0.8-0.8-0.8-2,0-2.8L24,37.2c0.8-0.8,2-0.8,2.8,0l0,0c0.8,0.8,0.8,2,0,2.8L16,50.8    C15.2,51.6,14,51.6,13.2,50.8L13.2,50.8z">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Vector Prism: Animating Vector Graphics by Stratifying Semantic Structure</title>
+    <link rel="icon" href="assets/favicon_davian.png" type="image/png">
     <link rel="stylesheet" href="afterglow-bootstrap.css">
     <style>
         /* Hero video grid */
@@ -63,6 +64,43 @@
             color: var(--gray-600);
             font-style: italic;
             line-height: 1.4;
+        }
+
+        /* Interactive scaling demo */
+        .scalable-demo-container {
+            max-width: 300px;
+            margin: 0 auto 3rem;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .scalable-demo-container:hover {
+            max-width: 600px;
+            transform: translateY(-10px);
+        }
+        
+        .scalable-demo-container .animation-frame {
+            border: 2px solid rgba(255, 106, 138, 0.3);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .scalable-demo-container:hover .animation-frame {
+            border-color: rgba(255, 106, 138, 0.8);
+            box-shadow: 0 20px 60px rgba(255, 106, 138, 0.3);
+        }
+        
+        .scale-hint {
+            font-style: italic;
+            color: #666;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .scalable-demo-container:hover + .scale-hint {
+            color: #ff6a8a;
+            font-weight: 600;
+            transform: scale(1.05);
         }
         
         /* Comparison section */
@@ -126,56 +164,19 @@
             font-size: 1.1rem;
             color: var(--gray-800);
         }
-        
-        /* Pipeline visual */
-        .pipeline-visual {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            margin: 2rem 0;
-        }
-        
-        .pipeline-step {
-            text-align: center;
-            padding: 1.5rem;
-            background: white;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--box-shadow-sm);
-            min-width: 180px;
-        }
-        
-        .pipeline-step .icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .pipeline-step h5 {
-            margin-bottom: 0.25rem;
-            color: var(--gray-800);
-        }
-        
-        .pipeline-step p {
-            font-size: 0.85rem;
-            color: var(--gray-600);
-            margin: 0;
-        }
-        
-        .pipeline-arrow {
-            font-size: 2rem;
-            color: var(--primary);
-        }
-        
+
         /* Stats section */
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            display: flex;
+            justify-content: center;
             gap: 2rem;
             margin: 2rem 0;
+            flex-wrap: wrap;
         }
         
         .stat-card {
+            flex: 0 0 calc(33.333% - 2rem);
+            max-width: 350px;
             text-align: center;
             padding: 2rem;
             background: white;
@@ -197,6 +198,19 @@
         .stat-card .label {
             color: var(--gray-600);
             font-size: 1rem;
+        }
+        
+        /* No video placeholder */
+        .no-video {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--gray-200);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-500);
+            font-size: 0.8rem;
         }
         
         /* No video placeholder */
@@ -251,17 +265,12 @@
                 <!-- Title and Authors -->
                 <div class="text-center">
                     <h1 class="text-gradient"
-                        style="margin-top: 20px; margin-bottom: 20px; line-height: 1.2em; font-weight: 600;">
+                        style="margin-top: 20px; margin-bottom: 20px; line-height: 1.2em; font-weight: 600; font-size: 3.5rem;">
                         Vector Prism
                     </h1>
-                    <h4 class="text-muted mb-4" style="font-weight: 400;">
+                    <h4 class="text-muted mb-4" style="font-weight: 400; font-size: 1.5rem;">
                         Animating Vector Graphics by Stratifying Semantic Structure
                     </h4>
-
-                    <!-- Conference Badge -->
-                    <!-- <div class="mb-4">
-                        <span class="badge badge-gradient" style="font-size: 0.9rem; padding: 0.5em 1em;">CVPR 2026</span>
-                    </div> -->
 
                     <!-- Authors - FIXED LAYOUT -->
                     <div class="row justify-content-center mt-4 mb-4">
@@ -275,12 +284,7 @@
                         </div>
                     </div>
                     <div class="row justify-content-center mt-4 mb-4">
-                        <div class="col-3 col-md-3 mb-3">
-                            <h1 class="text-gradient"
-                                style="margin-top: 10px; margin-bottom: 10px; line-height: 1.2em; font-weight: 600;">
-                                KAIST AI
-                            </h1>
-                        </div>
+                        <img src="assets/logo_kaist.svg" class="figure-img img-fluid" style="margin: 0px 50px" width="20%">
                     </div>
                 </div>
 
@@ -291,34 +295,34 @@
                         <figcaption>"Make the emoji look left and right"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/6-1-rainbow.html"></div>
                         <figcaption>"Elements smoothly pop up in a lively manner"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/18-2-compass.html"></div>
                         <figcaption>"Compass needle quickly spins around once"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/8-2-calculator.html"></div>
                         <figcaption>"Buttons bounce in one by one"</figcaption>
                     </div>
                 </div>
 
                 <div class="teaser-grid">
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/3-2-architecture.html"></div>
                         <figcaption>"Turn the scene to night"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/42-1-python.html"></div>
                         <figcaption>"Python logo bounces in and meets in the middle"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/43-2-pytorch.html"></div>
                         <figcaption>"PyTorch logo bounces and changes colors"</figcaption>
                     </div>
                     <div class="teaser-item">
-                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <div class="animation-frame loading" data-src="assets/24-1-doughnut.html"></div>
                         <figcaption>"Doughnut bounces up, sprinkles fall in"</figcaption>
                     </div>
                 </div>
@@ -327,52 +331,67 @@
                 <div class="text-center mt-5">
                     <a href="#" class="btn btn-gradient btn-lg mr-2 mb-2">📄 Paper</a>
                     <a href="https://github.com/YeolJ00/vector-prism" class="btn btn-outline-primary btn-lg mr-2 mb-2">💻 Code</a>
-                    <a href="#" class="btn btn-outline-primary btn-lg mb-2">🎬 Demo</a>
                 </div>
 
                 <hr class="my-5">
 
                 <!-- TL;DR -->
                 <div class="text-center">
-                    <h2 class="text-gradient mb-4">TL;DR</h2>
-                    <p class="lead" style="font-size: 1.3rem;">
-                        <strong>Vector Prism</strong> recovers semantic structure from SVGs, enabling VLMs to create
-                        coherent animations that outperform <span class="text-primary">Sora 2</span> and other
-                        state-of-the-art methods.
+                    <h2 class="text-gradient mb-5" style="font-weight: 600;">Why Animate Vector Graphics?</h2>
+                    <div class="scalable-demo-container">
+                        <div class="animation-frame loading" data-src="assets/28-1-finanace.html"></div>
+                    </div>
+                    <p class="scale-hint">
+                        "The coin spins into the piggy bank."<br>
+                        <span style="font-size: 0.85rem; color: #999;">💡 Hover to see infinite scalability</span>
                     </p>
+                    
+                </div>
+                <div style="max-width: 950px; margin: 0 auto;">
+                    <p class="lead" style="font-size: 1rem; margin-bottom: 2.5rem; line-height: 1.8; color: #333;">
+                        Vector graphics (SVGs) power the modern web. They are <strong>infinitely scalable</strong> with 
+                        perfect clarity at any resolution, <strong>54× smaller</strong> than video files, 
+                        <strong>editable</strong> with CSS and code, and <strong>portable</strong> across any device.
+                        Yet animating them meaningfully is incredibly difficult, even for LLMs. This is because SVGs
+                        are made of thousands of <strong>low-level elements</strong> (paths, groups, shapes) that lack
+                        semantic structure. Naively animating these elements leads to <strong>chaotic, incoherent results</strong>.
+                    </p>
+                    
+                    <div style="background: linear-gradient(135deg, rgba(255, 167, 166, 0.1) 0%, rgba(157, 79, 255, 0.1) 100%); 
+                                padding: 1rem 2.5rem; border-radius: 16px; margin: 2.5rem 0;">
+                        <p class="lead" style="font-size: 1.1rem; margin: 0; line-height: 1.8; color: #1a1a1a;">
+                            Vector Prism 
+                            <strong>re-organizing vector graphics to have a semantically meaningful structure</strong>
+                            before animating them, enabling high-quality, user-controllable animations
+                            that were previously impossible.
+                        </p>
+                    </div>
                 </div>
 
-                <!-- Simple Pipeline Visual -->
-                <div class="pipeline-visual mt-5">
-                    <div class="pipeline-step">
-                        <div class="icon">📊</div>
-                        <h5>Raw SVG</h5>
-                        <p>Fragmented structure</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div class="pipeline-step">
-                        <div class="icon">🔬</div>
-                        <h5>Vector Prism</h5>
-                        <p>Semantic recovery</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div class="pipeline-step">
-                        <div class="icon">🧩</div>
-                        <h5>Structured SVG</h5>
-                        <p>Meaningful groups</p>
-                    </div>
-                    <div class="pipeline-arrow">→</div>
-                    <div class="pipeline-step">
-                        <div class="icon">✨</div>
-                        <h5>Animation</h5>
-                        <p>Coherent motion</p>
-                    </div>
+                <!-- How Do We Do It Section -->
+                <div class="text-center">
+                    <h2 class="text-gradient mb-5" style="font-weight: 600;">How Do We Do It?</h2>
                 </div>
+                <p style="font-size: 1rem; line-height: 1.8; color: #333; margin-bottom: 2.5rem;">
+                    When you say "make the buttons bounce," there is no "buttons" in the code, but just scattered <code>&lt;path&gt;</code> elements with no semantic structure.
+                    We need to identify which elements correspond to "buttons" first. 
+                </p>
+                
+                <!-- First Image - Properly Centered -->
+                <div class="text-center mt-4 mb-4">
+                    <img src="assets/method_main.png" alt="Semantic Structure Visualization"
+                    style="max-width: 100%; height: auto; border-radius: var(--border-radius-lg); box-shadow: var(--box-shadow);">
+                </div>
+                <p class="method-intro" style="margin-bottom: 3rem;">
+                We render each SVG element multiple ways (highlighted, isolated, zoomed), 
+                collect (possibly incorrect) predictions from a vision-language model, then use Dawid-Skene model to aggregate these noisy predictions into reliable semantic labels. 
+                This turns weak, contradictory signals into robust semantic decisions.
+                </p>
 
                 <hr class="my-5">
 
                 <!-- Stats -->
-                <h2 class="text-gradient text-center mb-4">Results at a Glance</h2>
+                <h2 class="text-gradient text-center mb-4" style="font-weight: 600; margin-bottom: 1rem;">Results at a glance</h2>
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="number">76.1</div>
@@ -382,12 +401,17 @@
                         <div class="number">54×</div>
                         <div class="label">Smaller Files<br><small class="text-muted">vs. video formats</small></div>
                     </div>
-                    <div class="stat-card">
-                        <div class="number">89%</div>
-                        <div class="label">User Preference<br><small class="text-muted">vs. baselines</small></div>
-                    </div>
                 </div>
-
+                
+                <!-- Second Image - Properly Centered Below Stats -->
+                <div class="text-center mt-5 mb-4">
+                    <img src="assets/exp_user_study.png" alt="User Study Results"
+                        style="max-width: 60%; height: auto; border-radius: var(--border-radius-lg); box-shadow: var(--box-shadow);">
+                </div>
+                <p class="method-intro" style="margin-bottom: 3rem;">
+                Vector Prism achieves state-of-the-art performance across both instruction-following metrics and file efficiency, demonstrating that proper semantic structure unlocks superior animation quality. 
+                </p>
+                
             </div>
             <div class="col-1"></div>
         </div>
@@ -400,7 +424,7 @@
                 <div class="col-1"></div>
                 <div class="col-10">
 
-                    <h2 class="text-gradient text-center mb-5">Side-by-Side Comparisons</h2>
+                    <h2 class="text-gradient text-center mb-5" style="font-weight: 600;">Side-by-Side Comparisons</h2>
 
                     <!-- Comparison 1 -->
                     <div class="instruction-text">
@@ -432,9 +456,7 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <video controls loop muted playsinline>
-                                <source src="assets/57-2-windmill/video.mp4" type="video/mp4">
-                            </video>
+                            <div class="animation-frame loading" data-src="assets/57-2-windmill.html"></div>
                             <div class="method-label">Ours ✨</div>
                         </div>
                     </div>
@@ -469,9 +491,7 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <video controls loop muted playsinline>
-                                <source src="assets/16-2-lightning/video.mp4" type="video/mp4">
-                            </video>
+                            <div class="animation-frame loading" data-src="assets/16-2-lightning.html"></div>
                             <div class="method-label">Ours ✨</div>
                         </div>
                     </div>
@@ -504,9 +524,7 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <video controls loop muted playsinline>
-                                <source src="assets/32-1-galaxy/video.mp4" type="video/mp4">
-                            </video>
+                            <div class="animation-frame loading" data-src="assets/32-1-galaxy.html"></div>
                             <div class="method-label">Ours ✨</div>
                         </div>
                     </div>
@@ -539,9 +557,7 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <video controls loop muted playsinline>
-                                <source src="assets/12-1-cancel/video.mp4" type="video/mp4">
-                            </video>
+                            <div class="animation-frame loading" data-src="assets/12-1-cancel.html"></div>
                             <div class="method-label">Ours ✨</div>
                         </div>
                     </div>
@@ -558,14 +574,6 @@
             <div class="col-1"></div>
             <div class="col-10">
 
-                <!-- User Study -->
-                <h2 class="text-gradient text-center mb-4">User Study</h2>
-                <div class="text-center mb-5">
-                    <img src="assets/exp_user_study.png" alt="User Study Results"
-                        style="max-width: 100%; border-radius: var(--border-radius-lg); box-shadow: var(--box-shadow);">
-                    <p class="text-muted mt-3">Human preference results: Pink = Ours, Other colors = Baselines</p>
-                </div>
-
                 <hr class="my-5">
 
                 <!-- Citation -->
@@ -573,17 +581,10 @@
                 <pre class="border rounded p-3 bg-light" style="font-size: 0.85rem;"><code>@inproceedings{yun2026vectorprism,
   title={Vector Prism: Animating Vector Graphics by Stratifying Semantic Structure},
   author={Yun, Jooyeol and Choo, Jaegul},
-  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
   year={2026}
 }</code></pre>
 
                 <hr class="my-5">
-
-                <!-- CTA -->
-                <div class="text-center mb-5">
-                    <h3 class="text-gradient mb-4">Ready to Animate?</h3>
-                    <a href="#" class="btn btn-gradient btn-lg">Try Vector Prism</a>
-                </div>
 
             </div>
             <div class="col-1"></div>

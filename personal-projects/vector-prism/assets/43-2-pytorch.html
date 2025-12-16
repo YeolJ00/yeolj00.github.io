@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+  Lanes and composer for --main_ring-* custom properties.
+  Added once to avoid collisions with other animated lanes.
+*/
+@property --main_ring-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --main_ring-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --main_ring-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* 
+  Motion lane (main_ring-motion) drives translateY + non-uniform scale.
+  We animate custom properties only (no transform in keyframes) to avoid collision with other lanes.
+  Transform origin chosen as "center bottom" of the shape using fill-box so the squash/stretch feels anchored
+  near the visual base of the ring. The ring in the SVG is centered near x=128, y=161; using 50% 84% keeps
+  the pivot just below the geometric center to match the visible base of the arc and avoid collisions
+  with the top dot and other elements.
+*/
+.main_ring {
+  /* Ensure transforms operate relative to the element's own bounds */
+  transform-box: fill-box;
+  transform-origin: 50% 84%; /* center-bottom of the ring's shape (derived from SVG layout) */
+
+  /* Compose transform from animated custom properties (keeps @keyframes collision-free) */
+  transform: 
+    translateY(var(--main_ring-ty1, 0px))
+    scaleX(var(--main_ring-sx1, 1))
+    scaleY(var(--main_ring-sy1, 1));
+
+  /* Motion + color animations applied immediately on load. Longhand used and ordered carefully. */
+  animation-name: main_ring-motion, main_ring-fill;
+  animation-duration: 1.2s, 4.8s;               /* bounce repeats every 1.2s; fill cycles across 4 bounces */
+  animation-timing-function: ease-out, cubic-bezier(0.22,1,0.36,1);
+  animation-iteration-count: infinite, infinite;
+  animation-fill-mode: both, both;
+  animation-delay: 0s, 0s;
+  animation-direction: normal, normal;
+
+  /* Hint to the browser for better performance */
+  will-change: transform, fill;
+}
+
+/* Keyframes only change custom properties (no 'transform' inside keyframes per requirement). */
+/* Bounce loop: 0% -> lift (20%), impact (40%), small follow-up (60%), settle (100%) */
+@keyframes main_ring-motion {
+  0% {
+    --main_ring-ty1: 0px;
+    --main_ring-sx1: 1;
+    --main_ring-sy1: 1;
+  }
+  20% {
+    --main_ring-ty1: -30px;    /* ascent */
+    --main_ring-sx1: 1.03;     /* slight widen during lift */
+    --main_ring-sy1: 0.96;     /* slight flatten */
+  }
+  40% {                       /* impact frame: visual landing */
+    --main_ring-ty1: 0px;
+    --main_ring-sx1: 0.95;     /* compress horizontally on landing */
+    --main_ring-sy1: 1.08;     /* stretch vertically on landing */
+  }
+  60% {                       /* small rebound */
+    --main_ring-ty1: -12px;
+    --main_ring-sx1: 1.02;
+    --main_ring-sy1: 0.98;
+  }
+  100% {
+    --main_ring-ty1: 0px;
+    --main_ring-sx1: 1;
+    --main_ring-sy1: 1;
+  }
+}
+
+/* 
+  Fill/color animation:
+  - Runs for 4.8s so color advances once per bounce (4 bounces per cycle).
+  - Timings chosen so the visible color change coincides with the bounce impact frame.
+    First bounce impact is ~0.48s (40% of 1.2s), which is 10% of 4.8s, so we place the first step at 10%.
+  - HSL hues keep saturation/lightness similar to the original tone (S≈70% L≈~50%).
+*/
+@keyframes main_ring-fill {
+  /* Start: original red */
+  0%   { fill: hsl(14 70% 50%); }   /* original_red */
+  /* Keep red until first bounce impact (≈0.48s => 10% of 4.8s) */
+  10%  { fill: hsl(14 70% 50%); }
+
+  /* Immediately after impact -> warm yellow for the next bounce */
+  10.0001% { fill: hsl(40 70% 50%); } 
+  35%  { fill: hsl(40 70% 50%); }   /* warm_yellow through this interval (second impact ≈1.68s => 35%) */
+
+  /* Mid-blue on the third bounce */
+  35.0001% { fill: hsl(210 70% 47%); } 
+  60%  { fill: hsl(210 70% 47%); }   /* mid_blue */
+
+  /* Vivid green on the fourth bounce */
+  60.0001% { fill: hsl(140 70% 47%); }
+  85%  { fill: hsl(140 70% 47%); }   /* vivid_green */
+
+  /* Back to original red just before loop restarts so next cycle begins with red */
+  85.0001% { fill: hsl(14 70% 50%); }
+  100% { fill: hsl(14 70% 50%); }
+}
+
+/* Small comment: if your SVG element using the ring is a <g> or <path>, ensure it has class="main_ring".
+   This CSS is intentionally self-contained and will animate on page load without additional classes. */
+
+/* Top-arm animation lane declarations (added once) */
+/* Custom properties drive transforms so keyframes never set 'transform' directly. */
+@property --top_arm-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --top_arm-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --top_arm-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --top_arm-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --top_arm-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --top_arm-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --top_arm-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --top_arm-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --top_arm-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --top_arm-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+/* extra lanes reserved (declared to avoid collisions with other scripts/lanes) */
+@property --top_arm-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_arm-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_arm-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --top_arm-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --top_arm-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_arm-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_arm-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_arm-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Composer rule: build the element transform from custom properties (no transforms in keyframes) */
+/* transform-origin chosen to approximate the arm's inner/base connection so rotation pivots at the attachment point.
+   This keeps motion visually attached to the ring and avoids collision with the top dot. */
+.top_arm {
+  transform-box: fill-box;
+  transform-origin: 12% 18%; /* anchored at inner/base connection (approx relative to the arm's bbox) */
+
+  /* Compose transforms from the animated custom properties */
+  transform:
+    translateX(var(--top_arm-tx1, 0px))
+    translateY(var(--top_arm-ty1, 0px))
+    rotate(var(--top_arm-rot1, 0deg))
+    scaleX(var(--top_arm-sx1, 1))
+    scaleY(var(--top_arm-sy1, 1));
+
+  /* Two synchronized lanes:
+     1) top_arm-motion - follow-through rotation + vertical lag (1.2s, lags 90ms)
+     2) top_arm-fill   - color cycle following main_ring, phase-shifted 90ms so arm changes just after ring impact
+     Use longhand properties and aligned indexes for clarity and collision-avoidance.
+  */
+  animation-name: top_arm-motion, top_arm-fill;
+  animation-duration: 1.2s, 4.8s;
+  animation-timing-function: cubic-bezier(0.2,0.9,0.3,1), cubic-bezier(0.22,1,0.36,1);
+  animation-iteration-count: infinite, infinite;
+  animation-fill-mode: both, both;
+  animation-delay: 90ms, 90ms; /* small phase delay so the arm trails the main ring */
+  animation-direction: normal, normal;
+
+  will-change: transform, fill;
+}
+
+/* Motion keyframes modify only custom properties (no 'transform' property here).
+   Behavior:
+   - Soft follow-through: slight upward lag when ring lifts, then a mild over-rotation on impact,
+     and a subtle rebound before settling. Values chosen to remain subtle and not clip.
+*/
+@keyframes top_arm-motion {
+  0% {
+    --top_arm-ty1: 0px;
+    --top_arm-rot1: -2deg;
+    --top_arm-sx1: 1;
+    --top_arm-sy1: 1;
+  }
+
+  /* Arm begins to follow the ring's ascent (lags behind so movement is softer). */
+  20% {
+    --top_arm-ty1: -6px;      /* small vertical lift */
+    --top_arm-rot1: -6deg;    /* trailing tilt */
+    --top_arm-sx1: 0.99;      /* subtle narrow on lift */
+    --top_arm-sy1: 1.01;
+  }
+
+  /* Impact frame: the arm reacts slightly after the ring landing — gentle over-rotation and a hair of scale */
+  40% {
+    --top_arm-ty1: 0px;
+    --top_arm-rot1: 4deg;     /* small forward rotation on impact */
+    --top_arm-sx1: 1.01;      /* micro 'pop' to emphasize connection */
+    --top_arm-sy1: 0.99;
+  }
+
+  /* Small follow-through rebound */
+  60% {
+    --top_arm-ty1: -2.5px;
+    --top_arm-rot1: -1deg;
+    --top_arm-sx1: 1.002;
+    --top_arm-sy1: 0.998;
+  }
+
+  100% {
+    --top_arm-ty1: 0px;
+    --top_arm-rot1: -2deg;    /* return near the initial resting tilt */
+    --top_arm-sx1: 1;
+    --top_arm-sy1: 1;
+  }
+}
+
+/* Color/fill lane for the arm — mirrors the main_ring color cycle but phase-shifted (via animation-delay)
+   so the arm updates color a short moment after the ring's impact, reinforcing secondary motion.
+   Uses the same hue stops as main_ring-fill for visual coherence.
+*/
+@keyframes top_arm-fill {
+  0%   { fill: hsl(14 70% 50%); }   /* original_red */
+  10%  { fill: hsl(14 70% 50%); }
+
+  10.0001% { fill: hsl(40 70% 50%); } 
+  35%  { fill: hsl(40 70% 50%); }   /* warm_yellow */
+
+  35.0001% { fill: hsl(210 70% 47%); } 
+  60%  { fill: hsl(210 70% 47%); }   /* mid_blue */
+
+  60.0001% { fill: hsl(140 70% 47%); }
+  85%  { fill: hsl(140 70% 47%); }   /* vivid_green */
+
+  85.0001% { fill: hsl(14 70% 50%); }
+  100% { fill: hsl(14 70% 50%); }
+}
+
+/* Notes:
+   - All animation lanes are self-contained and start on page load (no runtime classes required).
+   - Keyframes never set the 'transform' property directly; they only update custom properties used by the composer.
+   - transform-origin is chosen to keep the arm visually attached to the ring's interior connection point and avoid collisions
+     with the top dot during rotation/translation.
+   - The small animation-delay (90ms) is the primary mechanism for 'lag' relative to the main_ring animation.
+*/
+
+/* top_dot animation lanes and composer.
+   Declared once to avoid collisions with other lanes in the document.
+   All keyframes update custom properties only (no 'transform' inside @keyframes).
+*/
+@property --top_dot-tx1  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --top_dot-tx2  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --top_dot-ty1  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --top_dot-ty2  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --top_dot-rot1 { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --top_dot-rot2 { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --top_dot-sx1  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --top_dot-sx2  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --top_dot-sy1  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --top_dot-sy2  { syntax: '<number>';  inherits: false; initial-value: 1; }
+
+/* reserved lanes (declared to avoid collisions with other scripts/lanes) */
+@property --top_dot-op1     { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_dot-op2     { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_dot-blur1   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --top_dot-blur2   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --top_dot-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_dot-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_dot-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --top_dot-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Composer: build transforms from custom properties (keeps keyframes collision-free).
+   transform-origin is the dot's own center (fill-box) so rotation/pivot feels natural and avoids collisions.
+*/
+.top_dot {
+  transform-box: fill-box;
+  transform-origin: 50% 50%; /* center of the small circle */
+
+  transform:
+    translateX(var(--top_dot-tx1, 0px))
+    translateY(var(--top_dot-ty1, 0px))
+    rotate(var(--top_dot-rot1, 0deg))
+    scaleX(var(--top_dot-sx1, 1))
+    scaleY(var(--top_dot-sy1, 1));
+
+  /* Two lanes:
+     1) top_dot-motion -- playful hop/rotation (1.2s loop) with an elastic-soft easing
+     2) top_dot-fill   -- color cycle synced with main_ring but phase-shifted; soft crossfades
+     Both start automatically on page load. */
+  animation-name: top_dot-motion, top_dot-fill;
+  animation-duration: 1.2s, 4.8s;
+  animation-timing-function: cubic-bezier(0.175,0.885,0.32,1.275), ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-fill-mode: both, both;
+  animation-delay: 140ms, 140ms; /* 140ms lag relative to main_ring for visible follow-through */
+  animation-direction: normal, normal;
+
+  will-change: transform, fill;
+}
+
+/* Motion keyframes update only custom properties.
+   Timings mirror other elements (0,20,40,60,100) but with larger first bounce as specified:
+   translateY: 0 -> -42px -> 0 -> -18px -> 0
+   rotation ranges between -8deg and +6deg to feel springy.
+*/
+@keyframes top_dot-motion {
+  0% {
+    --top_dot-ty1: 0px;
+    --top_dot-rot1: -2deg;
+    --top_dot-sx1: 1;
+    --top_dot-sy1: 1;
+  }
+
+  20% {
+    /* main hop apex */
+    --top_dot-ty1: -42px;
+    --top_dot-rot1: -8deg;
+    --top_dot-sx1: 1.03;  /* slight squash/stretch to sell the spring */
+    --top_dot-sy1: 0.97;
+  }
+
+  40% {
+    /* impact / forward tilt */
+    --top_dot-ty1: 0px;
+    --top_dot-rot1: 6deg;
+    --top_dot-sx1: 0.98;
+    --top_dot-sy1: 1.02;
+  }
+
+  60% {
+    /* smaller follow-up rebound */
+    --top_dot-ty1: -18px;
+    --top_dot-rot1: -4deg;
+    --top_dot-sx1: 1.01;
+    --top_dot-sy1: 0.995;
+  }
+
+  100% {
+    /* settle */
+    --top_dot-ty1: 0px;
+    --top_dot-rot1: 0deg;
+    --top_dot-sx1: 1;
+    --top_dot-sy1: 1;
+  }
+}
+
+/* Color/fill lane: follows the same hue progression as main_ring-fill but with a soft crossfade
+   window (~180ms) so the dot's highlight feels like a subtle follow. The animation-delay above
+   shifts this lane slightly after the ring so color updates trail the ring impact.
+   Crossfade window: 180ms / 4800ms = 3.75% of the 4.8s cycle; we use that percent to make each
+   color transition interpolate smoothly.
+*/
+@keyframes top_dot-fill {
+  /* Start: original red */
+  0%        { fill: hsl(14 70% 50%); }
+  10%       { fill: hsl(14 70% 50%); }
+
+  /* gentle transition to warm yellow (3.75% window for ~180ms crossfade) */
+  10%       { fill: hsl(14 70% 50%); }
+  13.75%    { fill: hsl(40 70% 50%); }
+  35%       { fill: hsl(40 70% 50%); }
+
+  /* to mid-blue */
+  35%       { fill: hsl(40 70% 50%); }
+  38.75%    { fill: hsl(210 70% 47%); }
+  60%       { fill: hsl(210 70% 47%); }
+
+  /* to vivid green */
+  60%       { fill: hsl(210 70% 47%); }
+  63.75%    { fill: hsl(140 70% 47%); }
+  85%       { fill: hsl(140 70% 47%); }
+
+  /* back to original red with a soft crossfade into the next loop */
+  85%       { fill: hsl(140 70% 47%); }
+  88.75%    { fill: hsl(14 70% 50%); }
+  100%      { fill: hsl(14 70% 50%); }
+}
+
+/* Notes:
+   - Keyframes never set the 'transform' property directly; only custom properties are used.
+   - transform-origin set to the dot's center (fill-box) to avoid collisions with the ring/top-arm.
+   - animation-delay of 140ms creates the requested follow-through relative to the main_ring lane.
+   - The fill animation uses short interpolation windows (~3.75%) to approximate a ~180ms soft crossfade
+     while remaining synchronized with the main ring's color cycle.
+   - Lanes declared above include spare/reserved properties so other scripts/animations won't collide.
+*/
+
+/* ground_shadow animation lane declarations (added once) */
+/* Declare a full set of reserved lanes for collision-safety (only a few are used below). */
+@property --ground_shadow-tx1   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-tx2   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-ty1   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-ty2   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-rot1  { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --ground_shadow-rot2  { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --ground_shadow-sx1   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-sx2   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-sy1   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-sy2   { syntax: '<number>';  inherits: false; initial-value: 1; }
+
+@property --ground_shadow-op1   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-op2   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-blur1 { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-blur2 { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --ground_shadow-stroke1{ syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-stroke2{ syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-bright1{ syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --ground_shadow-bright2{ syntax: '<number>';  inherits: false; initial-value: 1; }
+
+/* Composer for the shadow: builds transform & opacity from custom properties.
+   transform-origin set to the center of the shadow so scaling feels natural beneath the logo.
+   This rule animates immediately on page load and remains collision-safe (keyframes only change custom props).
+*/
+.ground_shadow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%; /* center of the ellipse */
+
+  /* Compose the visual transform from custom lanes - keyframes will update these variables. */
+  transform:
+    translateX(var(--ground_shadow-tx1, 0px))
+    translateY(var(--ground_shadow-ty1, 0px))
+    rotate(var(--ground_shadow-rot1, 0deg))
+    scaleX(var(--ground_shadow-sx1, 1))
+    scaleY(var(--ground_shadow-sy1, 1));
+
+  /* Map opacity to the custom lane so keyframes don't directly touch the 'opacity' property. */
+  opacity: var(--ground_shadow-op1, 0.22);
+
+  /* Single motion lane controls scaling & opacity in-phase with the main ring's contact frames.
+     Use longhand animation properties to avoid collision with other element lanes. */
+  animation-name: ground_shadow-motion;
+  animation-duration: 1.2s;
+  animation-timing-function: ease-out; /* mirrors main_ring timing for coherent impacts */
+  animation-iteration-count: infinite;
+  animation-fill-mode: both;
+  animation-delay: 0s;
+  animation-direction: normal;
+
+  will-change: transform, opacity;
+}
+
+/* Motion keyframes: only change custom properties (never set 'transform' or 'opacity' here).
+   Timings match main_ring's bounce frames (0,20,40,60,100) so the shadow tightens while airborne
+   and flattens/widens + darkens on impact. A subtle scaleY tweak is included to sell the flattening
+   without being dramatic (user requested scaleX + opacity as primary drivers).
+*/
+@keyframes ground_shadow-motion {
+  0% {
+    --ground_shadow-sx1: 1;     /* normal width */
+    --ground_shadow-sy1: 1;     /* normal height */
+    --ground_shadow-op1: 0.22;  /* base low opacity */
+  }
+
+  /* Apex (object airborne): shadow tightens and lightens */
+  20% {
+    --ground_shadow-sx1: 0.88;  /* tighten horizontally */
+    --ground_shadow-sy1: 1.06;  /* slight height increase (subtle) */
+    --ground_shadow-op1: 0.08;  /* much lighter while in air */
+  }
+
+  /* Impact: shadow flattens/widens and darkens */
+  40% {
+    --ground_shadow-sx1: 1.18;  /* widen on contact */
+    --ground_shadow-sy1: 0.92;  /* flatten slightly */
+    --ground_shadow-op1: 0.32;  /* darker at impact */
+  }
+
+  /* Small rebound: intermediate state */
+  60% {
+    --ground_shadow-sx1: 0.95;
+    --ground_shadow-sy1: 1.01;
+    --ground_shadow-op1: 0.14;
+  }
+
+  100% {
+    --ground_shadow-sx1: 1;
+    --ground_shadow-sy1: 1;
+    --ground_shadow-op1: 0.22;
+  }
+}
+
+/* Notes:
+   - Keyframes never write 'transform' or 'opacity' directly; they update custom properties only.
+   - The 1.2s duration and ease-out timing mirror the main_ring slot so impacts and shadow responses remain in-phase.
+   - transform-origin centered so the ellipse scales uniformly around its centre and avoids visual offset.
+   - Will-change hints provided for rendering performance; the animation is intentionally subtle.
+*/
+
+/*
+    ring_highlight animation lanes + composer.
+    - Declared once and kept collision-safe with existing lanes (use --ring_highlight-* naming).
+    - Keyframes ONLY update custom properties (never the 'transform' or 'opacity' directly).
+    - Two lanes:
+      1) ring_highlight-sweep  (4.8s linear) -> slow circulate/rotation + small translate
+      2) ring_highlight-pulse  (1.2s ease-in-out) -> subtle opacity pulse
+    - Small animation-delay aligns the sheen so it trails the main bounce slightly (pleasant follow-through).
+    - transform-origin chosen as the ring's geometric center so the sheen sweeps around the ring without clipping.
+  */
+
+  /* --- custom property lane declarations (added once) --- */
+  @property --ring_highlight-tx1  { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-tx2  { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-ty1  { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-ty2  { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-rot1 { syntax: '<angle>';  inherits: false; initial-value: 0deg; }
+  @property --ring_highlight-rot2 { syntax: '<angle>';  inherits: false; initial-value: 0deg; }
+  @property --ring_highlight-sx1  { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-sx2  { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-sy1  { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-sy2  { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+  /* reserved / extra lanes to avoid collisions with other scripts */
+  @property --ring_highlight-op1     { syntax: '<number>'; inherits: false; initial-value: 0.12; }
+  @property --ring_highlight-op2     { syntax: '<number>'; inherits: false; initial-value: 0.12; }
+  @property --ring_highlight-blur1   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-blur2   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --ring_highlight-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+  @property --ring_highlight-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+  /* --- composer: build final transform & opacity from custom properties (no transforms set in keyframes) --- */
+  .ring_highlight {
+    /* operate relative to the element bounds so small rotations feel anchored */
+    transform-box: fill-box;
+    transform-origin: 50% 50%; /* center of the ring: keeps sheen aligned while rotating */
+
+    /* compose transform from custom lanes (keyframes update vars only) */
+    transform:
+      translateX(var(--ring_highlight-tx1, 0px))
+      translateY(var(--ring_highlight-ty1, 0px))
+      rotate(var(--ring_highlight-rot1, 0deg))
+      scaleX(var(--ring_highlight-sx1, 1))
+      scaleY(var(--ring_highlight-sy1, 1));
+
+    /* sheen color is pure/near white; overall visibility controlled via custom opacity lane */
+    fill: rgb(255 255 255);
+    opacity: var(--ring_highlight-op1, 0.12);
+
+    /* Animations (longhand, multiple lanes). Index alignment matters. */
+    animation-name: ring_highlight-sweep, ring_highlight-pulse;
+    animation-duration: 4.8s, 1.2s;
+    animation-timing-function: linear, ease-in-out;
+    animation-iteration-count: infinite, infinite;
+    animation-fill-mode: both, both;
+    animation-delay: 60ms, 60ms; /* slight trail relative to the main bounce for natural follow */
+    animation-direction: normal, normal;
+
+    will-change: transform, opacity;
+    pointer-events: none; /* purely decorative */
+    mix-blend-mode: screen; /* subtle additive highlight on darker fills (optional but tasteful) */
+  }
+
+  /* --- motion: slow sweep around the ring (custom props only) --- */
+  @keyframes ring_highlight-sweep {
+    /* slow oscillation of rotation ±6deg while translating a few pixels along local X to simulate sweep.
+       Values are intentionally tiny (non-competing with bounce). */
+    0% {
+      --ring_highlight-rot1: -6deg;
+      --ring_highlight-tx1: -6px;
+      --ring_highlight-ty1: 0px;
+      --ring_highlight-sx1: 1;
+      --ring_highlight-sy1: 1;
+    }
+    25% {
+      --ring_highlight-rot1: -2deg;
+      --ring_highlight-tx1: -2px;
+    }
+    50% {
+      --ring_highlight-rot1: 6deg;
+      --ring_highlight-tx1: 6px;
+    }
+    75% {
+      --ring_highlight-rot1: 2deg;
+      --ring_highlight-tx1: 2px;
+    }
+    100% {
+      --ring_highlight-rot1: -6deg;
+      --ring_highlight-tx1: -6px;
+      --ring_highlight-ty1: 0px;
+      --ring_highlight-sx1: 1;
+      --ring_highlight-sy1: 1;
+    }
+  }
+
+  /* --- opacity pulse: gentle breathe so sheen 'catches' at slightly different phases of the bounce ---
+     - Pulses faster than the 4.8s sweep so the sheen reads as a subtle specular catch without competing.
+     - Keyframes update only the opacity custom property.
+  */
+  @keyframes ring_highlight-pulse {
+    0%   { --ring_highlight-op1: 0.05; }
+    50%  { --ring_highlight-op1: 0.22; }
+    100% { --ring_highlight-op1: 0.05; }
+  }
+
+  /* Coherence notes:
+     - The sweep (4.8s linear) shares the same base loop time as the main color cycle so the sheen slowly circulates
+       in-phase with the overall color rhythm. The small 60ms delay gives it a tasteful follow-through relative to the bounce.
+     - Keyframes never write 'transform' or 'opacity' directly; they mutate custom properties the composer consumes,
+       avoiding animation lane collisions with other elements in the file.
+     - Values are deliberately low-amplitude to keep the highlight subtle and performant.
+  */
+
+/* 
+  background_canvas: intentionally static (no animation) to keep visual focus on the logo.
+  We declare the standard set of custom-property "lanes" once (collision-safe) and provide a
+  composer rule that builds transforms/opactiy from those lanes. Keyframes are NOT added and
+  no animation-name is attached — this preserves full control and keeps the layer inert on load.
+  Coordinates / transform-origin chosen relative to the SVG bounds (centered) to avoid any visual
+  collision if someone later enables motion on this lane.
+*/
+
+/* --- lane declarations (added once, collision-safe naming) --- */
+@property --background_canvas-tx1  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-tx2  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-ty1  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-ty2  { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-rot1 { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --background_canvas-rot2 { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --background_canvas-sx1  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-sx2  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-sy1  { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-sy2  { syntax: '<number>';  inherits: false; initial-value: 1; }
+
+@property --background_canvas-op1     { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-op2     { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-blur1   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-blur2   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --background_canvas-stroke1 { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-stroke2 { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-bright1 { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --background_canvas-bright2 { syntax: '<number>';  inherits: false; initial-value: 1; }
+
+/* --- composer (maps custom lanes to actual visual properties) --- */
+.background_canvas {
+  /* operate relative to the element's own bounds; SVG centre ~ (128,161) so this keeps origin neutral */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose transform from custom properties so keyframes (if added later) never set 'transform' directly. */
+  transform:
+    translateX(var(--background_canvas-tx1, 0px))
+    translateY(var(--background_canvas-ty1, 0px))
+    rotate(var(--background_canvas-rot1, 0deg))
+    scaleX(var(--background_canvas-sx1, 1))
+    scaleY(var(--background_canvas-sy1, 1));
+
+  /* Static visual: transparent black layer. Opacity mapped to a custom lane so scripts can safely alter it later
+     without colliding with other animations. Default is solid black; reduce --background_canvas-op1 to make it
+     more transparent if desired. */
+  fill: rgb(0 0 0);
+  opacity: var(--background_canvas-op1, 1);
+
+  /* Decorative/background only: don't block pointer events to underlying page SVG elements. */
+  pointer-events: none;
+
+  /* Will-change kept minimal since this layer is static; leaving it out avoids unnecessary compositor hints. */
+}
+
+/* Coherence notes:
+   - Intentionally no animation-name / @keyframes are attached: this layer remains static on page load as requested.
+   - All lane properties are declared so future animations can be added safely (they will not conflict with the
+     existing lanes used by main_ring, top_arm, top_dot, etc.).
+   - transform-origin is centered to avoid clipping or visual collisions with the ring's motion if this element
+     is ever animated in the future.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg height="800px" preserveaspectratio="xMidYMid" version="1.1" viewbox="-27 0 310 310" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="top_dot-group" data-bounds="-12.6,0.0,268.6,322.0" data-center="128.00,161.00" data-center-relative="140.57,161.00" data-logical-parent="main_ring" data-paint-order="0" data-semantic-type="top_dot">
+     <path class="group top_dot" d="M218.281037,90.106412 C268.572988,140.398363 268.572988,221.075034 218.281037,271.716235 C169.036835,322.008186 88.0109141,322.008186 37.7189632,271.716235 C-12.5729877,221.424284 -12.5729877,140.398363 37.7189632,90.106412 L127.825375,0 L127.825375,45.053206 L119.443383,53.4351978 L59.7216917,113.156889 C22.0027285,150.177353 22.0027285,210.946794 59.7216917,248.665757 C96.7421555,286.38472 157.511596,286.38472 195.230559,248.665757 C232.949523,211.645293 232.949523,150.875853 195.230559,113.156889 L218.281037,90.106412 Z M173.227831,84.5184175 C163.969338,84.5184175 156.463847,77.0129263 156.463847,67.7544338 C156.463847,58.4959413 163.969338,50.9904502 173.227831,50.9904502 C182.486323,50.9904502 189.991814,58.4959413 189.991814,67.7544338 C189.991814,77.0129263 182.486323,84.5184175 173.227831,84.5184175 Z" fill="#EE4C2C" id="target_element_125744104908064">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

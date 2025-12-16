@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+  Entrance animation for .hexagon_outline
+  - Uses the "lanes" pattern via custom properties to avoid writing transform inside keyframes.
+  - Animates opacity and uniform scale (sx/sy) on dedicated lanes so it composes cleanly with other motions.
+  - transform-box + transform-origin are set to center of the path (fill-box / 50% 50%) so the pop feels natural relative
+    to the hexagon's geometry and won't visually collide with the central cross animation.
+*/
+
+/* Declare animatable custom properties (add ONCE as required). */
+@property --hexagon_outline-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hexagon_outline-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hexagon_outline-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hexagon_outline-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hexagon_outline-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hexagon_outline-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer rule that uses the lanes. This is safe to add once and keeps any transforms out of keyframes. */
+.hexagon_outline {
+  /* Initial lane values (match requested initial visual state: transparent + slightly smaller) */
+  --hexagon_outline-sx1: 0.97;
+  --hexagon_outline-sy1: 0.97;
+  --hexagon_outline-op1: 0;
+
+  /* Compose the transform and opacity from lanes. Use fill-box and center origin so scaling is centered on the hexagon shape. */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: translate(var(--hexagon_outline-tx1, 0px), var(--hexagon_outline-ty1, 0px))
+             rotate(var(--hexagon_outline-rot1, 0deg))
+             scale(var(--hexagon_outline-sx1, 1), var(--hexagon_outline-sy1, 1));
+  opacity: var(--hexagon_outline-op1, 1);
+
+  /* Performance hints */
+  will-change: transform, opacity;
+  /* Ensure this element's animation runs immediately on page load (no gating classes). */
+  /* Animation longhand follows so it composes nicely with potential additional lanes. */
+  animation-name: hexagon_outline__fadePop;
+  animation-duration: 600ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-direction: normal;
+}
+
+/* Keyframes animate only the custom properties (no transform or opacity directly) per the collision-avoidance rule. */
+@keyframes hexagon_outline__fadePop {
+  0% {
+    /* initial: invisible and slightly smaller */
+    --hexagon_outline-sx1: 0.97;
+    --hexagon_outline-sy1: 0.97;
+    --hexagon_outline-op1: 0;
+  }
+  70% {
+    /* subtle overshoot for organic feel */
+    --hexagon_outline-sx1: 1.02;
+    --hexagon_outline-sy1: 1.02;
+    --hexagon_outline-op1: 1;
+  }
+  100% {
+    /* settle to final state */
+    --hexagon_outline-sx1: 1;
+    --hexagon_outline-sy1: 1;
+    --hexagon_outline-op1: 1;
+  }
+}
+
+/* 
+  Notes:
+  - Single animation lane used for scale (sx1/sy1) and opacity (op1) to remain unobtrusive and avoid collisions.
+  - The hexagon_scale lanes (sx2/sy2) and op2 are declared above and left idle for future motions so we don't overwrite other lanes.
+  - Using transform-box: fill-box and transform-origin: 50% 50% ensures the gentle pop is centered on the hexagon's actual shape,
+    minimizing visual overlap with the central cross (which is independently animated).
+*/
+
+/* 
+  Entrance animation for the center cross. 
+  - Uses the "lanes" pattern: custom properties are animated (no transform inside keyframes).
+  - Applies the composer/animation to the group that contains the two bars so rotation/scale are centered
+    on the visual center of the X (use .center_cross-group which already groups both paths).
+  - Starts after the hexagon's entrance (hexagon: 600ms) + small buffer => 650ms delay.
+*/
+
+/* Declare animatable properties for center_cross ONCE (safe to add). */
+@property --center_cross-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --center_cross-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --center_cross-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --center_cross-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
+@property --center_cross-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --center_cross-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+@property --center_cross-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --center_cross-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --center_cross-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --center_cross-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+@property --center_cross-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --center_cross-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+@property --center_cross-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --center_cross-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
+@property --center_cross-stroke1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --center_cross-stroke2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --center_cross-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --center_cross-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Composer rule for the center cross group.
+   - Uses lane1 for the entrance motion (rot1, sx1/sy1, op1).
+   - Leaves lane2 idle for any future interactions so we don't collide with other motions.
+*/
+.center_cross-group {
+  /* Initial visual state before animation: invisible, spun, and scaled down */
+  --center_cross-rot1: -720deg;
+  --center_cross-sx1: 0.60;
+  --center_cross-sy1: 0.60;
+  --center_cross-op1: 0;
+
+  /* Compose transform from lanes (keeps transforms out of keyframes) */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: translate(var(--center_cross-tx1, 0px), var(--center_cross-ty1, 0px))
+             rotate(var(--center_cross-rot1, 0deg))
+             scale(var(--center_cross-sx1, 1), var(--center_cross-sy1, 1));
+  opacity: var(--center_cross-op1, 1);
+
+  will-change: transform, opacity;
+  /* Run immediately on load and settle forwards */
+  animation-name: center_cross__spinPop;
+  animation-duration: 750ms;
+  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation-delay: 650ms; /* starts after hexagon (600ms) + small buffer */
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-direction: normal;
+}
+
+/* Keyframes animate ONLY the custom properties (no direct transform/opacity) to avoid collisions. */
+@keyframes center_cross__spinPop {
+  0% {
+    --center_cross-op1: 0;
+    --center_cross-rot1: -720deg;
+    --center_cross-sx1: 0.60;
+    --center_cross-sy1: 0.60;
+  }
+  60% {
+    /* visible and slightly overshot for lively feel */
+    --center_cross-op1: 1;
+    --center_cross-rot1: 18deg;
+    --center_cross-sx1: 1.05;
+    --center_cross-sy1: 1.05;
+  }
+  85% {
+    /* soft settle back */
+    --center_cross-rot1: -6deg;
+    --center_cross-sx1: 0.98;
+    --center_cross-sy1: 0.98;
+    /* op1 remains 1 */
+  }
+  100% {
+    --center_cross-op1: 1;
+    --center_cross-rot1: 0deg;
+    --center_cross-sx1: 1;
+    --center_cross-sy1: 1;
+  }
+}
+
+/* 
+  Notes:
+  - The animation targets the group (.center_cross-group) so rotation & scaling are centered on the visual X.
+  - Keyframes modify only custom properties to avoid transform collision with other potential motions on other lanes.
+  - Lane2 properties are declared and left idle for future interactions (hover/press) so this entry animation won't overwrite them.
+  - Delay aligns this entrance with the hexagon_outline animation (hexagon: 600ms + 50ms buffer = 650ms).
+*/
+
+/* Background canvas: intentionally kept static (no entrance/idle animations).
+   - Declares the lanes (animatable custom properties) ONCE so future motions can safely use them
+     without colliding with the entrance animations already present on hexagon_outline / center_cross.
+   - Composer rule composes transform/op from lanes (no transforms in keyframes).
+   - Animation longhand explicitly disables animation to make the "no animation" intent unambiguous.
+   - transform-box/transform-origin chosen relative to the element's own geometry (fill-box, 50% 50%)
+     so any future lane-based motion will remain centered and avoid visual collisions with the center cross.
+*/
+
+/* --- Animatable custom properties for background_canvas (add ONCE) --- */
+@property --background_canvas-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --background_canvas-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --background_canvas-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --background_canvas-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
+@property --background_canvas-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --background_canvas-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+@property --background_canvas-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --background_canvas-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --background_canvas-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --background_canvas-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+@property --background_canvas-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --background_canvas-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+@property --background_canvas-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --background_canvas-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+
+@property --background_canvas-stroke1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --background_canvas-stroke2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+
+@property --background_canvas-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --background_canvas-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* --- Composer rule: static visual state (lane1 reserved/initialized; lane2 idle for future use) --- */
+.background_canvas {
+  /* Initial lane values: fully visible, neutral transform */
+  --background_canvas-tx1: 0px;
+  --background_canvas-ty1: 0px;
+  --background_canvas-rot1: 0deg;
+  --background_canvas-sx1: 1;
+  --background_canvas-sy1: 1;
+  --background_canvas-op1: 1;
+  --background_canvas-blur1: 0px;
+  --background_canvas-bright1: 1;
+
+  /* Compose transform/op from lanes (keeps transforms out of potential keyframes) */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform: translate(var(--background_canvas-tx1, 0px), var(--background_canvas-ty1, 0px))
+             rotate(var(--background_canvas-rot1, 0deg))
+             scale(var(--background_canvas-sx1, 1), var(--background_canvas-sy1, 1));
+  /* Apply subtle filter lane via filter property so future blur lanes can be driven without keyframe transforms */
+  filter: blur(var(--background_canvas-blur1, 0px));
+  opacity: var(--background_canvas-op1, 1);
+
+  /* Performance hint: background canvas is static so keep will-change conservative */
+  will-change: transform, opacity, filter;
+
+  /* Explicitly declare no animation - intention is that this element remains static
+     so it does not compete visually or computationally with the hexagon / center cross entrances.
+     Using animation longhand as requested; all fields set so there is no ambiguity. */
+  animation-name: none;
+  animation-duration: 0s;
+  animation-timing-function: ease;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: both;
+  animation-direction: normal;
+
+  /* Background should not intercept pointer events intended for controls above it */
+  pointer-events: none;
+}
+
+/* 
+  Notes on coherence & collision avoidance:
+  - The hexagon_outline animates from 0 → 600ms; the center_cross begins at 650ms.
+    Keeping background_canvas static avoids visual competition during these entrance motions.
+  - All transforms are composed from custom properties (lanes). If future interactive/idle motion is added,
+    authors should animate the lane properties (e.g. --background_canvas-sx2/op2) rather than write transforms
+    inside keyframes to prevent collision with other concurrent motions.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg data-name="Layer 1" height="800px" id="Layer_1" viewbox="0 0 64 64" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <style>
+     .cls-1{fill:#ffb300;}.cls-2{fill:#0074ff;}
+    </style>
+   </defs>
+   <title>
+   </title>
+   <g class="root-animation-group">
+    <g class="center_cross-group" data-bounds="-16.0,-16.0,59.0,42.0" data-center="21.50,13.00" data-center-relative="37.50,29.00" data-logical-parent="central_symbol" data-merged-count="2" data-paint-order="0" data-semantic-type="center_cross">
+     <path class="cls-1 center_cross" d="M24,42a2,2,0,0,1-1.41-3.42l16-16a2,2,0,0,1,2.83,2.83l-16,16A2,2,0,0,1,24,42Z" id="target_element_139738933014624">
+     </path>
+     <path class="cls-1 center_cross" d="M40,42a2,2,0,0,1-1.42-.59l-16-16a2,2,0,0,1,2.83-2.83l16,16A2,2,0,0,1,40,42Z" id="target_element_139738933003104">
+     </path>
+    </g>
+    <g class="hexagon_outline-group" data-bounds="-25.0,-5.3,61.1,57.7" data-center="18.04,26.17" data-center-relative="43.03,31.51" data-logical-parent="central_symbol" data-paint-order="1" data-semantic-type="hexagon_outline">
+     <path class="cls-2 hexagon_outline" d="M45.67,57.68H18.33a2,2,0,0,1-1.73-1L2.93,33a2,2,0,0,1,0-2L16.6,7.32a2,2,0,0,1,1.73-1H45.67a2,2,0,0,1,1.73,1L61.07,31a2,2,0,0,1,0,2l-5.34,9.26a2,2,0,0,1-3.47-2L57,32,44.52,10.32h-25L7,32,19.48,53.68h25L47,49.41a2,2,0,0,1,3.46,2l-3,5.27A2,2,0,0,1,45.67,57.68Z" id="target_element_139738933015904">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>
