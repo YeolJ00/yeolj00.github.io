@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vector Prism: Animating Vector Graphics by Stratifying Semantic Structure</title>
+    <link rel="stylesheet" href="afterglow-bootstrap.css">
+    <style>
+        /* Hero video grid */
+        .teaser-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .teaser-item {
+            text-align: center;
+        }
+        
+        /* Styled iframe container for animations */
+        .animation-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* SVG will scale to fit container */
+        .animation-frame svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* Loading state */
+        .animation-frame.loading::after {
+            content: "Loading...";
+            color: var(--gray-400);
+            font-size: 0.85rem;
+        }
+        
+        /* Hover effect for teaser animations */
+        .teaser-item .animation-frame {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .teaser-item .animation-frame:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--box-shadow-lg);
+        }
+        
+        .teaser-item figcaption {
+            font-size: 0.85rem;
+            margin-top: 12px;
+            color: var(--gray-600);
+            font-style: italic;
+            line-height: 1.4;
+        }
+        
+        /* Comparison section */
+        .comparison-section {
+            background: var(--gray-100);
+            padding: 3rem 0;
+            margin: 3rem 0;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .comparison-item {
+            text-align: center;
+        }
+        
+        /* Comparison iframe styling */
+        .comparison-item .animation-frame {
+            border-radius: var(--border-radius);
+            box-shadow: none;
+            border: 1px solid var(--gray-300);
+        }
+        
+        .comparison-item.ours .animation-frame {
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 106, 138, 0.2);
+        }
+        
+        /* Video styling for baselines */
+        .comparison-item video {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray-300);
+            background: #000;
+        }
+        
+        .comparison-item .method-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 8px;
+            color: var(--gray-700);
+        }
+        
+        .comparison-item.ours .method-label {
+            color: var(--primary);
+        }
+        
+        .instruction-text {
+            font-weight: 500;
+            text-align: center;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, rgba(255, 167, 166, 0.15) 0%, rgba(157, 79, 255, 0.15) 100%);
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            color: var(--gray-800);
+        }
+        
+        /* Pipeline visual */
+        .pipeline-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+        
+        .pipeline-step {
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-sm);
+            min-width: 180px;
+        }
+        
+        .pipeline-step .icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pipeline-step h5 {
+            margin-bottom: 0.25rem;
+            color: var(--gray-800);
+        }
+        
+        .pipeline-step p {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin: 0;
+        }
+        
+        .pipeline-arrow {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+        
+        /* Stats section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-sm);
+            border-top: 4px solid;
+            border-image: var(--gradient-afterglow) 1;
+        }
+        
+        .stat-card .number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-afterglow);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stat-card .label {
+            color: var(--gray-600);
+            font-size: 1rem;
+        }
+        
+        /* No video placeholder */
+        .no-video {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--gray-200);
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-500);
+            font-size: 0.8rem;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .teaser-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .comparison-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .teaser-grid {
+                grid-template-columns: 1fr;
+            }
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            .pipeline-visual {
+                flex-direction: column;
+            }
+            .pipeline-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" style="margin-top: 40px; margin-bottom: 60px;">
+        <div class="row">
+            <div class="col-1"></div>
+            <div class="col-10">
+
+                <!-- Title and Authors -->
+                <div class="text-center">
+                    <h1 class="text-gradient"
+                        style="margin-top: 20px; margin-bottom: 20px; line-height: 1.2em; font-weight: 600;">
+                        Vector Prism
+                    </h1>
+                    <h4 class="text-muted mb-4" style="font-weight: 400;">
+                        Animating Vector Graphics by Stratifying Semantic Structure
+                    </h4>
+
+                    <!-- Conference Badge -->
+                    <!-- <div class="mb-4">
+                        <span class="badge badge-gradient" style="font-size: 0.9rem; padding: 0.5em 1em;">CVPR 2026</span>
+                    </div> -->
+
+                    <!-- Authors - FIXED LAYOUT -->
+                    <div class="row justify-content-center mt-4 mb-4">
+                        <div class="col-3 col-md-3 mb-3">
+                            <h5 class="text-dark mb-1">Jooyeol Yun</h5>
+                            <p class="text-primary mb-0" style="font-size: 0.85rem;">blizzard072@kaist.ac.kr</p>
+                        </div>
+                        <div class="col-3 col-md-3 mb-3">
+                            <h5 class="text-dark mb-1">Jaegul Choo</h5>
+                            <p class="text-primary mb-0" style="font-size: 0.85rem;">jchoo@kaist.ac.kr</p>
+                        </div>
+                    </div>
+                    <div class="row justify-content-center mt-4 mb-4">
+                        <div class="col-3 col-md-3 mb-3">
+                            <h1 class="text-gradient"
+                                style="margin-top: 10px; margin-bottom: 10px; line-height: 1.2em; font-weight: 600;">
+                                KAIST AI
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teaser Videos -->
+                <div class="teaser-grid">
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Make the emoji look left and right"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Elements smoothly pop up in a lively manner"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Compass needle quickly spins around once"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Buttons bounce in one by one"</figcaption>
+                    </div>
+                </div>
+
+                <div class="teaser-grid">
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Turn the scene to night"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Python logo bounces in and meets in the middle"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"PyTorch logo bounces and changes colors"</figcaption>
+                    </div>
+                    <div class="teaser-item">
+                        <div class="animation-frame loading" data-src="assets/19-1-cool.html"></div>
+                        <figcaption>"Doughnut bounces up, sprinkles fall in"</figcaption>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center mt-5">
+                    <a href="#" class="btn btn-gradient btn-lg mr-2 mb-2">📄 Paper</a>
+                    <a href="https://github.com/YeolJ00/vector-prism" class="btn btn-outline-primary btn-lg mr-2 mb-2">💻 Code</a>
+                    <a href="#" class="btn btn-outline-primary btn-lg mb-2">🎬 Demo</a>
+                </div>
+
+                <hr class="my-5">
+
+                <!-- TL;DR -->
+                <div class="text-center">
+                    <h2 class="text-gradient mb-4">TL;DR</h2>
+                    <p class="lead" style="font-size: 1.3rem;">
+                        <strong>Vector Prism</strong> recovers semantic structure from SVGs, enabling VLMs to create
+                        coherent animations that outperform <span class="text-primary">Sora 2</span> and other
+                        state-of-the-art methods.
+                    </p>
+                </div>
+
+                <!-- Simple Pipeline Visual -->
+                <div class="pipeline-visual mt-5">
+                    <div class="pipeline-step">
+                        <div class="icon">📊</div>
+                        <h5>Raw SVG</h5>
+                        <p>Fragmented structure</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">
+                        <div class="icon">🔬</div>
+                        <h5>Vector Prism</h5>
+                        <p>Semantic recovery</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">
+                        <div class="icon">🧩</div>
+                        <h5>Structured SVG</h5>
+                        <p>Meaningful groups</p>
+                    </div>
+                    <div class="pipeline-arrow">→</div>
+                    <div class="pipeline-step">
+                        <div class="icon">✨</div>
+                        <h5>Animation</h5>
+                        <p>Coherent motion</p>
+                    </div>
+                </div>
+
+                <hr class="my-5">
+
+                <!-- Stats -->
+                <h2 class="text-gradient text-center mb-4">Results at a Glance</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="number">76.1</div>
+                        <div class="label">GPT-T2V Score<br><small class="text-muted">vs. Sora 2's 69.1</small></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">54×</div>
+                        <div class="label">Smaller Files<br><small class="text-muted">vs. video formats</small></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number">89%</div>
+                        <div class="label">User Preference<br><small class="text-muted">vs. baselines</small></div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="col-1"></div>
+        </div>
+    </div>
+
+    <!-- Comparisons Section (Full Width Background) -->
+    <div class="comparison-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-1"></div>
+                <div class="col-10">
+
+                    <h2 class="text-gradient text-center mb-5">Side-by-Side Comparisons</h2>
+
+                    <!-- Comparison 1 -->
+                    <div class="instruction-text">
+                        "I want an opening animation, starting from the bottom and moving up."
+                    </div>
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/57-2-aniclip/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">AniClipart</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/57-2-gpt/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">GPT-5</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/57-2-wan/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Wan 2.2</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/57-2-sora/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Sora 2</div>
+                        </div>
+                        <div class="comparison-item ours">
+                            <video controls loop muted playsinline>
+                                <source src="assets/57-2-windmill/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Ours ✨</div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison 2 -->
+                    <div class="instruction-text mt-5">
+                        "I want the lightning bolt to glow softly and raindrops to fade in and out."
+                    </div>
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/16-2-aniclip/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">AniClipart</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/16-2-gpt/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">GPT-5</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/16-2-wan/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Wan 2.2</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/16-2-sora/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Sora 2</div>
+                        </div>
+                        <div class="comparison-item ours">
+                            <video controls loop muted playsinline>
+                                <source src="assets/16-2-lightning/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Ours ✨</div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison 3 -->
+                    <div class="instruction-text mt-5">
+                        "I want stars and planets to emerge gently, then rings appear with a stroke effect."
+                    </div>
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <div class="no-video">No output</div>
+                            <div class="method-label">AniClipart</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/32-1-gpt/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">GPT-5</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/32-1-wan/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Wan 2.2</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/32-1-sora/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Sora 2</div>
+                        </div>
+                        <div class="comparison-item ours">
+                            <video controls loop muted playsinline>
+                                <source src="assets/32-1-galaxy/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Ours ✨</div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison 4 -->
+                    <div class="instruction-text mt-5">
+                        "I want the hexagon to appear first, then the X sign enters by spinning in."
+                    </div>
+                    <div class="comparison-grid">
+                        <div class="comparison-item">
+                            <div class="no-video">No output</div>
+                            <div class="method-label">AniClipart</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/12-1-gpt/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">GPT-5</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/12-1-wan/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Wan 2.2</div>
+                        </div>
+                        <div class="comparison-item">
+                            <video controls loop muted playsinline>
+                                <source src="assets/videos/12-1-sora/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Sora 2</div>
+                        </div>
+                        <div class="comparison-item ours">
+                            <video controls loop muted playsinline>
+                                <source src="assets/12-1-cancel/video.mp4" type="video/mp4">
+                            </video>
+                            <div class="method-label">Ours ✨</div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="col-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to container -->
+    <div class="container">
+        <div class="row">
+            <div class="col-1"></div>
+            <div class="col-10">
+
+                <!-- User Study -->
+                <h2 class="text-gradient text-center mb-4">User Study</h2>
+                <div class="text-center mb-5">
+                    <img src="assets/exp_user_study.png" alt="User Study Results"
+                        style="max-width: 100%; border-radius: var(--border-radius-lg); box-shadow: var(--box-shadow);">
+                    <p class="text-muted mt-3">Human preference results: Pink = Ours, Other colors = Baselines</p>
+                </div>
+
+                <hr class="my-5">
+
+                <!-- Citation -->
+                <h2 class="text-gradient mb-4">Citation</h2>
+                <pre class="border rounded p-3 bg-light" style="font-size: 0.85rem;"><code>@inproceedings{yun2026vectorprism,
+  title={Vector Prism: Animating Vector Graphics by Stratifying Semantic Structure},
+  author={Yun, Jooyeol and Choo, Jaegul},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  year={2026}
+}</code></pre>
+
+                <hr class="my-5">
+
+                <!-- CTA -->
+                <div class="text-center mb-5">
+                    <h3 class="text-gradient mb-4">Ready to Animate?</h3>
+                    <a href="#" class="btn btn-gradient btn-lg">Try Vector Prism</a>
+                </div>
+
+            </div>
+            <div class="col-1"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="container text-center">
+            <p>© 2026 KAIST AI. All rights reserved.</p>
+            <p class="text-muted" style="font-size: 0.9rem;">
+                Made with the Firefox Afterglow color palette 🦊✨
+            </p>
+        </div>
+    </div>
+</body>
+    <!-- JavaScript to load SVG animations -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all animation frames with data-src
+            const frames = document.querySelectorAll('.animation-frame[data-src]');
+            
+            frames.forEach((frame, index) => {
+                const src = frame.getAttribute('data-src');
+                
+                fetch(src)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to load: ' + src);
+                        return response.text();
+                    })
+                    .then(html => {
+                        // Parse the HTML
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // Extract SVG
+                        const svg = doc.querySelector('svg');
+                        
+                        // Extract all style tags
+                        const styles = doc.querySelectorAll('style');
+                        
+                        if (svg) {
+                            // Create a unique ID for scoping
+                            const uniqueId = 'anim-' + index;
+                            
+                            // Add unique class to SVG for scoping
+                            svg.classList.add(uniqueId);
+                            
+                            // Process styles to scope them
+                            styles.forEach(style => {
+                                // Optionally scope CSS - prepend unique class
+                                // This helps avoid conflicts between animations
+                                let css = style.textContent;
+                                
+                                // Create a new scoped style element
+                                const scopedStyle = document.createElement('style');
+                                scopedStyle.textContent = css;
+                                frame.appendChild(scopedStyle);
+                            });
+                            
+                            // Add SVG to frame
+                            frame.appendChild(svg);
+                            
+                            // Remove loading state
+                            frame.classList.remove('loading');
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        frame.innerHTML = '<span style="color: #999; font-size: 0.8rem;">Failed to load</span>';
+                        frame.classList.remove('loading');
+                    });
+            });
+        });
+    </script>
+
+</html>
