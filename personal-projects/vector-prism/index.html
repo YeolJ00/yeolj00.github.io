@@ -154,6 +154,25 @@
             color: var(--primary);
         }
         
+        .refresh-btn {
+            display: inline-block;
+            margin-left: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .refresh-btn:hover {
+            opacity: 1;
+            transform: rotate(180deg);
+        }
+        
+        .refresh-btn:active {
+            transform: rotate(180deg) scale(0.9);
+        }
+        
         .instruction-text {
             font-weight: 500;
             text-align: center;
@@ -339,7 +358,7 @@
                 <div class="text-center">
                     <h2 class="text-gradient mb-5" style="font-weight: 600;">Why Animate Vector Graphics?</h2>
                     <div class="scalable-demo-container">
-                        <div class="animation-frame loading" data-src="assets/28-1-finanace.html"></div>
+                        <div class="animation-frame loading" data-src="assets/28-1-finance.html"></div>
                     </div>
                     <p class="scale-hint">
                         "The coin spins into the piggy bank."<br>
@@ -456,8 +475,8 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <div class="animation-frame loading" data-src="assets/57-2-windmill.html"></div>
-                            <div class="method-label">Ours ✨</div>
+                            <div class="animation-frame loading" data-src="assets/57-2-windmill.html" id="anim-windmill"></div>
+                            <div class="method-label">Ours ✨<span class="refresh-btn" onclick="reloadAnimation('anim-windmill')" title="Reload animation">🔄</span></div>
                         </div>
                     </div>
 
@@ -491,8 +510,8 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <div class="animation-frame loading" data-src="assets/16-2-lightning.html"></div>
-                            <div class="method-label">Ours ✨</div>
+                            <div class="animation-frame loading" data-src="assets/16-2-lightning.html" id="anim-lightning"></div>
+                            <div class="method-label">Ours ✨<span class="refresh-btn" onclick="reloadAnimation('anim-lightning')" title="Reload animation">🔄</span></div>
                         </div>
                     </div>
 
@@ -524,8 +543,8 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <div class="animation-frame loading" data-src="assets/32-1-galaxy.html"></div>
-                            <div class="method-label">Ours ✨</div>
+                            <div class="animation-frame loading" data-src="assets/32-1-galaxy.html" id="anim-galaxy"></div>
+                            <div class="method-label">Ours ✨<span class="refresh-btn" onclick="reloadAnimation('anim-galaxy')" title="Reload animation">🔄</span></div>
                         </div>
                     </div>
 
@@ -557,8 +576,8 @@
                             <div class="method-label">Sora 2</div>
                         </div>
                         <div class="comparison-item ours">
-                            <div class="animation-frame loading" data-src="assets/12-1-cancel.html"></div>
-                            <div class="method-label">Ours ✨</div>
+                            <div class="animation-frame loading" data-src="assets/12-1-cancel.html" id="anim-cancel"></div>
+                            <div class="method-label">Ours ✨<span class="refresh-btn" onclick="reloadAnimation('anim-cancel')" title="Reload animation">🔄</span></div>
                         </div>
                     </div>
 
@@ -603,6 +622,65 @@
 </body>
     <!-- JavaScript to load SVG animations -->
     <script>
+        function reloadAnimation(elementId) {
+            const frame = document.getElementById(elementId);
+            if (!frame) return;
+            
+            const src = frame.getAttribute('data-src');
+            if (!src) return;
+            
+            // Clear the frame
+            frame.innerHTML = '';
+            frame.classList.add('loading');
+            
+            // Reload the animation
+            fetch(src)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to load: ' + src);
+                    return response.text();
+                })
+                .then(html => {
+                    // Parse the HTML
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Extract SVG
+                    const svg = doc.querySelector('svg');
+                    
+                    // Extract all style tags
+                    const styles = doc.querySelectorAll('style');
+                    
+                    if (svg) {
+                        // Create a unique ID for scoping
+                        const uniqueId = elementId + '-reload-' + Date.now();
+                        
+                        // Add unique class to SVG for scoping
+                        svg.classList.add(uniqueId);
+                        
+                        // Process styles to scope them
+                        styles.forEach(style => {
+                            let css = style.textContent;
+                            
+                            // Create a new scoped style element
+                            const scopedStyle = document.createElement('style');
+                            scopedStyle.textContent = css;
+                            frame.appendChild(scopedStyle);
+                        });
+                        
+                        // Add SVG to frame
+                        frame.appendChild(svg);
+                        
+                        // Remove loading state
+                        frame.classList.remove('loading');
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    frame.innerHTML = '<span style="color: #999; font-size: 0.8rem;">Failed to load</span>';
+                    frame.classList.remove('loading');
+                });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Find all animation frames with data-src
             const frames = document.querySelectorAll('.animation-frame[data-src]');
