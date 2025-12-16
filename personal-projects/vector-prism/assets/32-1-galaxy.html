@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+      Central star composer + custom properties (lanes) and animations.
+      - Uses transform-box: fill-box + transform-origin: 50% 50% to anchor on the star's own center
+      - Entrance is a single springy pop (0 → 0.8s), then a gentle breathing loop begins after the settle.
+      - We animate CSS custom properties only inside keyframes (no 'transform' in keyframes),
+        then read those properties in the element's transform. This avoids collision with other motion lanes.
+      - The properties below are declared once (required by the lane pattern). 
+    */
+
+    /*
+      Declare @property for all central_star lanes that may be used.
+      Syntax choices keep units explicit: <number> for scale/opacity/brightness, <angle> for rotation, <length> for translations.
+    */
+    @property --central_star-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+    @property --central_star-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+    @property --central_star-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+    @property --central_star-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+    @property --central_star-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    @property --central_star-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    @property --central_star-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-blur1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+    @property --central_star-blur2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+    @property --central_star-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+    @property --central_star-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+    /* Entrance (springy pop) - sets the star from scaled down, rotated and transparent to visible and slightly overshot */
+    @keyframes central_star__entrance {
+        0% {
+            --central_star-sx1: 0.70;
+            --central_star-sy1: 0.70;
+            --central_star-rot1: -8deg;
+            --central_star-op1: 0;
+            --central_star-bright1: 0.98;
+        }
+        /* quick overshoot for a springy feeling */
+        70% {
+            --central_star-sx1: 1.06;
+            --central_star-sy1: 1.06;
+            --central_star-rot1: 1.0deg;
+            --central_star-op1: 1;
+            --central_star-bright1: 1.06;
+        }
+        /* settle */
+        100% {
+            --central_star-sx1: 1.00;
+            --central_star-sy1: 1.00;
+            --central_star-rot1: 0deg;
+            --central_star-op1: 1;
+            --central_star-bright1: 1.00;
+        }
+    }
+
+    /* Breathing loop (subtle scaling). Runs after entrance settles; alternate for gentle in/out motion. */
+    @keyframes central_star__breathe {
+        0% {
+            --central_star-sx1: 1.00;
+            --central_star-sy1: 1.00;
+            --central_star-bright1: 1.00;
+        }
+        100% {
+            --central_star-sx1: 1.03;
+            --central_star-sy1: 1.03;
+            --central_star-bright1: 1.02;
+        }
+    }
+
+    /* Composer rule for the SVG star paths that share class 'central_star'.
+       - We set initial lane values to the requested "initial state" so the star starts correctly
+         even before the entrance animation kicks in on very slow devices.
+       - transform-box: fill-box + transform-origin: 50% 50% anchors transforms to the star's own center
+         (this is robust relative to the whole SVG layout and avoids clipping/collision when scaling).
+       - A subtle warm glow + shadow is applied via filter (non-animated).
+       - Animations are specified using longhand lists (two lanes: entrance, breathe).
+    */
+    .central_star {
+        /* initial lane values (match Initial state from the plan) */
+        --central_star-sx1: 0.70;
+        --central_star-sy1: 0.70;
+        --central_star-rot1: -8deg;
+        --central_star-op1: 0;
+        --central_star-bright1: 0.98;
+
+        transform-box: fill-box;
+        transform-origin: 50% 50%;
+        /* Use the lane custom-properties to compose the transform (no transform inside keyframes). */
+        transform: translate(var(--central_star-tx1, 0px), var(--central_star-ty1, 0px))
+                   rotate(var(--central_star-rot1, 0deg))
+                   scale(var(--central_star-sx1, 1), var(--central_star-sy1, 1));
+        opacity: var(--central_star-op1, 1);
+
+        /* subtle warm glow + tiny drop shadow, intentionally non-animated to keep performance stable */
+        filter: drop-shadow(0 6px 8px rgba(0,0,0,0.16))
+                drop-shadow(0 0 8px rgba(255,200,80,0.12))
+                brightness(var(--central_star-bright1, 1));
+
+        /* performance hints */
+        will-change: transform, opacity, filter;
+
+        /* TWO animation lanes:
+           1) entrance: quick springy pop (0.8s), cubic-bezier for organic springy feel
+           2) breathe: gentle alternate loop (3s), begins after entrance finishes (delay), offset phase relative to other planets
+           The lists below are ordered and aligned by index.
+        */
+        animation-name: central_star__entrance, central_star__breathe;
+        animation-duration: 0.8s, 3.0s;
+        animation-timing-function: cubic-bezier(0.2,0.9,0.3,1.1), ease-in-out;
+        animation-delay: 0s, 0.85s; /* breathe starts just after entrance settles */
+        animation-iteration-count: 1, infinite;
+        animation-direction: normal, alternate;
+        animation-fill-mode: both, both;
+        animation-play-state: running, running;
+        /* small phase offset to reduce mechanical synchrony with other planet loops:
+           negative phase would start mid-cycle; here we add a small positive delay to avoid simultaneous pulses */
+        /* Note: if other planets also offset, this value can be tuned to taste. */
+    }
+
+    /* 
+      Notes on coherence & collision avoidance:
+      - Using fill-box + 50% center ensures the star scales away from its own center so its outline does not clip into adjacent rings.
+      - Breathing amplitude is small (1 → 1.03) so the star never visually collides with orbit paths.
+      - We avoid animating filter blur to keep GPU work low; the glow is a fixed, subtle visual treatment.
+      - All animated values are custom properties so they respect the project's lane pattern and avoid editing other lanes.
+    */
+
+/* star_shade: inner highlight (crescent) lanes & animations
+   - Uses lane pattern (custom properties) so we don't modify other motion lanes.
+   - Anchored to its own center (fill-box + 50% 50%) so it tracks the central_star geometry and avoids clipping.
+   - Entrance is a short soft slide/scale-in with a 0.05s offset relative to the central star entrance.
+   - After entrance a very slow shimmer pulses the fill-opacity (1 → 0.85 → 1) to imply a glossy surface.
+   - We animate custom properties only inside @keyframes (no transform in keyframes) to avoid collisions.
+*/
+
+/* Declare @property once for all star_shade lanes used (keeps units explicit). */
+@property --star_shade-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_shade-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_shade-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_shade-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --star_shade-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --star_shade-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --star_shade-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-op1 { syntax: '<number>'; inherits: false; initial-value: 1; } /* entrance opacity lane */
+@property --star_shade-op2 { syntax: '<number>'; inherits: false; initial-value: 1; } /* shimmer / fill-opacity lane */
+@property --star_shade-blur1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_shade-blur2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --star_shade-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --star_shade-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Entrance: short soft slide + scale + fade-in (lane 1) */
+/* Kept simple: start translated +6px,+6px, slightly smaller and invisible → settle at identity */
+@keyframes star_shade__entrance {
+  0% {
+    --star_shade-tx1: 6px;
+    --star_shade-ty1: 6px;
+    --star_shade-sx1: 0.95;
+    --star_shade-sy1: 0.95;
+    --star_shade-op1: 0;
+    --star_shade-bright1: 0.99;
+  }
+  /* quick, smooth approach to final state */
+  100% {
+    --star_shade-tx1: 0px;
+    --star_shade-ty1: 0px;
+    --star_shade-sx1: 1;
+    --star_shade-sy1: 1;
+    --star_shade-op1: 1;
+    --star_shade-bright1: 1;
+  }
+}
+
+/* Shimmer: very slow, subtle fill-opacity pulse (lane 2)
+   - Uses fill-opacity so color hue doesn't shift; keeps the highlight feeling glossy.
+*/
+@keyframes star_shade__shimmer {
+  0%   { --star_shade-op2: 1;   }
+  50%  { --star_shade-op2: 0.85; }
+  100% { --star_shade-op2: 1;   }
+}
+
+/* Composer rule for the star_shade path(s).
+   - Initial lane values reflect the specified initial state so the element looks correct before animations begin.
+   - transform-box + 50% anchor to the shade's own center; this aligns it with central_star's geometry and avoids visual collision.
+   - We map lane 1 -> transform & opacity, lane 2 -> fill-opacity (shimmer).
+   - Animations are provided as a two-lane list (entrance, shimmer) and aligned by index.
+*/
+.star_shade {
+  /* initial lane values (match "Initial state") */
+  --star_shade-tx1: 6px;
+  --star_shade-ty1: 6px;
+  --star_shade-sx1: 0.95;
+  --star_shade-sy1: 0.95;
+  --star_shade-op1: 0;
+  --star_shade-op2: 1; /* shimmer baseline */
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  /* Compose transform from lanes (no transform declared in keyframes). */
+  transform: translate(var(--star_shade-tx1, 0px), var(--star_shade-ty1, 0px))
+             rotate(var(--star_shade-rot1, 0deg))
+             scale(var(--star_shade-sx1, 1), var(--star_shade-sy1, 1));
+
+  /* entrance opacity lane (global visibility) + separate fill-opacity for shimmer */
+  opacity: var(--star_shade-op1, 1);
+  fill-opacity: var(--star_shade-op2, 1);
+
+  /* subtle brightness control available via lane if needed; non-animated by default */
+  filter: brightness(var(--star_shade-bright1, 1));
+
+  /* performance hints */
+  will-change: transform, opacity, fill-opacity;
+
+  /* TWO animation lanes:
+     1) entrance  — index 0: short 450ms, ease-out, starts 0.05s after central star entrance
+     2) shimmer   — index 1: slow 2.8s loop, begins after the entrance finishes (0.05 + 0.45 = 0.50s)
+  */
+  animation-name: star_shade__entrance, star_shade__shimmer;
+  animation-duration: 450ms, 2.8s;
+  animation-timing-function: ease-out, ease-in-out;
+  animation-delay: 0.05s, 0.50s; /* shimmer begins once entrance completes */
+  animation-iteration-count: 1, infinite;
+  animation-direction: normal, normal;
+  animation-fill-mode: both, both;
+  animation-play-state: running, running;
+}
+
+/* Notes:
+   - The star_shade is placed inside the central_star group and uses the same anchoring approach (fill-box/50%) so it reliably lines up with the star
+     regardless of viewport scaling or other planet motion.
+   - We animate fill-opacity (via --star_shade-op2) rather than the fill color itself to keep the highlight smooth and avoid hue jumps.
+   - All motion is implemented using custom properties inside keyframes (no transform in keyframes) to avoid collisions with other lanes.
+   - Kept animations lightweight (no animated filters, no layout-triggering properties) for good web performance on complex SVGs.
+*/
+
+/* Planet-left animation lanes (@property declarations). Added once and kept explicit so lanes can be safely composed. */
+@property --planet_left-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_left-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_left-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_left-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_left-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_left-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_left-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-op2 { syntax: '<number>'; inherits: false; initial-value: 1; } /* reserved for subtle extra visibility lanes */
+@property --planet_left-blur1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_left-blur2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_left-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_left-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; } /* primary brightness lane */
+@property --planet_left-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; } /* highlight sweep lane */
+
+/* Entrance (gentle emerge + arc settle).
+   - Lane 1 (tx1/ty1, sx1/sy1, rot1, op1, bright1) performs the arrival + soft arc settle.
+   - No 'transform' inside keyframes; values are read by the composer below.
+*/
+@keyframes planet_left__entrance {
+  0% {
+    --planet_left-sx1: 0.60;
+    --planet_left-sy1: 0.60;
+    /* starts translated toward the central area (right + down) so it appears to arrive on its orbit */
+    --planet_left-tx1: 12px;
+    --planet_left-ty1: 12px;
+    --planet_left-rot1: -10deg; /* slight rotated arc on entry */
+    --planet_left-op1: 0;
+    --planet_left-bright1: 0.98;
+  }
+  70% {
+    /* small overshoot for a springy arc/settle */
+    --planet_left-sx1: 1.06;
+    --planet_left-sy1: 1.06;
+    --planet_left-tx1: 2px;
+    --planet_left-ty1: 2px;
+    --planet_left-rot1: 3deg;
+    --planet_left-op1: 1;
+    --planet_left-bright1: 1.06;
+  }
+  100% {
+    /* settle to identity on lane1 */
+    --planet_left-sx1: 1;
+    --planet_left-sy1: 1;
+    --planet_left-tx1: 0px;
+    --planet_left-ty1: 0px;
+    --planet_left-rot1: 0deg;
+    --planet_left-op1: 1;
+    --planet_left-bright1: 1;
+  }
+}
+
+/* Subtle radial-like highlight (simulated by a fast brightness pulse).
+   - Placed on lane --planet_left-bright2 so it can run independently of the entrance motion.
+   - Kicks in right after the entrance finishes (timed in the composer rule).
+*/
+@keyframes planet_left__highlight {
+  0%   { --planet_left-bright2: 1; }
+  50%  { --planet_left-bright2: 1.28; } /* quick, noticeable but subtle pulse */
+  100% { --planet_left-bright2: 1; }
+}
+
+/* Vertical float micro-motion (lane 2: ty2).
+   - Slow, large-period subtle float to avoid synchrony.
+   - Keeps amplitude small (±4px) to avoid collision with orbit paths.
+*/
+@keyframes planet_left__float_y {
+  0%   { --planet_left-ty2: -4px; }
+  100% { --planet_left-ty2: 4px; }
+}
+
+/* Slow, tiny rotation micro-motion (lane 2: rot2).
+   - Provides gentle wobble/orientation variation.
+   - Phase-shifted (via different animation-delay below) so it doesn't sync with float or other planets.
+*/
+@keyframes planet_left__rotate_slow {
+  0%   { --planet_left-rot2: -3deg; }
+  100% { --planet_left-rot2: 3deg; }
+}
+
+/* Composer rule for planet_left.
+   - Initial lane values reflect the requested initial state (scale 0.6, translated toward center, opacity 0).
+   - transform-box: fill-box + 50% 50% anchors transforms to the planet's own center to avoid clipping
+     and to keep translations/rotations local to the disc geometry.
+   - Compose transforms from lanes using calc(...) so keyframes never contain a transform rule.
+   - Brightness is composed by chaining multiple brightness() filter functions so lanes multiply visually
+     without needing complex calc multiplications.
+*/
+.planet_left {
+  /* Initial lane values (match "Initial" state from the plan) */
+  --planet_left-sx1: 0.60;
+  --planet_left-sy1: 0.60;
+  --planet_left-tx1: 12px;
+  --planet_left-ty1: 12px;
+  --planet_left-rot1: -10deg;
+  --planet_left-op1: 0;
+  --planet_left-bright1: 1;
+  --planet_left-bright2: 1;
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose transform: entrance lane (1) + micro-motion lane (2) are added via calc where applicable.
+     Note: scale uses lane1 (entrance) primarily; lane2 is free for future micro-scale lanes if needed.
+  */
+  transform:
+    translate(
+      calc(var(--planet_left-tx1, 0px) + var(--planet_left-tx2, 0px)),
+      calc(var(--planet_left-ty1, 0px) + var(--planet_left-ty2, 0px))
+    )
+    rotate(calc(var(--planet_left-rot1, 0deg) + var(--planet_left-rot2, 0deg)))
+    scale(var(--planet_left-sx1, 1), var(--planet_left-sy1, 1));
+
+  opacity: var(--planet_left-op1, 1);
+
+  /* subtle warm rim shadow + brightness lanes (chained so lanes multiply visually without complex calc) */
+  filter:
+    drop-shadow(0 4px 6px rgba(0,0,0,0.18))
+    drop-shadow(0 0 6px rgba(255,200,80,0.08))
+    brightness(var(--planet_left-bright1, 1))
+    brightness(var(--planet_left-bright2, 1));
+
+  will-change: transform, opacity, filter;
+
+  /* FOUR animation lanes (ordered and aligned by index):
+     0) entrance — quick arrival with soft arc (lane1)
+     1) highlight — short brightness pulse after entrance (lane2)
+     2) float_y — slow vertical float loop (lane3)
+     3) rotate_slow — slow small rotation loop (lane4)
+  */
+  animation-name: planet_left__entrance,
+                  planet_left__highlight,
+                  planet_left__float_y,
+                  planet_left__rotate_slow;
+  animation-duration: 0.9s, 280ms, 5.4s, 8s;
+  animation-timing-function: cubic-bezier(0.22,1,0.36,1), ease-out, ease-in-out, ease-in-out;
+  /* timing/delays:
+     - entrance starts at 0.12s (per plan)
+     - highlight begins exactly when entrance ends (0.12 + 0.9 = 1.02s)
+     - float_y and rotate_slow start with small offsets to phase-shift from other planets and each other
+       (keeps motion feeling organic and avoids mechanical synchrony).
+  */
+  animation-delay: 0.12s, 1.02s, 0.18s, 0.48s;
+  animation-iteration-count: 1, 1, infinite, infinite;
+  animation-direction: normal, normal, alternate, alternate;
+  animation-fill-mode: both, both, both, both;
+  animation-play-state: running, running, running, running;
+}
+
+/* Notes on spatial coherence and performance:
+   - planet_left sits upper-left; entrance translation (+12px,+12px) moves the disc from slightly toward center so the arrival reads as an orbital settle.
+   - Vertical float is intentionally small (±4px) so the disc never intersects orbit strokes or the central star, even when viewport scales.
+   - All animated values are exposed as custom properties and animated only inside keyframes (no transform inside keyframes) to respect the project's lane pattern and avoid collisions with other animated elements.
+   - Filters are not animated except via lightweight numeric brightness lanes; this keeps GPU work low and avoids expensive per-pixel animated effects.
+*/
+
+/* planet_right_small — lanes and composer
+   - Implements: entrance pop (lane1), continuous micro-drift + yaw (lane2),
+     separate scale pulse (lane3), and a 250ms highlight flash on arrival (lane4).
+   - Conforms to the project's lane pattern: all motion is driven by custom properties
+     inside keyframes (no 'transform' inside @keyframes). Composer composes the final transform.
+   - Timings are chosen to play nicely with existing elements (entrance starts at 0.24s).
+*/
+
+/* Declare @property lanes once (keeps units explicit and avoids collisions). */
+@property --planet_right_small-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_right_small-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_right_small-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_right_small-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_right_small-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_right_small-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_right_small-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-blur1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_right_small-blur2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_right_small-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_right_small-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* LANE 1: Entrance — soft, quicker pop (starts @ 0.24s for 0.75s ease-out) */
+@keyframes planet_right_small__entrance {
+  0% {
+    --planet_right_small-sx1: 0.50;
+    --planet_right_small-sy1: 0.50;
+    /* 'inward' translate from the right toward the center: negative X moves left */
+    --planet_right_small-tx1: -8px;
+    --planet_right_small-rot1: -8deg;
+    --planet_right_small-op1: 0;
+    --planet_right_small-bright1: 0.98;
+  }
+  /* small overshoot for a springy but soft pop */
+  70% {
+    --planet_right_small-sx1: 1.04;
+    --planet_right_small-sy1: 1.04;
+    --planet_right_small-tx1: 2px;
+    --planet_right_small-rot1: 2deg;
+    --planet_right_small-op1: 1;
+    --planet_right_small-bright1: 1.06;
+  }
+  100% {
+    --planet_right_small-sx1: 1;
+    --planet_right_small-sy1: 1;
+    --planet_right_small-tx1: 0px;
+    --planet_right_small-rot1: 0deg;
+    --planet_right_small-op1: 1;
+    --planet_right_small-bright1: 1;
+  }
+}
+
+/* LANE 2: Micro drift + yaw
+   - Horizontal micro-drift ±3px over 6s, slow alternating loop.
+   - Small yaw rotation -2deg → 2deg to avoid perfectly static orientation.
+*/
+@keyframes planet_right_small__micro_drift_and_yaw {
+  0% {
+    --planet_right_small-tx2: -3px;
+    --planet_right_small-rot2: -2deg;
+  }
+  50% {
+    --planet_right_small-tx2: 3px;
+    --planet_right_small-rot2: 2deg;
+  }
+  100% {
+    --planet_right_small-tx2: -3px;
+    --planet_right_small-rot2: -2deg;
+  }
+}
+
+/* LANE 3: Scale pulse (gentle material pulse)
+   - 1 → 1.02 → 1 over 4s, alternate loop. Uses sx2/sy2 so it composes with entrance scale.
+*/
+@keyframes planet_right_small__scale_pulse {
+  0%   { --planet_right_small-sx2: 1;    --planet_right_small-sy2: 1; }
+  50%  { --planet_right_small-sx2: 1.02; --planet_right_small-sy2: 1.02; }
+  100% { --planet_right_small-sx2: 1;    --planet_right_small-sy2: 1; }
+}
+
+/* LANE 4: Highlight flash on arrival — short 250ms pulse to sell materiality.
+   - Brightness spike immediately after entrance finishes (timed in composer).
+*/
+@keyframes planet_right_small__arrival_highlight {
+  0%   { --planet_right_small-bright2: 1; }
+  40%  { --planet_right_small-bright2: 1.45; } /* quick, slightly warm flash */
+  100% { --planet_right_small-bright2: 1; }
+}
+
+/* Composer for .planet_right_small
+   - Initial lane values mirror the requested "Initial" state so element looks correct before animations run.
+   - transform-box: fill-box + 50% anchors transforms to the planet's center (keeps motion local and avoids clipping).
+   - Compose transforms from lanes (no transform inside keyframes). We chain scale() calls so small pulses multiply with entrance scale.
+*/
+.planet_right_small {
+  /* initial lane values */
+  --planet_right_small-sx1: 0.50;
+  --planet_right_small-sy1: 0.50;
+  --planet_right_small-tx1: -8px; /* inward start */
+  --planet_right_small-rot1: -8deg;
+  --planet_right_small-op1: 0;
+  --planet_right_small-bright1: 1;
+  --planet_right_small-tx2: 0px;
+  --planet_right_small-rot2: 0deg;
+  --planet_right_small-sx2: 1;
+  --planet_right_small-sy2: 1;
+  --planet_right_small-bright2: 1;
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose translation: entrance lane + micro-drift lane */
+  transform:
+    translate(
+      calc(var(--planet_right_small-tx1, 0px) + var(--planet_right_small-tx2, 0px)),
+      calc(var(--planet_right_small-ty1, 0px) + var(--planet_right_small-ty2, 0px))
+    )
+    /* rotation composes lane1 + lane2 */
+    rotate(calc(var(--planet_right_small-rot1, 0deg) + var(--planet_right_small-rot2, 0deg)))
+    /* scale is constructed from two scale operations so the values multiply visually
+       (entrance scale * subtle pulse scale). */
+    scale(var(--planet_right_small-sx1, 1), var(--planet_right_small-sy1, 1))
+    scale(var(--planet_right_small-sx2, 1), var(--planet_right_small-sy2, 1));
+
+  /* entrance opacity lane controls visibility; reserve op2 for future use */
+  opacity: var(--planet_right_small-op1, 1);
+
+  /* subtle rim + brightness chaining so brightness lanes multiply without heavy calc */
+  filter:
+    drop-shadow(0 4px 6px rgba(0,0,0,0.18))
+    drop-shadow(0 0 6px rgba(255,200,80,0.08))
+    brightness(var(--planet_right_small-bright1, 1))
+    brightness(var(--planet_right_small-bright2, 1));
+
+  will-change: transform, opacity, filter;
+
+  /* FOUR animation lanes (lists must align by index):
+     0) entrance (lane1)        — quick pop at 0.24s, 0.75s duration
+     1) micro drift + yaw (lane2) — slow 6s alternate loop, starts after entrance settles to avoid collision
+     2) scale pulse (lane3)     — 4s alternate loop, phase-shifted for organic feel
+     3) arrival highlight (lane4) — single 250ms flash synchronized to entrance end
+  */
+  animation-name:
+    planet_right_small__entrance,
+    planet_right_small__micro_drift_and_yaw,
+    planet_right_small__scale_pulse,
+    planet_right_small__arrival_highlight;
+
+  animation-duration:
+    750ms,    /* entrance */
+    6s,       /* micro drift + yaw */
+    4s,       /* scale pulse */
+    250ms;    /* highlight flash */
+
+  animation-timing-function:
+    ease-out,         /* entrance */
+    ease-in-out,      /* drift/yaw (smooth periodic) */
+    cubic-bezier(.4,.0,.2,1), /* scale pulse (gentle) */
+    ease-out;         /* highlight */
+
+  /* Delays:
+     - entrance starts at 0.24s (per plan)
+     - drift/yaw and scale pulse begin after entrance settles; small offsets phase-shift them relative to each other
+     - highlight flash begins exactly when entrance finishes (0.24 + 0.75 = 0.99s)
+  */
+  animation-delay:
+    0.24s,   /* entrance */
+    1.00s,   /* micro drift + yaw (slightly after entrance end) */
+    1.12s,   /* scale pulse (phase-shifted) */
+    0.99s;   /* highlight (sync w/ entrance end) */
+
+  animation-iteration-count:
+    1,       /* entrance runs once */
+    infinite,/* drift loops forever */
+    infinite,/* scale pulse loops forever */
+    1;       /* highlight single flash */
+
+  animation-direction:
+    normal,
+    alternate,
+    alternate,
+    normal;
+
+  animation-fill-mode:
+    both, /* allow entrance to hold final state */
+    both, /* keep drift values applied */
+    both, /* keep scale pulse effect between frames */
+    both;
+
+  animation-play-state:
+    running, running, running, running;
+}
+
+/* Coherence & performance notes (compact):
+   - Entrance is deliberately quicker and softer than the central star/planet_left to give a layered arrival.
+   - Micro drift amplitude ±3px and tiny yaw ±2deg are small to avoid collisions with orbit strokes and central star even at extreme scaling.
+   - No filters are animated except lightweight brightness lanes; keeps GPU work low.
+   - All motion is implemented via custom properties inside keyframes (no 'transform' in keyframes) to respect the project's lanes and avoid collisions.
+*/
+
+/* planet_bottom lanes: declare once using the project's lane naming pattern.
+   Units explicit: <length> for translations, <angle> for rotations, <number> for scales/opacities.
+*/
+@property --planet_bottom-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_bottom-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_bottom-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_bottom-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --planet_bottom-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_bottom-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --planet_bottom-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-op1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-blur1 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_bottom-blur2 { syntax: '<number>'; inherits: false; initial-value: 0; }
+@property --planet_bottom-stroke1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-stroke2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --planet_bottom-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Entrance: deliberate, heavy-feel drop with a small overshoot -> settle.
+   - Lane 1 drives entrance: scale, translate (ty1 up → down), rotate micro-bounce, opacity.
+   - No 'transform' inside keyframes; we only change custom properties.
+*/
+@keyframes planet_bottom__entrance {
+  0% {
+    --planet_bottom-sx1: 0.65;
+    --planet_bottom-sy1: 0.65;
+    --planet_bottom-ty1: -10px;   /* start slightly above and drop in */
+    --planet_bottom-rot1: -3deg;  /* tiny tilt on entry */
+    --planet_bottom-op1: 0;
+    --planet_bottom-bright1: 0.98;
+  }
+  /* Overshoot/bounce to sell weight (quick settle feeling) */
+  70% {
+    --planet_bottom-sx1: 1.06;
+    --planet_bottom-sy1: 1.06;
+    --planet_bottom-ty1: 6px;     /* slight bounce down */
+    --planet_bottom-rot1: 4deg;
+    --planet_bottom-op1: 1;
+    --planet_bottom-bright1: 1.04;
+  }
+  /* Final settled state */
+  100% {
+    --planet_bottom-sx1: 1.00;
+    --planet_bottom-sy1: 1.00;
+    --planet_bottom-ty1: 0px;
+    --planet_bottom-rot1: 0deg;
+    --planet_bottom-op1: 1;
+    --planet_bottom-bright1: 1;
+  }
+}
+
+/* Orbital nudge: slow ±6° yaw around the horizontal ring.
+   - Placed on lane 2 (rot2) so it composes with entrance lanes and other micro lanes.
+   - Very slow (10s), alternate loop for continuous subtle motion.
+*/
+@keyframes planet_bottom__orbit_nudge {
+  0%   { --planet_bottom-rot2: -6deg; }
+  100% { --planet_bottom-rot2:  6deg; }
+}
+
+/* Composer rule for .planet_bottom
+   - Sets initial lane values (so element looks correct before animations run).
+   - Anchors transforms to the planet's own geometry with transform-box: fill-box and 50% origin.
+   - Composes transforms from lanes: entrance lane (1) + continuous micro lane (2).
+   - Uses only custom-properties inside keyframes to avoid collisions with other lanes.
+*/
+.planet_bottom {
+  /* initial lane values (match requested "Initial" state) */
+  --planet_bottom-sx1: 0.65;
+  --planet_bottom-sy1: 0.65;
+  --planet_bottom-ty1: -10px;  /* start translated upward */
+  --planet_bottom-rot1: 0deg;
+  --planet_bottom-op1: 0;
+  --planet_bottom-bright1: 1;
+  --planet_bottom-rot2: 0deg;  /* orbital nudge lane baseline */
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose translation (lane1 + lane2 if present), rotation (lane1 + lane2), scale (entrance * subtle pulses).
+     Scales are applied as two scale() calls so micro-pulses (sx2/sy2) multiply with entrance scale.
+  */
+  transform:
+    translate(
+      calc(var(--planet_bottom-tx1, 0px) + var(--planet_bottom-tx2, 0px)),
+      calc(var(--planet_bottom-ty1, 0px) + var(--planet_bottom-ty2, 0px))
+    )
+    rotate(calc(var(--planet_bottom-rot1, 0deg) + var(--planet_bottom-rot2, 0deg)))
+    scale(var(--planet_bottom-sx1, 1), var(--planet_bottom-sy1, 1))
+    scale(var(--planet_bottom-sx2, 1), var(--planet_bottom-sy2, 1));
+
+  /* entrance opacity lane controls overall visibility */
+  opacity: var(--planet_bottom-op1, 1);
+
+  /* non-animated subtle visual treatment (kept static to preserve performance).
+     brightness lanes are available if later needed; we do not animate expensive filters.
+  */
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.18)) brightness(var(--planet_bottom-bright1,1));
+
+  will-change: transform, opacity;
+
+  /* TWO animation lanes (aligned by index):
+     0) entrance        — deliberate heavy drop (starts 0.36s, duration 1.0s)
+     1) orbit_nudge     — slow ±6° yaw along orbit (starts just after entrance finishes, loops)
+  */
+  animation-name: planet_bottom__entrance, planet_bottom__orbit_nudge;
+  animation-duration: 1.0s, 10s;
+  animation-timing-function: cubic-bezier(0.18,0.9,0.4,1.05), ease-in-out;
+  animation-delay: 0.36s, 1.38s; /* orbit_nudge begins after entrance finishes (0.36 + 1.0 = 1.36s), small offset for organic feel */
+  animation-iteration-count: 1, infinite;
+  animation-direction: normal, alternate; /* orbit alternates between -6deg and +6deg */
+  animation-fill-mode: both, both;
+  animation-play-state: running, running;
+}
+
+/* Coherence & performance notes:
+   - Entrance duration intentionally slightly longer and heavier than other elements to read as a "drop".
+   - Orbit nudge amplitude is small (±6°) and very slow (10s) to avoid collisions with ring strokes or central star even at extreme scales.
+   - All motion is implemented via custom properties inside keyframes (no transform rules in @keyframes) to respect the lane pattern and avoid interference with other animated elements.
+   - Filters are not animated; only low-cost compositing is used to preserve smooth playback across devices.
+*/
+
+/* Ring (ring_horizontal) animation lanes and composer
+   - Adds stroke-reveal draw + tiny reveal-blur + ultra-slow rotation after draw.
+   - Follows the project's lane pattern: all animated values are custom properties (no 'transform' inside @keyframes).
+   - Declarations are added ONCE and do not modify existing lanes elsewhere.
+*/
+
+/* -- Declare @property lanes for ring_horizontal (units explicit). */
+@property --ring_horizontal-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_horizontal-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_horizontal-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_horizontal-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_horizontal-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --ring_horizontal-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@property --ring_horizontal-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_horizontal-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_horizontal-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_horizontal-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_horizontal-op1 { syntax: '<number>'; inherits: false; initial-value: 0; }       /* entrance opacity lane */
+@property --ring_horizontal-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }       /* spare */
+@property --ring_horizontal-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }   /* reveal blur lane */
+@property --ring_horizontal-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }   /* spare */
+@property --ring_horizontal-stroke1 { syntax: '<length>'; inherits: false; initial-value: 3500px; } /* dash length */
+@property --ring_horizontal-stroke2 { syntax: '<length>'; inherits: false; initial-value: 3500px; } /* dash-offset (animated) */
+@property --ring_horizontal-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_horizontal-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* KEYFRAMES
+   - ring_horizontal__draw: lane 1 drives the stroke-draw (stroke-dashoffset) + quick opacity fade + very short blur → sharp.
+     Timing chosen to match the scene: starts at 0.90s and runs 1.4s (per plan). Opacity ramps to 1 in the first 250ms (~18%).
+     A small overshoot (tiny negative offset) near the end gives a hand-drawn "settle" feel.
+   - ring_horizontal__spin: lane 2 is the continuous ultra-slow rotation that begins after the draw completes.
+     IMPORTANT: no 'transform' inside keyframes — we only change custom properties (rot2) and read them in the composer.
+*/
+
+/* Stroke draw + short blur/reveal */
+@keyframes ring_horizontal__draw {
+  /* start: fully hidden stroke (dash offset == dash length), invisible, slight fractional blur */
+  0% {
+    --ring_horizontal-stroke2: 3500px; /* fully offset (invisible) */
+    --ring_horizontal-op1: 0;
+    --ring_horizontal-blur1: 1px;      /* subtle fractional blur while drawing starts */
+  }
+
+  /* fade in opacity quickly — first ~250ms of the 1.4s draw (≈18%) */
+  18% {
+    --ring_horizontal-op1: 1;
+  }
+
+  /* after the quick reveal blur period (≈50ms from start) the stroke sharpens */
+  4% {
+    --ring_horizontal-blur1: 0px;
+  }
+
+  /* approach the end — nearly drawn */
+  85% {
+    --ring_horizontal-stroke2: 6px;    /* almost finished */
+  }
+
+  /* tiny overshoot for a hand-drawn settle (slight negative offset), then settle back */
+  92% {
+    --ring_horizontal-stroke2: -8px;   /* very small overshoot */
+  }
+
+  100% {
+    --ring_horizontal-stroke2: 0px;    /* fully drawn */
+    --ring_horizontal-op1: 1;
+    --ring_horizontal-blur1: 0px;
+  }
+}
+
+/* Ultra-slow continuous rotation (360° per 60s).
+   - Runs after the draw completes (delay aligned in the composer).
+   - Animation alternates not required; simple linear wrap.
+*/
+@keyframes ring_horizontal__spin {
+  0%   { --ring_horizontal-rot2: 0deg; }
+  100% { --ring_horizontal-rot2: 360deg; }
+}
+
+/* COMPOSER RULE
+   - Sets initial lane values (so element looks correct before animations begin).
+   - Uses transform-box: fill-box + transform-origin: 50% 50% so rotation is centered on the ring's own geometry.
+   - Composes stroke-dasharray / stroke-dashoffset from lanes; stroke-length chosen to be safely larger than the visible path length so the draw is a single continuous reveal.
+   - We override the path's fill with fill:none and draw the ring via stroke so the dash-reveal works. That is intentional and scoped to .ring_horizontal.
+   - Two animation lanes:
+       0) draw (stroke reveal + opacity + brief blur) — starts at 0.90s, 1.4s duration
+       1) spin (ultra-slow rotation) — starts after draw finishes (0.90 + 1.4 = 2.30s), 60s linear infinite
+   - All animation-* longhand declarations are used and indexes are aligned.
+*/
+.ring_horizontal {
+  /* INITIAL lane values */
+  --ring_horizontal-stroke1: 3500px; /* dash length (kept large to guarantee single dash across the path) */
+  --ring_horizontal-stroke2: 3500px; /* dash offset (start hidden) */
+  --ring_horizontal-op1: 0;
+  --ring_horizontal-blur1: 0px;
+  --ring_horizontal-rot2: 0deg;
+
+  /* Render the ring as a stroked path so dash reveal works reliably.
+     We intentionally override fill to none for this class only; the visible color is preserved. */
+  fill: none !important;
+  stroke: #6B0306;                /* match artwork color */
+  stroke-width: 18px;             /* visually similar thickness to original artwork */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  /* Compose the dash properties from lanes */
+  stroke-dasharray: calc(var(--ring_horizontal-stroke1, 3500px));
+  stroke-dashoffset: var(--ring_horizontal-stroke2, 3500px);
+
+  /* Opacity lane controls overall visibility during draw */
+  opacity: var(--ring_horizontal-op1, 1);
+
+  /* Short-lived reveal blur (kept tiny and brief). Using drop-shadow/brightness is avoided; blur is applied only during a few frames. */
+  filter: blur(var(--ring_horizontal-blur1, 0px));
+
+  /* Anchor transforms to the ring's own geometry to avoid rotating around the SVG origin.
+     Using fill-box + 50% 50% ensures the rotation is centered on the ring (robust across viewport scaling). */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose transform: allow future lanes to add translation/rotation. We read rot1 and rot2 lanes and add them.
+     No 'transform' will ever be written in keyframes — lanes are animated instead.
+  */
+  transform:
+    translate(
+      calc(var(--ring_horizontal-tx1, 0px) + var(--ring_horizontal-tx2, 0px)),
+      calc(var(--ring_horizontal-ty1, 0px) + var(--ring_horizontal-ty2, 0px))
+    )
+    rotate(calc(var(--ring_horizontal-rot1, 0deg) + var(--ring_horizontal-rot2, 0deg)))
+    scale(calc(var(--ring_horizontal-sx1, 1) * var(--ring_horizontal-sx2, 1)),
+          calc(var(--ring_horizontal-sy1, 1) * var(--ring_horizontal-sy2, 1)));
+
+  will-change: stroke-dashoffset, opacity, filter, transform;
+
+  /* TWO animation lanes
+     0) draw: stroke reveal + opacity + short blur (index 0)
+     1) spin: ultra-slow continuous rotation (index 1), begins after draw completes
+  */
+  animation-name: ring_horizontal__draw, ring_horizontal__spin;
+  animation-duration: 1.4s, 60s;
+  animation-timing-function: cubic-bezier(.22,.9,.3,1.05), linear; /* draw uses a slightly springy ease, spin is linear */
+  animation-delay: 0.90s, 2.30s; /* spin delay = draw start + draw duration so rotation begins after reveal */
+  animation-iteration-count: 1, infinite;
+  animation-direction: normal, normal;
+  animation-fill-mode: both, both;
+  animation-play-state: running, running;
+
+  /* keep pointer-events off for decorative element */
+  pointer-events: none;
+}
+
+/* Notes on coherence & performance:
+   - The stroke-dasharray is intentionally a single long dash (3500px). This guarantees a single continuous reveal
+     for typical path lengths in this artwork. If your toolchain measures path length precisely, you can set that value for a microscopically crisper result.
+   - The draw uses only custom properties inside keyframes (no transform inside keyframes) so it composes safely with other lanes present on other elements.
+   - The brief blur (50ms-ish) is tiny and only present during the very start of the draw; it is cleared quickly to avoid sustained expensive filter work.
+   - The slow rotation (60s) is intentionally extremely subtle so it keeps the scene 'alive' without distracting from other motion lanes (star/planets).
+*/
+
+/* ring_arc_top — lane declarations + animations
+   - Follows the project's lane pattern: all animated values are custom properties and only those properties are animated inside keyframes.
+   - Anchored to its own geometry using transform-box: fill-box + transform-origin: 50% 50% so the slow spin/wobble is centered on the path itself.
+   - Three lanes:
+     0) draw  — stroke-dashoffset reveal + quick opacity fade + tiny reveal blur (starts @ 1.10s, 1.2s)
+     1) settle — short elastic wobble immediately after draw completes (120ms)
+     2) spin  — very slow counter-rotation (−360deg / 80s) starting after draw completes
+   - All animation longhand properties are used and lists are index-aligned.
+*/
+
+/* Declare @property lanes once (units explicit). */
+@property --ring_arc_top-tx1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_arc_top-tx2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_arc_top-ty1 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_arc_top-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --ring_arc_top-rot1 { syntax: '<angle>'; inherits: false; initial-value: 0deg; } /* settle wobble lane */
+@property --ring_arc_top-rot2 { syntax: '<angle>'; inherits: false; initial-value: 0deg; } /* ultra-slow spin lane */
+@property --ring_arc_top-sx1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_arc_top-sx2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_arc_top-sy1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_arc_top-sy2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_arc_top-op1 { syntax: '<number>'; inherits: false; initial-value: 0; }       /* entrance opacity lane */
+@property --ring_arc_top-op2 { syntax: '<number>'; inherits: false; initial-value: 1; }       /* spare */
+@property --ring_arc_top-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; }   /* reveal blur lane */
+@property --ring_arc_top-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }   /* spare */
+@property --ring_arc_top-stroke1 { syntax: '<length>'; inherits: false; initial-value: 2000px; } /* dash length */
+@property --ring_arc_top-stroke2 { syntax: '<length>'; inherits: false; initial-value: 2000px; } /* dash-offset (animated) */
+@property --ring_arc_top-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --ring_arc_top-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* KEYFRAMES
+   - ring_arc_top__draw: lane 0 drives the stroke reveal (stroke-dashoffset) + quick opacity fade + tiny blur → sharp.
+     Fade to 1 occurs in the first 180ms of the 1.2s draw (≈15%).
+     Small overshoot (negative offset) near the end gives a subtle hand-drawn settle.
+   - ring_arc_top__settle: very short elastic wobble that nudges --ring_arc_top-rot1 immediately after draw finishes.
+   - ring_arc_top__spin: ultra-slow counter-rotation (-360deg / 80s) that begins after the draw finishes to create parallax with ring_horizontal.
+*/
+
+/* Stroke reveal + short reveal blur + opacity fade */
+@keyframes ring_arc_top__draw {
+  0% {
+    --ring_arc_top-stroke2: 2000px; /* fully offset (hidden) */
+    --ring_arc_top-op1: 0;
+    --ring_arc_top-blur1: 1px;      /* tiny fractional blur while drawing starts */
+  }
+
+  /* clear micro-blur early for crispness (keeps filter work minimal) */
+  4% {
+    --ring_arc_top-blur1: 0px;
+  }
+
+  /* quick opacity ramp — first ~180ms of 1200ms draw (≈15%) */
+  15% {
+    --ring_arc_top-op1: 1;
+  }
+
+  /* approach finish */
+  85% {
+    --ring_arc_top-stroke2: 8px;
+  }
+
+  /* tiny overshoot for a gentle hand-drawn settle */
+  94% {
+    --ring_arc_top-stroke2: -6px;
+  }
+
+  100% {
+    --ring_arc_top-stroke2: 0px;    /* fully drawn */
+    --ring_arc_top-op1: 1;
+    --ring_arc_top-blur1: 0px;
+  }
+}
+
+/* Short, subtle elastic wobble to suggest settling
+   - Animates rot1 only (composes with the slow rot2 spin).
+   - Very fast single-run: 120ms.
+*/
+@keyframes ring_arc_top__settle {
+  0% {
+    --ring_arc_top-rot1: 0deg;
+  }
+  30% {
+    --ring_arc_top-rot1: -3.2deg;
+  }
+  65% {
+    --ring_arc_top-rot1: 2.0deg;
+  }
+  100% {
+    --ring_arc_top-rot1: 0deg;
+  }
+}
+
+/* Ultra-slow counter-rotation (opposite direction of ring_horizontal)
+   - Rotates -360deg over 80s for a very soft parallax effect.
+*/
+@keyframes ring_arc_top__spin {
+  0%   { --ring_arc_top-rot2: 0deg; }
+  100% { --ring_arc_top-rot2: -360deg; }
+}
+
+/* Composer rule for the ring arc path(s).
+   - Sets initial lane values to ensure the arc is correctly hidden before entrance.
+   - Render as stroked path (dash-reveal technique).
+   - Anchored to its own geometry via fill-box + 50% 50% so rotation/wobble happens around the arc center.
+   - Animation lanes are index-aligned: draw (0), settle (1), spin (2).
+*/
+.ring_arc_top {
+  /* initial lane values (hidden by default) */
+  --ring_arc_top-stroke1: 2000px;
+  --ring_arc_top-stroke2: 2000px; /* start fully offset */
+  --ring_arc_top-op1: 0;
+  --ring_arc_top-blur1: 0px;
+  --ring_arc_top-rot1: 0deg;
+  --ring_arc_top-rot2: 0deg;
+
+  /* Use stroke-based reveal - keep fill none so the stroke is visible as intended */
+  fill: none !important;
+  stroke: #6B0204;        /* match artwork color */
+  stroke-width: 18px;     /* visually consistent with other rings */
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  /* Compose dash properties from lanes */
+  stroke-dasharray: calc(var(--ring_arc_top-stroke1, 2000px));
+  stroke-dashoffset: var(--ring_arc_top-stroke2, 2000px);
+
+  /* opacity lane for entrance fade */
+  opacity: var(--ring_arc_top-op1, 1);
+
+  /* tiny reveal blur (cleared quickly by the draw keyframes) */
+  filter: blur(var(--ring_arc_top-blur1, 0px));
+
+  /* Anchor transforms to the arc geometry; compose rotation lanes (no transform inside keyframes) */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transform:
+    translate(
+      calc(var(--ring_arc_top-tx1, 0px) + var(--ring_arc_top-tx2, 0px)),
+      calc(var(--ring_arc_top-ty1, 0px) + var(--ring_arc_top-ty2, 0px))
+    )
+    rotate(calc(var(--ring_arc_top-rot1, 0deg) + var(--ring_arc_top-rot2, 0deg)))
+    scale(calc(var(--ring_arc_top-sx1, 1) * var(--ring_arc_top-sx2, 1)),
+          calc(var(--ring_arc_top-sy1, 1) * var(--ring_arc_top-sy2, 1)));
+
+  will-change: stroke-dashoffset, opacity, filter, transform;
+
+  /* THREE animation lanes (index-aligned):
+     0) draw   — starts at 1.10s, 1.2s duration
+     1) settle — short 120ms wobble, starts right after draw completes (1.10 + 1.2 = 2.30s)
+     2) spin   — ultra-slow -360deg / 80s, begins after draw completes, infinite
+  */
+  animation-name: ring_arc_top__draw, ring_arc_top__settle, ring_arc_top__spin;
+  animation-duration: 1.2s, 120ms, 80s;
+  animation-timing-function: ease-in-out, cubic-bezier(.2,1.2,.3,1), linear;
+  animation-delay: 1.10s, 2.30s, 2.30s;
+  animation-iteration-count: 1, 1, infinite;
+  animation-direction: normal, normal, normal;
+  animation-fill-mode: both, both, both;
+  animation-play-state: running, running, running;
+
+  /* decorative only */
+  pointer-events: none;
+}
+
+/* Coherence notes:
+   - The draw timing (starts at 1.10s, 1.2s duration) is chosen to sit harmoniously with the existing ring_horizontal (which draws earlier at 0.90s/1.4s).
+   - The spin is deliberately slower (80s) and in the opposite direction to the horizontal ring (60s) to produce a soft parallax without visual conflict.
+   - The settle wobble is very short and subtle (120ms) and only nudges rotation; it uses a separate lane so continuous spin is not disrupted.
+   - No transform rules are written inside keyframes; only custom properties are animated to respect the lanes pattern and avoid collisions.
+   - Filters are tiny and cleared quickly to keep GPU cost minimal.
+*/
+
+/* timing_and_grouping_notes — lane declarations (added once, units explicit)
+   - Uses the project's lane naming convention. These @property declarations make
+     animations safe to compose with the existing scene lanes.
+*/
+@property --timing_and_grouping_notes-tx1   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-tx2   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-ty1   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-ty2   { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-rot1  { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --timing_and_grouping_notes-rot2  { syntax: '<angle>';   inherits: false; initial-value: 0deg; }
+@property --timing_and_grouping_notes-sx1   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --timing_and_grouping_notes-sx2   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --timing_and_grouping_notes-sy1   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --timing_and_grouping_notes-sy2   { syntax: '<number>';  inherits: false; initial-value: 1; }
+@property --timing_and_grouping_notes-op1   { syntax: '<number>';  inherits: false; initial-value: 1; } /* primary visibility lane */
+@property --timing_and_grouping_notes-op2   { syntax: '<number>';  inherits: false; initial-value: 1; } /* spare/fine fade lane */
+@property --timing_and_grouping_notes-blur1 { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-blur2 { syntax: '<length>';  inherits: false; initial-value: 0px; }
+@property --timing_and_grouping_notes-stroke1 { syntax: '<length>'; inherits: false; initial-value: 1000px; }
+@property --timing_and_grouping_notes-stroke2 { syntax: '<length>'; inherits: false; initial-value: 1000px; }
+@property --timing_and_grouping_notes-bright1 { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --timing_and_grouping_notes-bright2 { syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* Sequence lane — orchestrates the "callouts" that correspond to Group A entrance timings.
+   Duration chosen to finish before the rings begin their stroke reveals (ring draws at 0.90s / 1.10s).
+   The percentages map to the given plan timings (0s, 0.05s, 0.12s, 0.24s, 0.36s) inside a 0.85s window.
+   NOTE: keyframes only mutate custom properties (no transform rules).
+*/
+@keyframes timing_and_grouping_notes__sequence {
+  /* initial: hidden + compact, placed near the group's anchor */
+  0% {
+    --timing_and_grouping_notes-sx1: 0.70;
+    --timing_and_grouping_notes-sy1: 0.70;
+    --timing_and_grouping_notes-rot1: -6deg;
+    --timing_and_grouping_notes-op1: 0;
+    --timing_and_grouping_notes-bright1: 0.98;
+  }
+
+  /* central star pop (0s → quick overshoot) */
+  2% {
+    --timing_and_grouping_notes-sx1: 1.08;
+    --timing_and_grouping_notes-sy1: 1.08;
+    --timing_and_grouping_notes-rot1: 2deg;
+    --timing_and_grouping_notes-op1: 1;
+    --timing_and_grouping_notes-bright1: 1.06;
+  }
+
+  /* tiny follow for the star_shade (≈0.05s) — small settling */
+  6% {
+    --timing_and_grouping_notes-sx1: 1.03;
+    --timing_and_grouping_notes-sy1: 1.03;
+    --timing_and_grouping_notes-rot1: 0.5deg;
+    --timing_and_grouping_notes-bright1: 1.02;
+  }
+
+  /* settle back before next callout */
+  12% {
+    --timing_and_grouping_notes-sx1: 1.00;
+    --timing_and_grouping_notes-sy1: 1.00;
+    --timing_and_grouping_notes-rot1: 0deg;
+    --timing_and_grouping_notes-bright1: 1.00;
+  }
+
+  /* planet_left callout (≈0.12s) — gentle pop, slightly phase-shifted rotation */
+  14% {
+    --timing_and_grouping_notes-sx1: 1.06;
+    --timing_and_grouping_notes-sy1: 1.06;
+    --timing_and_grouping_notes-rot1: -2deg;
+    --timing_and_grouping_notes-bright1: 1.05;
+  }
+
+  /* return to neutral */
+  20% {
+    --timing_and_grouping_notes-sx1: 1.00;
+    --timing_and_grouping_notes-sy1: 1.00;
+    --timing_and_grouping_notes-rot1: 0deg;
+    --timing_and_grouping_notes-bright1: 1.00;
+  }
+
+  /* planet_right_small callout (≈0.24s) — slightly softer pop */
+  28% {
+    --timing_and_grouping_notes-sx1: 1.05;
+    --timing_and_grouping_notes-sy1: 1.05;
+    --timing_and_grouping_notes-rot1: 3deg;
+    --timing_and_grouping_notes-bright1: 1.04;
+  }
+
+  34% {
+    --timing_and_grouping_notes-sx1: 1.00;
+    --timing_and_grouping_notes-sy1: 1.00;
+    --timing_and_grouping_notes-rot1: 0deg;
+    --timing_and_grouping_notes-bright1: 1.00;
+  }
+
+  /* planet_bottom callout (≈0.36s) — slightly larger bounce to sell weight */
+  42% {
+    --timing_and_grouping_notes-sx1: 1.07;
+    --timing_and_grouping_notes-sy1: 1.07;
+    --timing_and_grouping_notes-rot1: -4deg;
+    --timing_and_grouping_notes-bright1: 1.06;
+  }
+
+  50% {
+    --timing_and_grouping_notes-sx1: 1.00;
+    --timing_and_grouping_notes-sy1: 1.00;
+    --timing_and_grouping_notes-rot1: 0deg;
+    --timing_and_grouping_notes-bright1: 1.00;
+  }
+
+  /* brief gentle emphasis before settling (keeps visuals coherent) */
+  70% {
+    --timing_and_grouping_notes-sx1: 1.02;
+    --timing_and_grouping_notes-sy1: 1.02;
+    --timing_and_grouping_notes-rot1: 0.5deg;
+    --timing_and_grouping_notes-bright1: 1.01;
+  }
+
+  /* final settled state — ready for rings to begin */
+  100% {
+    --timing_and_grouping_notes-sx1: 1.00;
+    --timing_and_grouping_notes-sy1: 1.00;
+    --timing_and_grouping_notes-rot1: 0deg;
+    --timing_and_grouping_notes-op1: 1; /* ensure visible after sequence */
+    --timing_and_grouping_notes-bright1: 1.00;
+  }
+}
+
+/* Idle breathe lane — subtle continuous motion after the entrance sequence finishes.
+   - Starts after the sequence (0.90s) to avoid competing with callouts.
+   - Very low amplitude so it doesn't visually collide with orbit paths.
+*/
+@keyframes timing_and_grouping_notes__idle_breathe {
+  0% {
+    --timing_and_grouping_notes-sx2: 1;
+    --timing_and_grouping_notes-sy2: 1;
+    --timing_and_grouping_notes-ty2: 0px;
+  }
+  100% {
+    --timing_and_grouping_notes-sx2: 1.02;
+    --timing_and_grouping_notes-sy2: 1.02;
+    --timing_and_grouping_notes-ty2: -3px; /* tiny float upward */
+  }
+}
+
+/* Fade-out lane to make room for ring stroke-reveals.
+   - Begins slightly before ring_horizontal's draw (which starts @0.90s) so rings can take visual focus.
+   - Uses op1 again (composed with the sequence) — delayed so it only runs after the sequence has completed.
+*/
+@keyframes timing_and_grouping_notes__fade_for_rings {
+  0% {
+    --timing_and_grouping_notes-op1: 1;
+    --timing_and_grouping_notes-blur1: 0px;
+  }
+  40% {
+    --timing_and_grouping_notes-op1: 0.6;
+    --timing_and_grouping_notes-blur1: 0px;
+  }
+  100% {
+    --timing_and_grouping_notes-op1: 0.18; /* keep a faint presence but not competing */
+    --timing_and_grouping_notes-blur1: 0px;
+  }
+}
+
+/* Composer rule for .timing_and_grouping_notes
+   - Initial lane values match the 'hidden then pop' initial state so the element is correct before animations begin.
+   - Uses transform-box: fill-box + transform-origin: 50% 50% so transforms are centered on the element itself,
+     preventing collisions/clipping relative to nearby artwork (central star / planets).
+   - Transform is composed from lanes only (no transform in keyframes): entrance lane (1) + idle micro-lane (2).
+   - animation-* longhand lists are index-aligned.
+*/
+.timing_and_grouping_notes {
+  /* initial lane values (match initial 'quiet' state) */
+  --timing_and_grouping_notes-sx1: 0.70;
+  --timing_and_grouping_notes-sy1: 0.70;
+  --timing_and_grouping_notes-rot1: -6deg;
+  --timing_and_grouping_notes-op1: 0; /* hidden before sequence */
+  --timing_and_grouping_notes-bright1: 0.98;
+
+  /* idle lane baseline */
+  --timing_and_grouping_notes-sx2: 1;
+  --timing_and_grouping_notes-sy2: 1;
+  --timing_and_grouping_notes-ty2: 0px;
+
+  /* position the notes slightly above the central star to avoid overlap.
+     This relative offset is intentionally modest so it remains robust under scaling.
+     If your artwork places .timing_and_grouping_notes elsewhere, tweak --timing_and_grouping_notes-ty1/tx1 in markup or stylesheet as needed. */
+  --timing_and_grouping_notes-ty1: -48px; /* static positional offset to sit above central visuals */
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose transform from lanes. We use two scale() calls so entrance scale (sx1) multiplies with the idle breathe (sx2). */
+  transform:
+    translate(
+      calc(var(--timing_and_grouping_notes-tx1, 0px) + var(--timing_and_grouping_notes-tx2, 0px)),
+      calc(var(--timing_and_grouping_notes-ty1, 0px) + var(--timing_and_grouping_notes-ty2, 0px))
+    )
+    rotate(calc(var(--timing_and_grouping_notes-rot1, 0deg) + var(--timing_and_grouping_notes-rot2, 0deg)))
+    scale(var(--timing_and_grouping_notes-sx1, 1), var(--timing_and_grouping_notes-sy1, 1))
+    scale(var(--timing_and_grouping_notes-sx2, 1), var(--timing_and_grouping_notes-sy2, 1));
+
+  /* Primary visibility lane controls overall opacity */
+  opacity: var(--timing_and_grouping_notes-op1, 1);
+
+  /* subtle brightness lane available for micro-highlights (kept static by default) */
+  filter: brightness(var(--timing_and_grouping_notes-bright1, 1));
+
+  will-change: transform, opacity, filter;
+
+  /* THREE animation lanes (index-aligned):
+     0) sequence        — orchestrates the Group A callouts (0 → ~0.85s)
+     1) idle_breathe    — subtle long-running micro-motion (starts after sequence finishes)
+     2) fade_for_rings  — timed fade so rings can take visual focus (starts ~0.88s)
+     Notes on timings:
+       - sequence duration chosen to complete just before rings begin (ring_horizontal@0.90s),
+         preserving the requested Group A-first then Group B order.
+       - idle_breathe begins slightly after sequence ends so it doesn't compete with the entrance pulses.
+       - fade_for_rings runs after sequence finishes (delayed) and reduces opacity to a low level so rings remain legible.
+  */
+  animation-name:
+    timing_and_grouping_notes__sequence,
+    timing_and_grouping_notes__idle_breathe,
+    timing_and_grouping_notes__fade_for_rings;
+
+  animation-duration:
+    850ms,   /* sequence (0 → ~0.85s aligns with planets/star timing) */
+    3s,      /* idle breathe (long-running subtle motion) */
+    320ms;   /* fade_for_rings (short fade into ring draws) */
+
+  animation-timing-function:
+    cubic-bezier(0.2, 0.88, 0.32, 1.08), /* organic springy feel for callouts */
+    ease-in-out,                          /* gentle idle loop */
+    ease-out;                             /* quick, unobtrusive fade */
+
+  animation-delay:
+    0s,    /* sequence begins with the scene (star at 0s) */
+    0.90s, /* idle starts after sequence completes (keeps callouts clean) */
+    0.88s; /* fade runs slightly before ring draw so rings get visual priority */
+
+  animation-iteration-count:
+    1,       /* sequence only once */
+    infinite,/* idle breath loops */
+    1;       /* fade runs once */
+
+  animation-direction:
+    normal,
+    alternate,
+    normal;
+
+  animation-fill-mode:
+    both, /* sequence and idle keep their computed states appropriately */
+    both,
+    both;
+
+  animation-play-state:
+    running, running, running;
+}
+
+/* Coherence & performance notes (compact):
+   - All motion is implemented by animating custom properties (no 'transform' inside @keyframes),
+     so lanes compose cleanly with the existing project lanes for central_star, planets, and rings.
+   - Sequence timing maps to the provided plan: central star (0s), shade (~0.05s), planet_left (0.12s),
+     planet_right_small (0.24s), planet_bottom (0.36s). The sequence completes before ring draw (0.90s).
+   - Idle breathe amplitude and translations are intentionally tiny (≤3px, ≤2% scale) to avoid collisions with orbit strokes.
+   - No heavy filters (blur/drop-shadow) are animated; only cheap numeric properties and transforms are used to keep GPU/paint cost low.
+*/
+
+/* implementation_tips — lane declarations (added ONCE)
+   - Follow the project's lane naming convention. Units explicit.
+   - These properties are animated inside keyframes only (no 'transform' in keyframes).
+*/
+@property --implementation_tips-tx1   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --implementation_tips-tx2   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --implementation_tips-ty1   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --implementation_tips-ty2   { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --implementation_tips-rot1  { syntax: '<angle>';  inherits: false; initial-value: 0deg; }
+@property --implementation_tips-rot2  { syntax: '<angle>';  inherits: false; initial-value: 0deg; }
+@property --implementation_tips-sx1   { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --implementation_tips-sx2   { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --implementation_tips-sy1   { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --implementation_tips-sy2   { syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --implementation_tips-op1   { syntax: '<number>'; inherits: false; initial-value: 1; }   /* primary visibility (entrance) */
+@property --implementation_tips-op2   { syntax: '<number>'; inherits: false; initial-value: 1; }   /* stroke/secondary visibility */
+@property --implementation_tips-blur1 { syntax: '<length>'; inherits: false; initial-value: 0px; } /* small reveal blur */
+@property --implementation_tips-blur2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --implementation_tips-stroke1{ syntax: '<length>'; inherits: false; initial-value: 2500px; } /* dash length */
+@property --implementation_tips-stroke2{ syntax: '<length>'; inherits: false; initial-value: 2500px; } /* dash offset (animated) */
+@property --implementation_tips-bright1{ syntax: '<number>'; inherits: false; initial-value: 1; }
+@property --implementation_tips-bright2{ syntax: '<number>'; inherits: false; initial-value: 1; }
+
+/* KEYFRAMES
+   - entrance: pop/overshoot (lane 0) — sets primary scale/rotation/opacity/brightness
+   - breathe: gentle continuous material breathe (lane 1) — subtle multiplicative scale + brightness
+   - draw: stroke reveal for stroked elements (lane 2) — stroke-dashoffset + stroke-opacity + tiny blur
+   - spin: slow micro-rotation (lane 3) — very slow rotation to keep the group alive
+   Notes:
+   - No 'transform' inside keyframes; only custom properties are animated to respect existing lanes.
+   - Names are unique to avoid conflicts.
+*/
+
+/* lane 0: entrance pop (quick and slightly springy) */
+@keyframes implementation_tips__entrance {
+  0% {
+    --implementation_tips-sx1: 0.75;
+    --implementation_tips-sy1: 0.75;
+    --implementation_tips-rot1: -8deg;
+    --implementation_tips-op1: 0;
+    --implementation_tips-bright1: 0.96;
+  }
+  70% {
+    --implementation_tips-sx1: 1.06;
+    --implementation_tips-sy1: 1.06;
+    --implementation_tips-rot1: 2.0deg;
+    --implementation_tips-op1: 1;
+    --implementation_tips-bright1: 1.06;
+  }
+  100% {
+    --implementation_tips-sx1: 1.00;
+    --implementation_tips-sy1: 1.00;
+    --implementation_tips-rot1: 0deg;
+    --implementation_tips-op1: 1;
+    --implementation_tips-bright1: 1.00;
+  }
+}
+
+/* lane 1: gentle breathe (long alternate loop) — uses sx2/sy2 to multiply with entrance scale */
+@keyframes implementation_tips__breathe {
+  0% {
+    --implementation_tips-sx2: 1;
+    --implementation_tips-sy2: 1;
+    --implementation_tips-bright2: 1;
+  }
+  100% {
+    --implementation_tips-sx2: 1.025;
+    --implementation_tips-sy2: 1.025;
+    --implementation_tips-bright2: 1.02;
+  }
+}
+
+/* lane 2: stroke reveal for stroked children (stroke-dashoffset) */
+@keyframes implementation_tips__draw {
+  0% {
+    --implementation_tips-stroke2: 2500px; /* hidden */
+    --implementation_tips-op2: 0;          /* stroke-opacity lane */
+    --implementation_tips-blur1: 1px;     /* tiny reveal blur */
+  }
+  12% {
+    --implementation_tips-op2: 1;          /* fade stroke in early */
+  }
+  18% {
+    --implementation_tips-blur1: 0px;      /* clear blur quickly */
+  }
+  85% {
+    --implementation_tips-stroke2: 12px;   /* nearly drawn */
+  }
+  96% {
+    --implementation_tips-stroke2: -6px;   /* slight overshoot for a hand-drawn settle */
+  }
+  100% {
+    --implementation_tips-stroke2: 0px;    /* fully drawn */
+    --implementation_tips-op2: 1;
+    --implementation_tips-blur1: 0px;
+  }
+}
+
+/* lane 3: very slow micro-spin (keeps scene alive without conflict) */
+@keyframes implementation_tips__spin {
+  0%   { --implementation_tips-rot2: 0deg; }
+  100% { --implementation_tips-rot2: 360deg; }
+}
+
+/* COMPOSER RULE — .implementation_tips
+   - Set initial lane values so the element looks correct before animations begin.
+   - transform-box: fill-box and transform-origin center anchor transforms to the group's own geometry.
+   - Compose transforms using custom properties only (no transform inside keyframes).
+   - Stroke reveal is wired to common stroked child elements (path/circle/line/polyline/polygon).
+   - Animation longhand lists are index-aligned with keyframes above.
+   - Timing/delays chosen to harmonize with the scene:
+       * Entrance begins after primary group callouts and ring reveals (placed after ~2.3s).
+       * Stroke reveal begins slightly after entrance finishes so the group pops then draws.
+       * Breathe begins after entrance settles.
+       * Slow spin begins once the draw completes.
+*/
+.implementation_tips {
+  /* initial (pre-entrance) lane baselines */
+  --implementation_tips-sx1: 0.75;
+  --implementation_tips-sy1: 0.75;
+  --implementation_tips-rot1: -8deg;
+  --implementation_tips-op1: 0;
+  --implementation_tips-bright1: 0.96;
+
+  --implementation_tips-sx2: 1;
+  --implementation_tips-sy2: 1;
+  --implementation_tips-bright2: 1;
+
+  --implementation_tips-stroke1: 2500px;
+  --implementation_tips-stroke2: 2500px;
+  --implementation_tips-op2: 0;
+  --implementation_tips-blur1: 0px;
+  --implementation_tips-rot2: 0deg;
+
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Compose transforms from lanes (entrance lane 1 + slow micro-spin lane 2) and multiplicative scales */
+  transform:
+    translate(
+      calc(var(--implementation_tips-tx1, 0px) + var(--implementation_tips-tx2, 0px)),
+      calc(var(--implementation_tips-ty1, 0px) + var(--implementation_tips-ty2, 0px))
+    )
+    rotate(calc(var(--implementation_tips-rot1, 0deg) + var(--implementation_tips-rot2, 0deg)))
+    /* entrance scale * breathe scale — multiplicative visual effect using two scale() calls */
+    scale(var(--implementation_tips-sx1, 1), var(--implementation_tips-sy1, 1))
+    scale(var(--implementation_tips-sx2, 1), var(--implementation_tips-sy2, 1));
+
+  /* primary visibility lane (entrance) controls overall opacity */
+  opacity: var(--implementation_tips-op1, 1);
+
+  /* chain brightness lanes so numeric multipliers combine without calc multiplication */
+  filter:
+    brightness(var(--implementation_tips-bright1, 1))
+    brightness(var(--implementation_tips-bright2, 1))
+    blur(var(--implementation_tips-blur2, 0px)); /* reserved lane (kept off by default) */
+
+  will-change: transform, opacity, filter, stroke-dashoffset;
+
+  /* TWO / FOUR animation lanes (ordered):
+     0) entrance (quick pop) — starts after scene callouts/ring reveals to avoid collision (delay 2.40s)
+     1) breathe (gentle loop) — begins after entrance settles (delay 3.05s)
+     2) draw (stroke reveal for stroked children) — begins slightly after entrance end (delay 2.95s)
+     3) spin (ultra-slow) — begins after draw completes (delay 4.40s)
+  */
+  animation-name:
+    implementation_tips__entrance,
+    implementation_tips__breathe,
+    implementation_tips__draw,
+    implementation_tips__spin;
+
+  animation-duration:
+    600ms,   /* entrance */
+    3.6s,    /* breathe (alternate loop) */
+    1.1s,    /* draw */
+    60s;     /* spin (very slow) */
+
+  animation-timing-function:
+    cubic-bezier(.2,.85,.28,1.08), /* entrance springy */
+    ease-in-out,                   /* breathe gentle */
+    cubic-bezier(.22,.9,.3,1),     /* draw slightly organic */
+    linear;                        /* spin linear */
+
+  /* delays chosen to be harmonious with provided scene timings (callouts/ring draws around 0.9-2.3s) */
+  animation-delay:
+    2.40s, /* entrance: after rings reveal / initial scene */
+    3.05s, /* breathe: starts once entrance settled */
+    2.95s, /* draw: slightly after entrance ends so pop→draw sequence */
+    4.40s; /* spin: after draw completes (draw start + draw duration ≈ 2.95 + 1.1 = 4.05s), small cushion */
+
+  animation-iteration-count:
+    1,        /* entrance once */
+    infinite, /* breathe loops */
+    1,        /* draw once */
+    infinite; /* spin loops forever */
+
+  animation-direction:
+    normal,
+    alternate,
+    normal,
+    normal;
+
+  animation-fill-mode:
+    both, /* keep entrance final state */
+    both, /* breathe holds intermediate values between alternations */
+    both, /* draw keeps final drawn stroke */
+    both;
+
+  animation-play-state:
+    running, running, running, running;
+
+  /* Do not intercept pointer events — decorative */
+  pointer-events: none;
+}
+
+/* Wire stroke-reveal to common stroked children inside the group
+   - Applies conservative large dash lengths so typical paths are revealed.
+   - stroke-opacity uses op2 lane so the stroke can fade-in during draw without altering element fill opacity.
+   - fill is preserved; only stroked primitives are affected.
+*/
+.implementation_tips path,
+.implementation_tips circle,
+.implementation_tips line,
+.implementation_tips polyline,
+.implementation_tips polygon {
+  /* Preserve fill for filled shapes — only affect stroke rendering used for outlines */
+  stroke-dasharray: calc(var(--implementation_tips-stroke1, 2500px));
+  stroke-dashoffset: var(--implementation_tips-stroke2, 2500px);
+  stroke-opacity: var(--implementation_tips-op2, 1);
+  will-change: stroke-dashoffset, stroke-opacity;
+}
+
+/* Subtle performance note: keep heavy filters off and use tiny reveal blur only for brief frames.
+   The animation delays are placed to avoid visual collision with existing scene callouts and ring reveals.
+   If the implementation_tips group is large or contains many stroked primitives, reduce stroke-dasharray
+   to a closer estimate of the path length(s) (measured with getTotalLength) to avoid unnecessarily large dash values.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg class="icon" height="800px" version="1.1" viewbox="0 0 1024 1024" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="ring_horizontal-group" data-bounds="-498.2,-247.0,536.9,587.0" data-center="19.34,170.00" data-center-relative="517.56,416.95" data-logical-parent="planetary_system" data-paint-order="0" data-semantic-type="ring_horizontal">
+     <path class="icon ring_horizontal" d="M536.89344 516.87424C297.6768 473.99936 33.47456 483.98336 15.02208 586.95168c-18.45248 102.94784 225.8432 204.06784 465.05472 246.9376 239.21152 42.86976 503.41376 32.89088 521.86624-70.06208 18.45248-102.9632-225.83808-204.0832-465.0496-246.95296z m444.71808 243.31264c-11.84256 66.08896-227.4304 103.73632-498.22208 55.20384-270.7968-48.53248-459.88864-158.70976-448.04096-224.79872 11.84256-66.08896 227.43552-103.7568 498.2272-55.22432 270.79168 48.53248 459.88352 158.73024 448.03584 224.8192z" fill="#6B0306" id="target_element_132490281458144">
+     </path>
+    </g>
+    <g class="ring_arc_top-group" data-bounds="-491.3,-279.4,463.2,348.2" data-center="-14.07,34.38" data-center-relative="477.27,313.82" data-logical-parent="planetary_system" data-paint-order="1" data-semantic-type="ring_arc_top">
+     <path class="icon ring_arc_top" d="M314.71104 345.87648c12.42112-19.82976 26.97216-38.7072 44.05248-56.08448 126.81728-128.9984 334.19776-130.7648 463.19616-3.94752 71.69536 70.48192 103.94624 165.84704 96.80384 258.816l19.54816 6.43072c9.10848-100.15232-25.088-203.43296-102.4-279.43936-136.83712-134.52288-356.8128-132.64896-491.33568 4.18816a348.19584 348.19584 0 0 0-49.40288 63.60064l19.53792 6.43584z" fill="#6B0204" id="target_element_132490281461584">
+     </path>
+    </g>
+    <g class="planet_left-group" data-bounds="-153.1,-153.1,318.0,444.3" data-center="82.41,145.58" data-center-relative="235.54,298.72" data-logical-parent="planetary_system" data-merged-count="3" data-paint-order="2" data-semantic-type="planet_left">
+     <path class="icon planet_left" d="M295.53152 360.49408m-76.56448 0a76.56448 76.56448 0 1 0 153.12896 0 76.56448 76.56448 0 1 0-153.12896 0Z" fill="#FFEC43" id="target_element_132490281455344">
+     </path>
+     <path class="icon planet_left" d="M295.53152 444.29824c-46.21312 0-83.80416-37.59616-83.80416-83.80928S249.3184 276.6848 295.53152 276.6848s83.80416 37.59616 83.80416 83.80928-37.59104 83.80416-83.80416 83.80416z m0-153.13408c-38.22592 0-69.33504 31.104-69.33504 69.3248s31.10912 69.3248 69.33504 69.3248 69.33504-31.104 69.33504-69.3248-31.10912-69.3248-69.33504-69.3248z" fill="#6B0204" id="target_element_132490281458704">
+     </path>
+     <path class="icon planet_left" d="M317.952 294.63552c22.45632 11.40736 31.95904 38.08256 28.96896 64.65024-6.528 57.98912-75.73504 64.24576-82.67264 61.93664a69.64224 69.64224 0 0 0 31.62112 7.55712c38.35904 0 69.45792-30.82752 69.45792-68.85888-0.00512-30.37184-19.84512-56.13568-47.37536-65.28512z" fill="#FFC700" id="target_element_132490281466304">
+     </path>
+    </g>
+    <g class="planet_right_small-group" data-bounds="-75.8,-75.8,923.0,572.9" data-center="423.58,248.52" data-center-relative="499.39,324.34" data-logical-parent="planetary_system" data-merged-count="2" data-paint-order="3" data-semantic-type="planet_right_small">
+     <path class="icon planet_right_small" d="M922.96704 527.70304m-37.90848 0a37.90848 37.90848 0 1 0 75.81696 0 37.90848 37.90848 0 1 0-75.81696 0Z" fill="#FFC700" id="target_element_132490281453184">
+     </path>
+     <path class="icon planet_right_small" d="M922.96704 572.85632c-24.89856 0-45.14304-20.25472-45.14304-45.15328 0-24.89344 20.24448-45.14816 45.14304-45.14816 24.89856 0 45.14304 20.25472 45.14304 45.14816 0 24.89856-20.24448 45.15328-45.14304 45.15328z m0-75.82208a30.70464 30.70464 0 0 0-30.67392 30.66368 30.70976 30.70976 0 0 0 30.67392 30.67392 30.70976 30.70976 0 0 0 30.67392-30.67392 30.70464 30.70464 0 0 0-30.67392-30.66368z" fill="#6C0000" id="target_element_132490281464384">
+     </path>
+    </g>
+    <g class="planet_bottom-group" data-bounds="-99.5,0.0,566.5,838.2" data-center="233.50,419.09" data-center-relative="333.01,419.09" data-logical-parent="planetary_system" data-paint-order="4" data-semantic-type="planet_bottom">
+     <path class="icon planet_bottom" d="M566.5024 838.17984m-49.75616 0a49.75616 49.75616 0 1 0 99.51232 0 49.75616 49.75616 0 1 0-99.51232 0Z" fill="#6C0000" id="target_element_132490281455824">
+     </path>
+    </g>
+    <g class="central_star-group" data-bounds="-88.4,-86.7,769.6,729.5" data-center="340.63,321.40" data-center-relative="429.02,408.06" data-logical-children="star_shade" data-merged-count="2" data-paint-order="5" data-semantic-type="central_star">
+     <path class="icon central_star" d="M769.64864 507.07456c-4.12672-11.73504-14.53056-20.1728-27.13088-22.02112l-82.85184-12.12928-35.97824-73.56928c-5.60128-11.46368-17.65376-18.85696-30.73024-18.85696-13.03552 0-25.10848 7.39328-30.73024 18.85696l-35.97824 73.56928-82.83136 12.14976c-12.6208 1.80736-23.04 10.24512-27.17184 22.02112-4.1472 11.91424-1.08032 24.88832 8.02304 33.83808l60.83072 59.86816-14.09536 82.92864c-2.1248 12.42624 3.42016 25.20576 14.13632 32.5376 10.26048 6.94272 24.6528 7.72608 35.74272 1.88928l72.09472-38.24128 72.13568 38.27712a35.00032 35.00032 0 0 0 16.26112 4.02944 34.74432 34.74432 0 0 0 19.50208-5.95968c10.65472-7.31136 16.19968-20.07552 14.07488-32.49664l-14.09536-82.92864 60.83072-59.86816c9.08288-8.96512 12.12928-21.9392 7.9616-33.8944z" fill="#FFC700" id="target_element_132490281465344">
+     </path>
+     <path class="icon central_star" d="M681.37472 729.46176a42.19904 42.19904 0 0 1-19.64032-4.86912l-68.75648-36.48512-68.7104 36.43904c-13.13792 6.92224-31.01184 5.94432-43.1872-2.28352-13.06624-8.94976-19.81952-24.54528-17.2288-39.7568l13.48096-79.19616-58.15296-57.22112c-11.1104-10.9312-14.85824-26.78272-9.7792-41.37472 5.03296-14.34624 17.67424-24.61184 32.98304-26.8032l79.03232-11.60192 34.29888-70.13888c6.8352-13.92128 21.44768-22.912 37.23264-22.912 15.82592 0 30.4384 8.99584 37.23264 22.91712l34.29888 70.13376 79.0784 11.57632c15.2832 2.24256 27.88864 12.50816 32.91136 26.78784 5.10464 14.62272 1.37728 30.49984-9.70752 41.4464L708.608 603.3408l13.47072 79.2064c2.60608 15.17568-4.11136 30.76096-17.11104 39.68a42.05568 42.05568 0 0 1-23.59296 7.23456z m-88.3968-57.74336l75.53024 40.07936c8.7808 4.64896 20.00896 4.06528 28.32896-1.54112 8.2944-5.69856 12.63104-15.62624 10.97216-25.26208l-14.71488-86.66624 63.5136-62.5152c7.07072-6.96832 9.45152-17.07008 6.21056-26.34752-3.23072-9.17504-11.40736-15.78496-21.34016-17.24416l-86.64064-12.68224-37.64736-76.99968c-4.39296-8.99072-13.90592-14.79168-24.22784-14.79168-10.31168 0-19.81952 5.8112-24.22784 14.80192l-37.64736 76.99456-86.62016 12.70784c-9.96864 1.42336-18.15552 8.0384-21.38624 17.24928-3.21536 9.23648-0.81408 19.31264 6.26688 26.27584l63.52384 62.52032-14.73024 86.65088c-1.64864 9.65632 2.69824 19.6096 11.08992 25.35424 7.78752 5.27872 19.77344 5.92896 28.27776 1.45408l75.4688-40.0384z" fill="#6C0000" id="target_element_132490281456704">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

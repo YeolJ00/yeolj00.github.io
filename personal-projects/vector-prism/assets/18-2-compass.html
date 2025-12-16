@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+  Compass outer-case micro-anticipation animation.
+  - Uses the "lanes" pattern (sx/ sy lanes) so the @keyframes only toggle custom properties.
+  - transform is composed in the element rule (no 'transform' in keyframes) to avoid lane collisions.
+  - Animates immediately on load, single iteration, and settles (forwards).
+  - transform-box + transform-origin ensure the scale is centered on the actual SVG shape.
+*/
+
+/* Declare custom properties once so they can be smoothly animated as numbers */
+@property --compass_outer_case-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --compass_outer_case-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Reserve the paired lanes (sx2/sy2 included as defaults for lane completeness) */
+:root {
+  /* primary scale lane (we animate these) */
+  --compass_outer_case-sx1: 1;
+  --compass_outer_case-sy1: 1;
+  /* spare/paired lanes left at identity so they don't interfere with other motions */
+  --compass_outer_case-sx2: 1;
+  --compass_outer_case-sy2: 1;
+}
+
+/* Composer rule for the SVG shape:
+   - Uses the animated custom properties to build the transform (no transforms inside keyframes).
+   - transform-box ensures the transform origin is relative to the SVG path's bounding box.
+*/
+.compass_outer_case {
+  /* Ensure origin is the visual center of the compass outer case */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Use will-change for performance hint (micro animation) */
+  will-change: transform;
+
+  /* Compose the transform from custom property lanes. Using scale(sx, sy) for uniform or non-uniform scaling. */
+  transform: scale(var(--compass_outer_case-sx1, 1), var(--compass_outer_case-sy1, 1));
+
+  /* Animation longhand (single micro-sequence). Default timing-function set to linear;
+     per-segment easing is specified inside the keyframes so the pop and recoil get different easings. */
+  animation-name: compass_outer_case-scale-anticipation;
+  animation-duration: 280ms;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+/* Keyframes operate only on the custom properties (lanes).
+   Offsets computed from the requested timeline (0ms, 20ms, 120ms, 280ms).
+   - 0%      -> scale(1)
+   - 7.142%  -> scale(1.02)  (quick pop)           -> easing: cubic-bezier(0.2,0.8,0.2,1)
+   - 42.857% -> scale(0.985) (tiny squash/recoil)  -> easing: cubic-bezier(0.38,0.15,0.24,1)
+   - 100%    -> scale(1)     (settle)
+*/
+@keyframes compass_outer_case-scale-anticipation {
+  /* start -> quick pop uses the "pop" ease for the outgoing transition */
+  0% {
+    --compass_outer_case-sx1: 1;
+    --compass_outer_case-sy1: 1;
+    /* easing from 0% -> 7.142% (pop) */
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* short pop peak */
+  7.142857% {
+    --compass_outer_case-sx1: 1.02;
+    --compass_outer_case-sy1: 1.02;
+    /* easing from 7.142% -> 42.857% (recoil) */
+    animation-timing-function: cubic-bezier(0.38, 0.15, 0.24, 1);
+  }
+
+  /* tiny squash while the needle accelerates */
+  42.857143% {
+    --compass_outer_case-sx1: 0.985;
+    --compass_outer_case-sy1: 0.985;
+    /* easing for the final settle -> (keeps the snappy character) */
+    animation-timing-function: cubic-bezier(0.38, 0.15, 0.24, 1);
+  }
+
+  /* final settle: identity scale */
+  100% {
+    --compass_outer_case-sx1: 1;
+    --compass_outer_case-sy1: 1;
+  }
+}
+
+/* Small note: This micro-animation is intentionally short and subtle so it complements
+   the needle's launch animation (not included here). Because we animate only numeric
+   custom properties and compose the transform once, the impact on layout and paint is minimal. */
+
+/* Compass hanger micro-shift complementing the outer-case pop.
+   - Uses the "lanes" pattern: we animate numeric custom properties only (no 'transform' inside keyframes).
+   - Small translateY + subtle rotate, origin anchored to the hanger's top so it looks like a hanging weight.
+   - Starts immediately and runs once in lock-step with the outer-case (280ms).
+*/
+
+/* Declare minimal lane properties once so they can be smoothly animated as typed values */
+@property --compass_hanger-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --compass_hanger-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --compass_hanger-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Reserve paired lanes at identity so other motions can later use them without collisions */
+:root {
+  --compass_hanger-tx1: 0px;
+  --compass_hanger-ty1: 0px;
+  --compass_hanger-rot1: 0deg;
+  --compass_hanger-tx2: 0px;
+  --compass_hanger-ty2: 0px;
+  --compass_hanger-rot2: 0deg;
+}
+
+/* Composer rule: build the element transform once from lanes (keeps keyframes lane-safe).
+   transform-origin uses the hanger's visual top-center (50% 15%) so it pivots like a hanging weight.
+*/
+.compass_hanger {
+  transform-box: fill-box;
+  transform-origin: 50% 15%;
+
+  /* Performance hint for small transform-only motion */
+  will-change: transform;
+
+  /* Compose transform from lanes. No 'transform' inside keyframes to avoid lane collisions. */
+  transform: translate(
+      var(--compass_hanger-tx1, 0px),
+      var(--compass_hanger-ty1, 0px)
+    )
+    rotate(var(--compass_hanger-rot1, 0deg));
+
+  /* Single short micro-sequence in sync with the outer-case pop (280ms). */
+  animation-name: compass_hanger-shift;
+  animation-duration: 280ms;
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-timing-function: ease-out;
+}
+
+/* Keyframes only toggle the numeric custom properties (lanes). Timings match the requested timeline:
+   0ms -> 0%
+   50ms -> 17.857%  (~0.05s)
+   120ms -> 42.857% (~0.12s)
+   280ms -> 100%
+*/
+@keyframes compass_hanger-shift {
+  0% {
+    --compass_hanger-ty1: 0px;
+    --compass_hanger-rot1: 0deg;
+    /* keep outgoing ease consistent */
+    animation-timing-function: ease-out;
+  }
+
+  /* quick downward pop (small translation and rotation) */
+  17.857143% {
+    --compass_hanger-ty1: 1.6px;
+    --compass_hanger-rot1: 1.2deg;
+    animation-timing-function: ease-out;
+  }
+
+  /* slight recoil upward */
+  42.857143% {
+    --compass_hanger-ty1: -0.8px;
+    --compass_hanger-rot1: -0.6deg;
+    animation-timing-function: ease-out;
+  }
+
+  /* settle back to rest */
+  100% {
+    --compass_hanger-ty1: 0px;
+    --compass_hanger-rot1: 0deg;
+  }
+}
+
+/* Notes:
+   - Motion values are intentionally tiny to avoid visual collision with nearby elements (needle, case).
+   - By animating typed custom properties and composing transform once, this keeps layout/paint cost low.
+*/
+
+/*
+    inner_ring subtle highlight sweep (brightness lane).
+    - Uses the "lanes" pattern: keyframes only toggle typed custom properties.
+    - Composed in the element rule with filter: brightness(...) so there are no transform/paint lane collisions.
+    - Runs immediately on load, single iteration, and finishes forwards in ~750ms to match needle spin.
+    - This animation is intentionally tiny (+6% brightness max) so it complements the needle motion without being
+      visually dominant or causing collisions with the needle/outer case.
+  */
+
+  /* Brightness lane (typed numeric property so interpolation is smooth and cheap). */
+  @property --inner_ring-bright1 {
+    syntax: '<number>';
+    inherits: false;
+    initial-value: 1;
+  }
+
+  /* Reserve paired/spare lanes so later motions can reuse lanes without collisions. */
+  :root {
+    --inner_ring-bright1: 1;
+    --inner_ring-bright2: 1; /* spare lane - identity */
+    /* other lanes reserved but left at neutral values for safety */
+    --inner_ring-op1: 0;
+    --inner_ring-op2: 0;
+    --inner_ring-tx1: 0px;
+    --inner_ring-ty1: 0px;
+    --inner_ring-sx1: 1;
+    --inner_ring-sy1: 1;
+  }
+
+  .inner_ring {
+    /* Compose the visual effect from the animated lane(s). */
+    will-change: filter;
+    /* Use brightness() to implement a subtle 'highlight' without extra DOM markup.
+       This keeps the animation self-contained and inexpensive (no new SVG nodes). */
+    filter: brightness(var(--inner_ring-bright1, 1));
+
+    /* Animation longhand (single subtle sweep). Duration matches needle main spin (~0.75s). */
+    animation-name: inner_ring-bright-sweep;
+    animation-duration: 750ms;
+    animation-delay: 0s;
+    animation-iteration-count: 1;
+    animation-fill-mode: forwards;
+    animation-timing-function: ease-in-out;
+  }
+
+  /* Keyframes only toggle the numeric custom property lanes (no transform or filter here). 
+     Timeline (relative to 0.75s total):
+       0s   -> 0%      : brightness 1 (baseline)
+       0.05s-> ~6.666% : small pop to 1.018
+       0.45s-> 60%     : peak highlight ~1.06
+       0.75s-> 100%    : back to 1
+  */
+  @keyframes inner_ring-bright-sweep {
+    0% {
+      --inner_ring-bright1: 1;
+    }
+
+    /* quick subtle onset */
+    6.666667% {
+      --inner_ring-bright1: 1.018; /* ~+1.8% brightness to match small early opacity in the plan */
+    }
+
+    /* peak (mid-spin) with gentle falloff starting after */
+    60% {
+      --inner_ring-bright1: 1.06; /* ~+6% max brightness (kept subtle) */
+    }
+
+    /* settle back to baseline by the end of the needle spin */
+    100% {
+      --inner_ring-bright1: 1;
+    }
+  }
+
+  /* Notes:
+     - We intentionally animate a typed custom property and compose the filter once on .inner_ring so
+       the keyframes remain lane-safe and performant.
+     - This animation is subtle and timed to run in lock-step with the needle spin (~750ms).
+     - If a later iteration requires a visible sweeping highlight shape (diagonal movement), a second lane
+       with an overlay SVG element or a filter paint server would be appropriate; this version avoids extra
+       DOM/filters for simplicity and performance.
+  */
+
+/* Face plate: intentionally static composer + typed lanes (lanes reserved for future use).
+   - The design brief explicitly requests that the white face remain visually stable so the needle
+     motion reads clearly. Therefore no active keyframe animation is applied.
+   - We still declare typed @property lanes and compose transform/filter/op once so future motions
+     can be added lane-safely without touching keyframes elsewhere.
+   - transform-box + 50% 50% origin keep any future transforms centered on the actual SVG shape (face center ~506,292 in file).
+   - Collision-avoidance: keyframes (if added later) must animate ONLY these custom props (no 'transform' in keyframes).
+*/
+
+/* Typed lanes (added once) */
+@property --face_plate-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --face_plate-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --face_plate-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --face_plate-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --face_plate-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --face_plate-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --face_plate-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --face_plate-bright1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Reserve paired/spare lanes at neutral values so they don't interfere with other motions. */
+:root {
+  --face_plate-tx1: 0px;
+  --face_plate-ty1: 0px;
+  --face_plate-rot1: 0deg;
+  --face_plate-sx1: 1;
+  --face_plate-sy1: 1;
+  --face_plate-op1: 1;
+  --face_plate-blur1: 0px;
+  --face_plate-bright1: 1;
+
+  /* spare lanes (identity) */
+  --face_plate-tx2: 0px;
+  --face_plate-ty2: 0px;
+  --face_plate-rot2: 0deg;
+  --face_plate-sx2: 1;
+  --face_plate-sy2: 1;
+  --face_plate-op2: 1;
+  --face_plate-blur2: 0px;
+  --face_plate-bright2: 1;
+}
+
+/* Composer rule: build visual state from lanes once. No animation applied so face remains stable. */
+.face_plate {
+  /* Use the element's actual fill-box so the origin aligns with the drawn circle center. */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  /* Hint that these properties might be read/changed later; avoids unnecessary paint churn now. */
+  will-change: transform, filter, opacity;
+
+  /* Compose transform from typed lanes (no transforms inside keyframes to avoid lane collisions). */
+  transform: translate(var(--face_plate-tx1, 0px), var(--face_plate-ty1, 0px))
+             rotate(var(--face_plate-rot1, 0deg))
+             scale(var(--face_plate-sx1, 1), var(--face_plate-sy1, 1));
+
+  /* Compose other visual lanes (filter/opacity/brightness). Kept at neutrals for this static treatment. */
+  filter: blur(var(--face_plate-blur1, 0px)) brightness(var(--face_plate-bright1, 1));
+  opacity: var(--face_plate-op1, 1);
+
+  /* Explicit: no animation for the face_plate so needle motion reads without visual competition. */
+  animation-name: none;
+  animation-duration: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: none;
+  animation-timing-function: linear;
+}
+
+/* Note: If a later iteration requires an ultra-subtle idle effect (micro-breathe or tint),
+   add a keyframe animation that toggles only the above custom properties (e.g. --face_plate-bright1)
+   and reference it in animation-* longhand. This keeps the animation lane-safe and performant. */
+
+/* tick_marks landing pulse (lane-safe, single-shot; triggers after needle settle ~2.48s)
+   - Uses the "lanes" pattern: keyframes toggle typed custom properties only (no 'transform' in keyframes).
+   - Compose the transform once in the composer rule so the animation stays lane-safe and GPU-friendly.
+   - Delay is set to ~2.48s so the pulse happens automatically after the needle's final settle.
+   - Duration ~620ms, single iteration, forwards fill so the group returns to rest.
+   - We use both brightness and opacity lanes so the visual 'pop' is perceptible even if one channel clips.
+*/
+
+/* Typed lanes used by tick_marks. Added once. */
+@property --tick_marks-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tick_marks-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tick_marks-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --tick_marks-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --tick_marks-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --tick_marks-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --tick_marks-bright1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Reserve the paired/spare lanes at neutral values so they don't interfere with other motions. */
+:root {
+  --tick_marks-tx1: 0px;
+  --tick_marks-ty1: 0px;
+  --tick_marks-rot1: 0deg;
+  --tick_marks-sx1: 1;
+  --tick_marks-sy1: 1;
+  --tick_marks-op1: 1;
+  --tick_marks-bright1: 1;
+
+  /* spare lanes (identity) */
+  --tick_marks-tx2: 0px;
+  --tick_marks-ty2: 0px;
+  --tick_marks-rot2: 0deg;
+  --tick_marks-sx2: 1;
+  --tick_marks-sy2: 1;
+  --tick_marks-op2: 1;
+  --tick_marks-bright2: 1;
+}
+
+/* Composer rule: build the visual transform/filter/opacity from lanes once.
+   - transform-box + transform-origin chosen to keep the group-centered motion and
+     avoid visual clipping with the compass face and needle.
+   - will-change hints optimize for transform/opacity changes only.
+*/
+.tick_marks {
+  transform-box: fill-box;
+  /* animating the group as a unified element — center-origin keeps cardinal tick marks
+     scaling/translation symmetric and prevents collisions with the face border. */
+  transform-origin: 50% 50%;
+
+  will-change: transform, opacity, filter;
+
+  /* Compose the transform from the numeric lanes so keyframes never write 'transform'. */
+  transform: translate(
+      var(--tick_marks-tx1, 0px),
+      var(--tick_marks-ty1, 0px)
+    )
+    rotate(var(--tick_marks-rot1, 0deg))
+    scale(var(--tick_marks-sx1, 1), var(--tick_marks-sy1, 1));
+
+  /* Use brightness lane to give a visible pop even if opacity tops out at 1. */
+  filter: brightness(var(--tick_marks-bright1, 1));
+  opacity: var(--tick_marks-op1, 1);
+
+  /* Single landing pulse that runs automatically after the needle settles (~2.48s).
+     We keep the declared timing-function linear here and specify per-segment easing inside keyframes
+     to create the elastic-like onset followed by a smooth ease-out. */
+  animation-name: tick_marks-landing-pulse;
+  animation-duration: 620ms;
+  animation-delay: 2.48s; /* trigger at needle final settle time (approx) */
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+/* Keyframes toggle only the numeric custom properties (lanes).
+   Offsets: 0% -> 20% -> 60% -> 100% which map to the requested timeline:
+     0%   (2.48s) : rest
+     20%  (2.60s) : quick pop (scale up + small rise)
+     60%  (2.85s) : slight recoil (tiny squash + small drop)
+     100% (3.10s) : settle at identity
+*/
+@keyframes tick_marks-landing-pulse {
+  0% {
+    --tick_marks-sx1: 1;
+    --tick_marks-sy1: 1;
+    --tick_marks-ty1: 0px;
+    --tick_marks-op1: 1;
+    --tick_marks-bright1: 1;
+
+    /* outgoing ease for the initial motion -> peak */
+    animation-timing-function: cubic-bezier(.2, 1.1, .2, 1);
+  }
+
+  /* quick pop: slightly larger, lifted up, brighter */
+  20% {
+    --tick_marks-sx1: 1.06;
+    --tick_marks-sy1: 1.06;
+    --tick_marks-ty1: -1px;         /* up by 1px */
+    --tick_marks-op1: 1.06;         /* slight opacity bump (may clamp to 1) */
+    --tick_marks-bright1: 1.06;     /* +6% visual brightening */
+
+    /* switch to an ease-out for the recoil and settle */
+    animation-timing-function: ease-out;
+  }
+
+  /* small recoil: tiny squash and a subtle drop to read the landing */
+  60% {
+    --tick_marks-sx1: 0.99;
+    --tick_marks-sy1: 0.99;
+    --tick_marks-ty1: 0.5px;        /* slight downward settle */
+    --tick_marks-op1: 0.995;
+    --tick_marks-bright1: 1.01;
+    animation-timing-function: ease-out;
+  }
+
+  /* final settle back to identity (resting state) */
+  100% {
+    --tick_marks-sx1: 1;
+    --tick_marks-sy1: 1;
+    --tick_marks-ty1: 0px;
+    --tick_marks-op1: 1;
+    --tick_marks-bright1: 1;
+  }
+}
+
+/* Notes:
+   - This animation is intentionally compact and subtle to complement the existing needle/outer-case motions.
+   - By animating typed custom properties and composing the transform once, we avoid transform lane collisions
+     with other SVG animations and keep the runtime cost low (GPU-accelerated transform/filter where available).
+   - The small translate values and scale range were chosen to avoid visual overlap with the face/needle while
+     still giving a readable 'landing' emphasis.
+*/
+
+/* Needle group — lane-safe, lane-declared animation set.
+   - Uses the "lanes" pattern: keyframes only toggle typed custom properties.
+   - Composer rules build transforms/filters once (no 'transform' inside keyframes).
+   - Animations start immediately on load, run once, and finish forwards.
+   - All lanes are declared once here and reserved so future motions won't collide.
+*/
+
+/* Primary lanes for the whole needle_group (container motion + motion blur/opacity). */
+@property --needle_group-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --needle_group-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --needle_group-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --needle_group-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Per-half lanes (kept separate so each needle half can follow/lead independently).
+   Naming uses the needle_group prefix and descriptive half suffix to avoid collisions. */
+@property --needle_group-halfA-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --needle_group-halfA-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --needle_group-halfB-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* Reserve paired/spare lanes at neutral values (safety for future motions). */
+:root {
+  --needle_group-rot1: 0deg;
+  --needle_group-sy1: 1;
+  --needle_group-op1: 1;
+  --needle_group-blur1: 0px;
+
+  --needle_group-halfA-sx1: 1;
+  --needle_group-halfA-rot1: 0deg;
+  --needle_group-halfB-rot1: 0deg;
+
+  /* spare lanes (identity) */
+  --needle_group-tx2: 0px;
+  --needle_group-ty2: 0px;
+  --needle_group-sx2: 1;
+  --needle_group-sy2: 1;
+  --needle_group-op2: 1;
+  --needle_group-blur2: 0px;
+  --needle_group-bright1: 1;
+}
+
+/* Composer for the whole needle group (the <g class="needle_group-group">).
+   - Transform origin is the visual center of the compass; 50% 50% keeps rotation centered on the face.
+   - Compose rotation/scaleY from lanes. Filter/opacity composed from lanes for blur smear during spin.
+   - will-change hints for performant transforms/filters.
+*/
+.needle_group-group {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  will-change: transform, filter, opacity;
+
+  /* Compose the rotation + squash/stretch lanes here. No transform declarations inside keyframes. */
+  transform: rotate(var(--needle_group-rot1, 0deg))
+             scaleY(var(--needle_group-sy1, 1));
+
+  /* Motion blur + subtle opacity smear for high-speed spin -> uses typed lanes. */
+  filter: blur(var(--needle_group-blur1, 0px));
+  opacity: var(--needle_group-op1, 1);
+
+  /* Two animations in sequence (spin then damped wobble).
+     They are declared in parallel so they can be scheduled/delayed independently but both
+     mutate the same lanes (they are written in keyframes only). */
+  animation-name: needle_group-main-spin, needle_group-wobble;
+  animation-duration: 0.75s, 1.65s;          /* spin (0→0.75) then wobble (0.75→2.4) */
+  animation-delay: 0s, 0.75s;                /* wobble starts exactly when spin finishes */
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  /* Use linear here; per-segment easing is applied within the keyframes via animation-timing-function. */
+  animation-timing-function: linear, linear;
+}
+
+/* Composer for the two needle halves (paths with class 'needle_group' inside the group)
+   - nth-of-type used to pick the left (red) and right (blue) half reliably (both are <path> siblings).
+   - Each half composes its micro-follow-through lanes in its own transform so keyframes never write 'transform'.
+*/
+.needle_group-group .needle_group:nth-of-type(1) {
+  /* left/red half (leading edge) */
+  transform-box: fill-box;
+  /* pivot slightly inboard so the leading-edge "length" stretch feels natural */
+  transform-origin: 35% 50%;
+
+  will-change: transform;
+
+  transform: rotate(var(--needle_group-halfA-rot1, 0deg))
+             scaleX(var(--needle_group-halfA-sx1, 1));
+  /* red half has two small animations: lead-scale during spin and gentle tighten during wobble. */
+  animation-name: needle_group-halfA-scale-spin, needle_group-halfA-tighten-wobble;
+  animation-duration: 0.75s, 1.65s;
+  /* slight lead on the spin (starts fractionally 'ahead') — negative delay moves timeline forward slightly */
+  animation-delay: -0.02s, 0.75s;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-timing-function: linear, linear;
+}
+
+.needle_group-group .needle_group:nth-of-type(2) {
+  /* right/blue half (trailing edge) */
+  transform-box: fill-box;
+  /* pivot slightly inboard on the opposite side so trailing skew/rotation reads as inertia */
+  transform-origin: 65% 50%;
+
+  will-change: transform;
+
+  transform: rotate(var(--needle_group-halfB-rot1, 0deg));
+  /* subtle lag on the spin (starts slightly later) and then participates in the wobble with small offsets */
+  animation-name: needle_group-halfB-skew-spin, needle_group-halfB-wobble-follow;
+  animation-duration: 0.75s, 1.65s;
+  animation-delay: 0.03s, 0.75s;
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  animation-timing-function: linear, linear;
+}
+
+/* -----------------
+   Keyframes (only change numeric custom properties - lane-safe)
+   -----------------*/
+
+/* Phase A: main rapid double spin (0 → 0.75s)
+   - rotation from 0 → +720deg (two full clockwise turns).
+   - squash/stretch on Y to suggest centrifugal flex: 0.985 → 1.02 → 1.
+   - short motion blur / opacity smear while spinning, removed at the end.
+   - strong ease-out feel for the spin using a custom cubic-bezier on the first interval.
+*/
+@keyframes needle_group-main-spin {
+  /* start: subtle low-squash, no blur */
+  0% {
+    --needle_group-rot1: 0deg;
+    --needle_group-sy1: 0.985;
+    --needle_group-blur1: 0px;
+    --needle_group-op1: 1;
+    /* ease for the initial fast spin */
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  /* mid-spin: peak centrifugal stretch + visible blur */
+  60% {
+    --needle_group-sy1: 1.02;
+    --needle_group-blur1: 1.6px;
+    --needle_group-op1: 0.92;
+    /* keep spin easing until final arrival */
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  /* finish spin: arrive at 2 full rotations and return squash/blur to neutral */
+  100% {
+    --needle_group-rot1: 720deg;  /* two full clockwise rotations from initial heading */
+    --needle_group-sy1: 1;
+    --needle_group-blur1: 0px;
+    --needle_group-op1: 1;
+  }
+}
+
+/* Phase B: damped settle + wobble (0.75s → 2.4s)
+   - Uses a sequence of relative "bounces" around the landing angle (720deg).
+   - Percent offsets correspond to the requested timeline mapped into the 1.65s wobble window.
+     (0% -> 0.75s; 12.12% -> 0.95s; 27.27% -> 1.20s; 48.48% -> 1.55s; 69.69% -> 1.90s; 100% -> 2.40s)
+   - Per-segment easing uses a springy cubic-bezier for the initial overshoot then eases out to settle.
+*/
+@keyframes needle_group-wobble {
+  0% {
+    --needle_group-rot1: 720deg;
+    /* outgoing spring-onset */
+    animation-timing-function: cubic-bezier(.2, 1.1, .2, 1);
+  }
+
+  /* quick overshoot (first bounce) */
+  12.121212% {
+    --needle_group-rot1: 738deg; /* +18° overshoot */
+    animation-timing-function: cubic-bezier(.2, 1.1, .2, 1);
+  }
+
+  /* swing back past center */
+  27.272727% {
+    --needle_group-rot1: 710deg; /* -10° */
+    animation-timing-function: cubic-bezier(.2, 1.05, .24, 1);
+  }
+
+  /* smaller rebound */
+  48.484848% {
+    --needle_group-rot1: 725deg; /* +5° */
+    animation-timing-function: cubic-bezier(.2, 1.05, .24, 1);
+  }
+
+  /* very small undershoot before final settle */
+  69.69697% {
+    --needle_group-rot1: 718deg; /* -2° */
+    animation-timing-function: ease-out;
+  }
+
+  /* final rest at landing heading */
+  100% {
+    --needle_group-rot1: 720deg;
+  }
+}
+
+/* -----------------
+   Needle half animations (follow-through)
+   -----------------*/
+
+/* Red half (halfA) — leads slightly during the spin and lengthens along its axis,
+   then tightens slightly during the wobble to read as 'stabilising' */
+@keyframes needle_group-halfA-scale-spin {
+  0% {
+    --needle_group-halfA-sx1: 1;
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  60% {
+    /* small leading stretch along the length to read as leading edge */
+    --needle_group-halfA-sx1: 1.03;
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  100% {
+    --needle_group-halfA-sx1: 1;
+  }
+}
+
+@keyframes needle_group-halfA-tighten-wobble {
+  0% {
+    --needle_group-halfA-sx1: 1;
+    animation-timing-function: ease-out;
+  }
+
+  40% {
+    --needle_group-halfA-sx1: 0.99; /* slightly "tighten" as it settles in */
+    animation-timing-function: ease-out;
+  }
+
+  100% {
+    --needle_group-halfA-sx1: 1;
+  }
+}
+
+/* Blue half (halfB) — lags during the spin and exhibits a small rotation offset
+   that reads like a trailing skew/inertia; participates in the same damped timing as the body. */
+@keyframes needle_group-halfB-skew-spin {
+  0% {
+    --needle_group-halfB-rot1: 0deg;
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  60% {
+    /* small trailing tilt (simulates a skew) while spinning */
+    --needle_group-halfB-rot1: 2.2deg;
+    animation-timing-function: cubic-bezier(.12, .85, .24, 1);
+  }
+
+  100% {
+    --needle_group-halfB-rot1: 0deg;
+  }
+}
+
+/* Blue half wobble follow-through — smaller rotation offsets that decay with the main wobble.
+   Timing matches container wobble (starts at 0.75s via animation-delay on the element). */
+@keyframes needle_group-halfB-wobble-follow {
+  0% {
+    --needle_group-halfB-rot1: 0deg;
+    animation-timing-function: cubic-bezier(.2, 1.1, .2, 1);
+  }
+
+  12.121212% {
+    --needle_group-halfB-rot1: 2.6deg;
+    animation-timing-function: cubic-bezier(.2, 1.05, .2, 1);
+  }
+
+  27.272727% {
+    --needle_group-halfB-rot1: -1.6deg;
+    animation-timing-function: cubic-bezier(.2, 1.05, .2, 1);
+  }
+
+  48.484848% {
+    --needle_group-halfB-rot1: 1.1deg;
+    animation-timing-function: ease-out;
+  }
+
+  69.69697% {
+    --needle_group-halfB-rot1: -0.4deg;
+    animation-timing-function: ease-out;
+  }
+
+  100% {
+    --needle_group-halfB-rot1: 0deg;
+  }
+}
+
+/* -----------------
+   Notes & coherence with other animations
+   - This block only animates typed custom properties; no transform is written in keyframes,
+     minimizing transform-lane collisions with existing animations (outer-case, hanger, etc.).
+   - The main rotation uses 720deg to represent two full clockwise rotations relative to the current angle.
+   - The total timeline (0 → 2.4s) is aligned with the other compass micro-animations:
+     spin finishes at 0.75s, wobble completes at ~2.4s (matching tick_marks landing timing).
+   - Values for blur/scale/rotation are intentionally small and tuned to avoid clipping or visual collision
+     with the face_plate and surrounding rings while still reading clearly.
+   - All animations run automatically on page load (no JS or runtime classes needed).
+*/
+
+/* center_pivot lane-safe animation
+   - Implements two landing pulses tied into the needle timeline:
+     * primary accent around first overshoot (~0.98s)
+     * small final micro-pulse at final settle (~2.4 → 2.6s)
+   - Uses typed @property lanes and composes transform/filter in the composer rule.
+   - Keyframes only set custom properties (no 'transform' in keyframes) to avoid lane collisions.
+   - Animation runs automatically on load, single iteration, forwards fill.
+*/
+
+/* Typed lanes for center_pivot (added once). */
+@property --center_pivot-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --center_pivot-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --center_pivot-bright1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Reserve paired/spare lanes at neutral values so they don't interfere later. */
+:root {
+  --center_pivot-sx1: 1;
+  --center_pivot-sy1: 1;
+  --center_pivot-bright1: 1;
+
+  /* spare lanes (identity) */
+  --center_pivot-sx2: 1;
+  --center_pivot-sy2: 1;
+  --center_pivot-bright2: 1;
+
+  /* other common lanes preserved as neutrals for safety (no-op defaults) */
+  --center_pivot-tx1: 0px;
+  --center_pivot-ty1: 0px;
+  --center_pivot-rot1: 0deg;
+  --center_pivot-op1: 1;
+  --center_pivot-blur1: 0px;
+  --center_pivot-stroke1: 0;
+}
+
+/* Composer rule for the center pivot element.
+   - transform-box + 50% 50% origin centers the scale on the pivot graphic.
+   - Compose transform from lanes (no transform inside keyframes).
+   - Compose brightness from lane so we can subtly lighten the pivot at peaks.
+*/
+.center_pivot {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+
+  will-change: transform, filter;
+
+  /* Compose transform from numeric lanes (lane-safe). */
+  transform: scale(var(--center_pivot-sx1, 1), var(--center_pivot-sy1, 1))
+             translate(var(--center_pivot-tx1, 0px), var(--center_pivot-ty1, 0px))
+             rotate(var(--center_pivot-rot1, 0deg));
+
+  /* Subtle brightness boost lane used for pulses; kept at 1 by default. */
+  filter: brightness(var(--center_pivot-bright1, 1));
+
+  /* Single timeline animation that embeds both pulses so synchronization is deterministic.
+     Duration covers entire landing window (0 → 2.6s) so percentage offsets map directly to the requested times.
+     We use linear globally and set per-segment easing inside keyframes for crisp accents. */
+  animation-name: center_pivot-pulse-timeline;
+  animation-duration: 2.6s;         /* covers until final settle (2.6s) */
+  animation-delay: 0s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+/* Keyframes: only toggle typed numeric custom properties (lane-safe).
+   Timeline mapping (2.6s total):
+     - 0%                -> 0s                      : rest
+     - 35.384615% (~0.92s) -> pre-onset (still rest)
+     - 37.692308% (~0.98s) -> peak of first pulse (scale 1.18, bright +12%)
+     - 40.384615% (~1.05s) -> settle back to 1
+     - 92.307692% (~2.40s) -> start of final micro-pulse
+     - 96.153846% (~2.50s) -> small peak (scale 1.06)
+     - 100%             -> 2.6s final rest
+*/
+@keyframes center_pivot-pulse-timeline {
+  /* resting baseline */
+  0% {
+    --center_pivot-sx1: 1;
+    --center_pivot-sy1: 1;
+    --center_pivot-bright1: 1;
+    /* outgoing ease for the quick onset */
+    animation-timing-function: ease-out;
+  }
+
+  /* keep quiet until just before the overshoot */
+  35.384615% {
+    --center_pivot-sx1: 1;
+    --center_pivot-sy1: 1;
+    --center_pivot-bright1: 1;
+    animation-timing-function: ease-out;
+  }
+
+  /* primary pulse peak (quick, perceptible accent) */
+  37.692308% {
+    --center_pivot-sx1: 1.18;
+    --center_pivot-sy1: 1.18;
+    --center_pivot-bright1: 1.12; /* +12% brightness */
+    /* ease-out going into the rebound for a snappy feel */
+    animation-timing-function: ease-out;
+  }
+
+  /* settle back after first pulse */
+  40.384615% {
+    --center_pivot-sx1: 1;
+    --center_pivot-sy1: 1;
+    --center_pivot-bright1: 1;
+    animation-timing-function: ease-out;
+  }
+
+  /* --- gap while wobble continues; final micro-pulse near final settle --- */
+
+  /* just before final micro-pulse */
+  92.307692% {
+    --center_pivot-sx1: 1;
+    --center_pivot-sy1: 1;
+    --center_pivot-bright1: 1;
+    animation-timing-function: ease-out;
+  }
+
+  /* final micro-pulse peak (much smaller) */
+  96.153846% {
+    --center_pivot-sx1: 1.06;
+    --center_pivot-sy1: 1.06;
+    --center_pivot-bright1: 1.06; /* subtle brightness bump */
+    animation-timing-function: ease-out;
+  }
+
+  /* final rest */
+  100% {
+    --center_pivot-sx1: 1;
+    --center_pivot-sy1: 1;
+    --center_pivot-bright1: 1;
+  }
+}
+
+/* Notes:
+   - This block keeps all modifications lane-safe (keyframes only change custom properties).
+   - Percentages map directly to absolute times relative to the 2.6s duration so the pulses align
+     deterministically with the needle's spin + wobble (first overshoot ≈0.98s, final settle ≈2.4s).
+   - Values are intentionally modest to avoid visual collisions with the needle halves and face plate:
+     the pivot scales up briefly but returns to identity and brightness changes are small.
+   - For maximum performance the transform and filter are composed once in the composer rule; the keyframes
+     therefore do minimal work (typed property interpolation), which keeps the animation GPU-friendly.
+*/
+
+/* general_notes — lane-safe, page-load animated micro-sequence.
+   - Uses the "lanes" pattern: keyframes only toggle typed custom properties (no 'transform' in keyframes).
+   - Composer rule composes transform / filter / opacity once so the animation is transform-lane friendly.
+   - Timeline: two sequential animations (intro pop -> subtle breathe/settle) that together span ~2.4s
+     to remain synchronous with the needle spin + wobble in the artboard.
+   - Transform origin anchored to the compass center (50% 50%) so rotations/scales pivot visually around the dial.
+   - This file declares properties & reserves spare lanes once; it will not edit existing lanes elsewhere.
+*/
+
+/* --------------------------
+   Typed custom properties (declared once so they can be smoothly animated)
+   -------------------------- */
+@property --general_notes-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --general_notes-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --general_notes-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --general_notes-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --general_notes-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --general_notes-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --general_notes-blur1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --general_notes-bright1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Reserve paired/spare lanes at neutral values so other scripts/animations can reuse them later safely. */
+:root {
+  --general_notes-tx1: 0px;
+  --general_notes-ty1: 0px;
+  --general_notes-rot1: 0deg;
+  --general_notes-sx1: 1;
+  --general_notes-sy1: 1;
+  --general_notes-op1: 1;
+  --general_notes-blur1: 0px;
+  --general_notes-bright1: 1;
+
+  /* spare lanes (identity) */
+  --general_notes-tx2: 0px;
+  --general_notes-ty2: 0px;
+  --general_notes-rot2: 0deg;
+  --general_notes-sx2: 1;
+  --general_notes-sy2: 1;
+  --general_notes-op2: 1;
+  --general_notes-blur2: 0px;
+  --general_notes-bright2: 1;
+}
+
+/* --------------------------
+   Composer rule: build transforms/filters once (lane-safe)
+   - Anchor to the compass center so general_notes motions don't visually collide with needle/faces.
+   - Use will-change to hint for transform/opacity/filter acceleration.
+*/
+.general_notes {
+  transform-box: fill-box;
+  transform-origin: 50% 50%; /* compass center aligned with the main artwork */
+  will-change: transform, opacity, filter;
+
+  /* Compose transform from lanes. Keyframes will only modify the custom properties above (no 'transform' in keyframes). */
+  transform: translate(var(--general_notes-tx1, 0px), var(--general_notes-ty1, 0px))
+             rotate(var(--general_notes-rot1, 0deg))
+             scale(var(--general_notes-sx1, 1), var(--general_notes-sy1, 1));
+
+  /* Compose visual lanes */
+  filter: blur(var(--general_notes-blur1, 0px)) brightness(var(--general_notes-bright1, 1));
+  opacity: var(--general_notes-op1, 1);
+
+  /* Two sequential animations:
+     - intro-pop (quick, 0 → 0.75s): subtle pop + rotation arrival
+     - settle-breathe (1.65s starting at 0.75s): gentle micro-breathe/wobble that finishes at ~2.4s
+     Both are single-shot and use forwards fill so final states persist.
+   */
+  animation-name: general_notes-intro-pop, general_notes-settle-breathe;
+  animation-duration: 750ms, 1650ms;      /* intro, then breathe */
+  animation-delay: 0s, 0.75s;             /* breathe starts when intro finishes (0.75s) */
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: forwards, forwards;
+  /* Use linear globally; per-segment easing specified inside keyframes. */
+  animation-timing-function: linear, linear;
+}
+
+/* --------------------------
+   Keyframes (lane-safe: only mutate custom properties)
+   - Names chosen to avoid conflicts with existing animations.
+   - No 'transform' declarations here (collision avoidance).
+   -------------------------- */
+
+/* Intro: quick, subtle pop & alignment (0 → 0.75s)
+   - Fade in from low opacity while doing a small pop and a tiny corrective rotation.
+   - Eases chosen for a snappy pop then a gentle recoil to settle.
+*/
+@keyframes general_notes-intro-pop {
+  0% {
+    --general_notes-op1: 0;
+    --general_notes-sx1: 0.985;
+    --general_notes-sy1: 0.985;
+    --general_notes-rot1: -6deg;
+    /* snappy pop-onset */
+    animation-timing-function: cubic-bezier(.2, .9, .2, 1);
+  }
+
+  /* peak pop — quick, slight overscale while becoming fully visible */
+  28% {
+    --general_notes-op1: 1;
+    --general_notes-sx1: 1.02;
+    --general_notes-sy1: 1.02;
+    --general_notes-rot1: -2deg;
+    /* transition into the recoil with a softer spring */
+    animation-timing-function: cubic-bezier(.38, .15, .24, 1);
+  }
+
+  /* small recoil while the needle completes its rapid spin — keeps motion coherent */
+  62% {
+    --general_notes-sx1: 0.995;
+    --general_notes-sy1: 0.995;
+    --general_notes-rot1: -1deg;
+    animation-timing-function: cubic-bezier(.38, .15, .24, 1);
+  }
+
+  /* settled at identity (end of intro) */
+  100% {
+    --general_notes-op1: 1;
+    --general_notes-sx1: 1;
+    --general_notes-sy1: 1;
+    --general_notes-rot1: 0deg;
+  }
+}
+
+/* Settle / breathe: gentle micro-motion that runs after the intro (0.75s → 2.4s)
+   - Very small pulsing scale and brightness variations to give life while the needle wobbles.
+   - Uses soft eases; ends at identity so no permanent distortion is introduced.
+*/
+@keyframes general_notes-settle-breathe {
+  0% {
+    --general_notes-sx1: 1;
+    --general_notes-sy1: 1;
+    --general_notes-bright1: 1;
+    --general_notes-blur1: 0px;
+    /* outgoing ease for micro-accents */
+    animation-timing-function: ease-out;
+  }
+
+  /* tiny inhale */
+  18% {
+    --general_notes-sx1: 1.01;
+    --general_notes-sy1: 0.997;
+    --general_notes-bright1: 1.02;
+    --general_notes-blur1: 0.4px; /* micro-soften for perceived motion */
+    animation-timing-function: ease-out;
+  }
+
+  /* subtle exhale */
+  55% {
+    --general_notes-sx1: 0.997;
+    --general_notes-sy1: 1.006;
+    --general_notes-bright1: 1.01;
+    --general_notes-blur1: 0.18px;
+    animation-timing-function: ease-out;
+  }
+
+  /* final gentle settle back to identity at the same time the needle finishes wobble */
+  100% {
+    --general_notes-sx1: 1;
+    --general_notes-sy1: 1;
+    --general_notes-bright1: 1;
+    --general_notes-blur1: 0px;
+  }
+}
+
+/* --------------------------
+   Notes on coherence & performance
+   - Percentages/durations chosen to align the general_notes sequence with the needle_group timeline
+     already present in the file: intro finishes at ~0.75s (needle spin end) and breathe finishes at ~2.4s.
+   - All keyframes only change typed custom properties; transforms/filters/opacity are composed once in the
+     .general_notes composer rule, avoiding transform-lane collisions and keeping animations GPU-friendly.
+   - Values are intentionally small and subtle so the needle remains the visual focus.
+   - animation-fill-mode: forwards is used to hold final states as requested; the keyframes are self-contained
+     and run automatically on page load.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg class="icon" height="800px" version="1.1" viewbox="0 0 1024 1024" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="compass_hanger-group" data-bounds="-59.9,-71.8,561.4,289.5" data-center="250.75,108.85" data-center-relative="310.65,180.65" data-logical-parent="compass" data-merged-count="2" data-paint-order="0" data-semantic-type="compass_hanger">
+     <path class="icon compass_hanger" d="M512 198.7c-33 0-59.9-26.9-59.9-59.9v-14.3c0-33 26.9-59.9 59.9-59.9s59.9 26.9 59.9 59.9v14.3c-0.1 33-26.9 59.9-59.9 59.9zM512 75c-27.3 0-49.5 22.2-49.5 49.5v14.3c0 27.3 22.2 49.5 49.5 49.5s49.5-22.2 49.5-49.5v-14.3C561.4 97.2 539.2 75 512 75z" fill="#986612" id="target_element_123956810683616">
+     </path>
+     <path class="icon compass_hanger" d="M515.5 289.5h-5.8c-24.2 0-43.9-19.8-43.9-43.9v-71.8c0-24.2 19.8-43.9 43.9-43.9h5.8c24.2 0 43.9 19.8 43.9 43.9v71.8c0.1 24.1-19.7 43.9-43.9 43.9z" fill="#D8962A" id="target_element_123956810694096">
+     </path>
+    </g>
+    <g class="compass_outer_case-group" data-bounds="-749.8,0.0,512.6,749.8" data-center="-118.60,374.90" data-center-relative="631.20,374.90" data-logical-parent="compass" data-paint-order="1" data-semantic-type="compass_outer_case">
+     <path class="icon compass_outer_case" d="M512.6 584.5m-374.9 0a374.9 374.9 0 1 0 749.8 0 374.9 374.9 0 1 0-749.8 0Z" fill="#F6B13A" id="target_element_123956810683536">
+     </path>
+    </g>
+    <g class="inner_ring-group" data-bounds="-618.2,0.0,512.6,618.2" data-center="-52.80,309.10" data-center-relative="565.40,309.10" data-logical-parent="compass" data-paint-order="2" data-semantic-type="inner_ring">
+     <path class="icon inner_ring" d="M512.6 584.5m-309.1 0a309.1 309.1 0 1 0 618.2 0 309.1 309.1 0 1 0-618.2 0Z" fill="#F35426" id="target_element_123956810693296">
+     </path>
+    </g>
+    <g class="face_plate-group" data-bounds="-499.4,0.0,512.6,584.5" data-center="6.60,292.25" data-center-relative="506.00,292.25" data-logical-parent="compass" data-paint-order="3" data-semantic-type="face_plate">
+     <path class="icon face_plate" d="M512.6 584.5m-249.7 0a249.7 249.7 0 1 0 499.4 0 249.7 249.7 0 1 0-499.4 0Z" fill="#F4F4F4" id="target_element_123956810682576">
+     </path>
+    </g>
+    <g class="tick_marks-group" data-bounds="-95.5,-95.5,870.0,810.0" data-center="387.25,357.25" data-center-relative="482.75,452.75" data-logical-parent="compass" data-paint-order="4" data-semantic-type="tick_marks">
+     <path class="icon tick_marks" d="M313.3 584.5h-95.5c-7.6 0-13.9-6.2-13.9-13.9 0-7.6 6.2-13.9 13.9-13.9h95.5c7.6 0 13.9 6.2 13.9 13.9-0.1 7.7-6.3 13.9-13.9 13.9zM525.9 774.6V870c0 7.6-6.2 13.9-13.9 13.9-7.6 0-13.9-6.2-13.9-13.9v-95.5c0-7.6 6.2-13.9 13.9-13.9 7.6 0.1 13.9 6.3 13.9 14zM525.9 297.3v95.5c0 7.6-6.2 13.9-13.9 13.9-7.6 0-13.9-6.2-13.9-13.9v-95.5c0-7.6 6.2-13.9 13.9-13.9 7.6 0 13.9 6.3 13.9 13.9zM810 584.5h-95.5c-7.6 0-13.9-6.2-13.9-13.9 0-7.6 6.2-13.9 13.9-13.9H810c7.6 0 13.9 6.2 13.9 13.9s-6.2 13.9-13.9 13.9z" fill="#C9CCC7" id="target_element_123956810693056">
+     </path>
+    </g>
+    <g class="needle_group-group" data-bounds="-128.6,-135.5,484.3,624.0" data-center="177.85,244.25" data-center-relative="306.45,379.75" data-logical-children="center_pivot" data-logical-parent="compass" data-merged-count="2" data-paint-order="5" data-semantic-type="needle_group">
+     <path class="icon needle_group" d="M484.3 624l-128-135.1 179.2 52.8z" fill="#EC5C3D" id="target_element_123956808515344">
+     </path>
+     <path class="icon needle_group" d="M483.9 623.8l178.5 52.4-128.6-135.5z" fill="#2E9DC7" id="target_element_123956808511584">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

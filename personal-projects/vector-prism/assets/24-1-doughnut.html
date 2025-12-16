@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* 
+  Bread ring animation lanes (added once). 
+  We expose only the lanes we use to keep collision-free composition.
+  Lanes: tx/ty (length), rot (angle), sx/sy (scale numbers), op (opacity number).
+*/
+@property --bread_ring-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --bread_ring-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --bread_ring-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --bread_ring-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --bread_ring-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --bread_ring-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --bread_ring-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer rule: builds the final transform/opacity from the lanes.
+   - Uses fill-box and an explicit transform-origin derived from the SVG layout.
+   - transform uses the custom properties; keyframes animate the properties only.
+*/
+.bread_ring {
+  /* Ensure transforms are applied relative to the element's shape */
+  transform-box: fill-box;
+  /* transform-origin derived from the donut's center in the 64x64 viewBox.
+     Using the SVG group's center to avoid visual offset when popping.
+     (approx: 29.85% 40.35% relative to the overall SVG) */
+  transform-origin: 29.85% 40.35%;
+
+  /* Compose transform from lanes (do not put 'transform' in @keyframes) */
+  transform: 
+    translate(var(--bread_ring-tx1, 0px), calc(var(--bread_ring-ty1, 0px) + var(--bread_ring-ty2, 0px)))
+    rotate(var(--bread_ring-rot1, 0deg))
+    scale(var(--bread_ring-sx1, 1), var(--bread_ring-sy1, 1));
+
+  opacity: var(--bread_ring-op1, 1);
+
+  /* Promote to its own layer for smooth, compositor-driven motion */
+  will-change: transform, opacity;
+
+  /* Two animations (aligned by index):
+     [0] = pop (one-shot, 620ms) using an overshoot cubic-bezier
+     [1] = idle bob (looped, slow) starting after the pop completes
+  */
+  animation-name: bread_ring-pop-620ms, bread_ring-bob-6s;
+  animation-duration: 620ms, 6s;
+  animation-timing-function: cubic-bezier(0.22, 1.4, 0.36, 1), ease-in-out;
+  animation-delay: 0s, 620ms; /* idle starts after pop finishes */
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, both;
+  animation-direction: normal, alternate;
+}
+
+/* Pop: lively spring-like 'open' effect.
+   Animates scale (sx/sy), vertical lane ty1, and opacity op1.
+   Keyframes only touch the custom properties to avoid transform collision. */
+@keyframes bread_ring-pop-620ms {
+  /* 0% — initial compressed, off-screen (down) and invisible */
+  0% {
+    --bread_ring-sx1: 0.8;
+    --bread_ring-sy1: 0.8;
+    --bread_ring-ty1: 24px;
+    --bread_ring-op1: 0;
+  }
+
+  /* 60% — overshoot upward and fully visible (spring apex) */
+  60% {
+    --bread_ring-sx1: 1.08;
+    --bread_ring-sy1: 1.08;
+    --bread_ring-ty1: -8px;
+    --bread_ring-op1: 1;
+  }
+
+  /* 85% — small pull-back */
+  85% {
+    --bread_ring-sx1: 0.98;
+    --bread_ring-sy1: 0.98;
+    --bread_ring-ty1: 4px;
+    /* opacity remains at 1 */
+    --bread_ring-op1: 1;
+  }
+
+  /* 100% — rest state */
+  100% {
+    --bread_ring-sx1: 1;
+    --bread_ring-sy1: 1;
+    --bread_ring-ty1: 0px;
+    --bread_ring-op1: 1;
+  }
+}
+
+/* Idle bob: very subtle long-period vertical motion to keep the doughnut alive.
+   Uses a separate ty2 lane so it composes with the pop translation (ty1),
+   avoiding keyframe conflicts and making layering predictable. */
+@keyframes bread_ring-bob-6s {
+  0% {
+    --bread_ring-ty2: 0px;
+  }
+  25% {
+    --bread_ring-ty2: -2px;
+  }
+  50% {
+    --bread_ring-ty2: 0px;
+  }
+  75% {
+    --bread_ring-ty2: 2px;
+  }
+  100% {
+    --bread_ring-ty2: 0px;
+  }
+}
+
+/* Notes:
+   - We animate numeric/length custom properties (@property) to keep transforms compositable
+     and avoid accidental collisions with other animations that may animate transform.
+   - Pop animation holds its final state (animation-fill-mode: both) so the idle bob composes
+     on top of the settled donut without a visible jump.
+   - Using separate ty1 & ty2 lanes prevents the slow idle motion from interfering with the pop keyframes.
+   - The timings and timing-functions were chosen for a snappy entrance and a calm, natural idle.
+*/
+
+/* --- glaze_layer motion lanes (added once) ---
+   Follows the lanes pattern used elsewhere to avoid transform collisions.
+   Lanes: ty1 (landing offset), ty2 (idle bob), sx1/sy1 (scale lanes), op1 (opacity)
+*/
+@property --glaze_layer-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -6px; /* initial: slightly above the bread */
+}
+@property --glaze_layer-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* idle-bob composes here */
+}
+@property --glaze_layer-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.98; /* initial: slightly smaller */
+}
+@property --glaze_layer-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.98;
+}
+@property --glaze_layer-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* initial: invisible until it lands */
+}
+
+/* Composer rule: compose the transform/opacity from lanes only.
+   transform-origin derived from glaze_layer group's center (data-center-relative).
+   transform is intentionally not animated directly inside keyframes. */
+.glaze_layer {
+  transform-box: fill-box;
+  transform-origin: 18.05% 36.55%;
+
+  transform:
+    translate(var(--glaze_layer-tx1, 0px), calc(var(--glaze_layer-ty1, 0px) + var(--glaze_layer-ty2, 0px)))
+    rotate(var(--glaze_layer-rot1, 0deg))
+    scale(var(--glaze_layer-sx1, 1), var(--glaze_layer-sy1, 1));
+
+  opacity: var(--glaze_layer-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Two animations:
+     [0] settle (one-shot, 460ms) begins 220ms after bread starts (so it lands near bread's overshoot)
+     [1] idle bob (looped, 6s) begins after settle completes to visually attach to the bread */
+  animation-name: glaze_layer-settle-460ms, glaze_layer-bob-6s;
+  animation-duration: 460ms, 6s;
+  animation-timing-function: ease-out, ease-in-out;
+  animation-delay: 220ms, 680ms; /* settle starts at 220ms; bob starts when settle finishes (220+460=680ms) */
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, both;
+  animation-direction: normal, alternate;
+}
+
+/* Settle: fade-in, translateY -> 0, small scale to 1 with an 1-frame contact-squash at 80% */
+@keyframes glaze_layer-settle-460ms {
+  0% {
+    --glaze_layer-op1: 0;
+    --glaze_layer-ty1: -6px;    /* above the dough */
+    --glaze_layer-sx1: 0.98;
+    --glaze_layer-sy1: 0.98;
+  }
+
+  /* Approach: become visible and move toward surface */
+  60% {
+    --glaze_layer-op1: 1;
+    --glaze_layer-ty1: -1.5px;
+    --glaze_layer-sx1: 1.01;
+    --glaze_layer-sy1: 1.01;
+  }
+
+  /* Subtle contact squash to read 'landing' (very small, quick) */
+  80% {
+    --glaze_layer-op1: 1;
+    --glaze_layer-ty1: 0px;
+    --glaze_layer-sx1: 1.005;   /* slight widen */
+    --glaze_layer-sy1: 0.995;   /* slight flatten */
+  }
+
+  /* Rest settled */
+  100% {
+    --glaze_layer-op1: 1;
+    --glaze_layer-ty1: 0px;
+    --glaze_layer-sx1: 1;
+    --glaze_layer-sy1: 1;
+  }
+}
+
+/* Idle bob: very small long-period vertical motion to match the bread's bob (keeps glaze attached visually).
+   Uses ty2 lane so it composes with the settle ty1 lane, avoiding keyframe collisions. */
+@keyframes glaze_layer-bob-6s {
+  0%   { --glaze_layer-ty2: 0px; }
+  25%  { --glaze_layer-ty2: -1px; }
+  50%  { --glaze_layer-ty2: 0px; }
+  75%  { --glaze_layer-ty2: 1px; }
+  100% { --glaze_layer-ty2: 0px; }
+}
+
+/* Notes:
+   - All motion is expressed via custom properties (@property) to avoid animate(transform) collisions.
+   - Delays are chosen to coordinate with the existing bread_ring timeline:
+     bread pop = 0 → 620ms; glaze settle = 220ms → 680ms so it lands near the bread's overshoot.
+   - The idle bob starts after settle completes so the glaze composes cleanly on top of the settled bread.
+   - Kept amplitudes tiny for an elegant, subtle feel and to minimize repaint cost.
+*/
+
+/* hole_inner: static composer + no-op animations that hold its final appearance
+   - We declare only the lanes we need and compose transform/opacity from them.
+   - Animations are intentionally no-ops (properties remain constant) but are timed
+     to align with the bread/glaze choreography so the hole's visual state is guaranteed
+     and stable during the landing+idle sequence.
+   - Important: keyframes only mutate custom properties (no 'transform' inside keyframes). */
+
+/* Lanes (added once) */
+@property --hole_inner-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hole_inner-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hole_inner-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --hole_inner-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --hole_inner-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hole_inner-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --hole_inner-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer rule: builds transform/opacity from lanes.
+   transform-origin chosen relative to overall SVG to match the donut's inner hole center
+   (approx. slightly above true center so the inner shadow stays visually aligned). */
+.hole_inner {
+  transform-box: fill-box;
+  transform-origin: 50% 43%; /* relative to SVG; aligns with donut hole centroid */
+
+  transform:
+    translate(var(--hole_inner-tx1, 0px), calc(var(--hole_inner-ty1, 0px) + var(--hole_inner-ty2, 0px)))
+    rotate(var(--hole_inner-rot1, 0deg))
+    scale(var(--hole_inner-sx1, 1), var(--hole_inner-sy1, 1));
+
+  opacity: var(--hole_inner-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Two aligned animations:
+     [0] hold: one-shot that spans the main landing window (bread pop + glaze settle)
+           so the hole maintains its silhouette during the coordinated motion.
+     [1] idle: long-period no-op that begins after hold completes and runs forever,
+           preserving the static appearance while matching the page's animation rhythm.
+     Both animations are no-ops (properties remain equal to initial values). */
+  animation-name: hole_inner-hold-680ms, hole_inner-idle-6s;
+  animation-duration: 680ms, 6s;
+  animation-timing-function: ease-out, ease-in-out;
+  animation-delay: 0s, 680ms;
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, both;
+  animation-direction: normal, alternate;
+}
+
+/* Hold: no visual change, protects final resting appearance during bread+glaze landing.
+   (bread pop = 0→620ms, glaze settle = 220→680ms; hold covers up to 680ms). */
+@keyframes hole_inner-hold-680ms {
+  0% {
+    --hole_inner-op1: 1;
+    --hole_inner-ty1: 0px;
+    --hole_inner-ty2: 0px;
+    --hole_inner-sx1: 1;
+    --hole_inner-sy1: 1;
+    --hole_inner-rot1: 0deg;
+    --hole_inner-tx1: 0px;
+  }
+  100% {
+    /* identical to 0% — intentional no-op to lock appearance */
+    --hole_inner-op1: 1;
+    --hole_inner-ty1: 0px;
+    --hole_inner-ty2: 0px;
+    --hole_inner-sx1: 1;
+    --hole_inner-sy1: 1;
+    --hole_inner-rot1: 0deg;
+    --hole_inner-tx1: 0px;
+  }
+}
+
+/* Idle: long-period no-op so the element remains static while the rest of the scene bobs.
+   Keeping a matching idle slot avoids collisions with other long-running animations. */
+@keyframes hole_inner-idle-6s {
+  0% {
+    --hole_inner-op1: 1;
+    --hole_inner-ty2: 0px;
+  }
+  100% {
+    --hole_inner-op1: 1;
+    --hole_inner-ty2: 0px;
+  }
+}
+
+/* Notes:
+   - No keyframe touches 'transform' directly; only custom properties are animated.
+   - Keeping the hole absolutely static avoids any visual tearing of the inner shadow silhouette.
+   - The timings mirror nearby timelines so the hole composes without jumps or clipping.
+*/
+
+/* sprinkle_top_purple motion lanes (added once).
+   Lanes follow the project's pattern so we never write 'transform' inside keyframes.
+   transform-origin derived from group's data-center-relative="17.55,17.75" (relative to the 64x64 viewBox).
+*/
+@property --sprinkle_top_purple-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_top_purple-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: held above the surface so it can fall in */
+  initial-value: -36px;
+}
+@property --sprinkle_top_purple-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* idle / composition lane (keeps pop/bob separated) */
+}
+@property --sprinkle_top_purple-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* main rotation lane used for fall + landing-bounce */
+  initial-value: -20deg;
+}
+@property --sprinkle_top_purple-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  /* micro-wobble uses this lane (starts after landing) */
+  initial-value: 0deg;
+}
+@property --sprinkle_top_purple-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_purple-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_purple-op1 {
+  syntax: '<number>';
+  inherits: false;
+  /* start invisible until it falls in */
+  initial-value: 0;
+}
+
+/* Composer: build final transform/opacity from lanes only.
+   - transform-origin uses group's center relative to full SVG (approx from data-center-relative)
+   - Do NOT animate 'transform' inside keyframes; keyframes only change custom properties.
+*/
+.sprinkle_top_purple {
+  transform-box: fill-box;
+  transform-origin: 17.55% 17.75%;
+
+  transform:
+    translate(var(--sprinkle_top_purple-tx1, 0px), calc(var(--sprinkle_top_purple-ty1, 0px) + var(--sprinkle_top_purple-ty2, 0px)))
+    rotate(var(--sprinkle_top_purple-rot1, 0deg))
+    rotate(var(--sprinkle_top_purple-rot2, 0deg))
+    scale(var(--sprinkle_top_purple-sx1, 1), var(--sprinkle_top_purple-sy1, 1));
+
+  opacity: var(--sprinkle_top_purple-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Three animations, aligned by index:
+     [0] fall-in (one-shot)     : 580ms → 950ms (duration 370ms)
+     [1] landing bounce (one-shot): 950ms → 1050ms (duration 100ms)
+     [2] micro-wobble (loop)    : starts at 2s, slow alternate motion
+  */
+  animation-name: 
+    sprinkle_top_purple-fall-370ms,
+    sprinkle_top_purple-bounce-100ms,
+    sprinkle_top_purple-wobble-2s;
+  animation-duration: 370ms, 100ms, 2s;
+  /* easing: fall uses provided cubic-bezier; bounce is a quick ease-out; wobble is gentle */
+  animation-timing-function: cubic-bezier(0.17,0.67,0.3,1), ease-out, ease-in-out;
+  animation-delay: 580ms, 950ms, 2s;
+  animation-iteration-count: 1, 1, infinite;
+  animation-fill-mode: both, both, both;
+  animation-direction: normal, normal, alternate;
+}
+
+/* Fall-in: opacity 0 -> 1, translateY -36px -> 0, rotate -20deg -> 6deg
+   (uses rot1/ty1/op1 lanes). Timing chosen to coordinate with other scene animations:
+   bread pop ends at ~620ms, glaze settle ends at ~680ms — this sprinkle falls last (starts 580ms).
+*/
+@keyframes sprinkle_top_purple-fall-370ms {
+  0% {
+    --sprinkle_top_purple-op1: 0;
+    --sprinkle_top_purple-ty1: -36px;
+    --sprinkle_top_purple-rot1: -20deg;
+    --sprinkle_top_purple-sx1: 1;
+    --sprinkle_top_purple-sy1: 1;
+  }
+  100% {
+    --sprinkle_top_purple-op1: 1;
+    --sprinkle_top_purple-ty1: 0px;
+    /* land with a small tipping angle (will be corrected by the quick bounce) */
+    --sprinkle_top_purple-rot1: 6deg;
+    --sprinkle_top_purple-sx1: 1;
+    --sprinkle_top_purple-sy1: 1;
+  }
+}
+
+/* Landing bounce: very quick squash/stretch and rotation correction
+   (0.95s → 1.05s). Uses the same lanes as the fall (rot1 and sy1/sx1) so they compose cleanly
+   — fall finishes immediately before bounce starts (no overlap).
+*/
+@keyframes sprinkle_top_purple-bounce-100ms {
+  0% {
+    /* start from the fall's end pose */
+    --sprinkle_top_purple-sy1: 0.88;
+    --sprinkle_top_purple-sx1: 1.02;
+    --sprinkle_top_purple-rot1: 6deg;
+  }
+  100% {
+    /* settle to neutral */
+    --sprinkle_top_purple-sy1: 1;
+    --sprinkle_top_purple-sx1: 1;
+    --sprinkle_top_purple-rot1: 0deg;
+  }
+}
+
+/* Micro-wobble: slow, tiny rotation ±1deg to keep the element alive.
+   Runs after 2s and alternates; uses rot2 lane so it never collides with the fall+bounce lanes. */
+@keyframes sprinkle_top_purple-wobble-2s {
+  0% {
+    --sprinkle_top_purple-rot2: -1deg;
+  }
+  100% {
+    --sprinkle_top_purple-rot2: 1deg;
+  }
+}
+
+/* Notes:
+   - All animations mutate only custom properties (@property) to avoid transform collisions.
+   - Delays/timings are chosen to nest this sprinkle's fall neatly after the glaze + bread choreography.
+   - Using separate lanes (ty1 vs ty2, rot1 vs rot2, sx1/sy1) ensures pop/settle/idle motions don't fight each other.
+   - Kept amplitudes small for an elegant, subtle result and minimal repaint cost.
+*/
+
+/* sprinkle_top_yellow: fall with slight horizontal drift + short landing squash + gentle settle.
+   - Uses the project's "lanes" pattern so keyframes never write 'transform' directly.
+   - Coordinates chosen to nest with existing choreography:
+     bread_ring pop ~0→620ms, glaze settle ends ~680ms; this sprinkle begins at 640ms so it
+     arrives just after the major overshoot but before glaze fully settles for a natural cascade.
+   - All @property declarations are added ONCE and kept minimal to avoid collisions. */
+
+@property --sprinkle_top_yellow-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -6px; /* start slightly left for horizontal drift */
+}
+@property --sprinkle_top_yellow-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_top_yellow-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -44px; /* start well above the surface */
+}
+@property --sprinkle_top_yellow-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_top_yellow-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 12deg; /* initial tipping angle during fall */
+}
+@property --sprinkle_top_yellow-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --sprinkle_top_yellow-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_yellow-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_yellow-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_yellow-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_top_yellow-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* invisible until it falls in */
+}
+@property --sprinkle_top_yellow-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+/* (extra lanes such as blur/stroke/bright left undeclared here since not required) */
+
+/* Composer: build the final transform from lanes only.
+   transform-origin derived from group's data-center-relative="24.65,21.10" (relative to 64x64 viewBox). */
+.sprinkle_top_yellow {
+  transform-box: fill-box;
+  transform-origin: 24.65% 21.10%;
+
+  transform:
+    translate(var(--sprinkle_top_yellow-tx1, 0px), calc(var(--sprinkle_top_yellow-ty1, 0px) + var(--sprinkle_top_yellow-ty2, 0px)))
+    translate(var(--sprinkle_top_yellow-tx2, 0px), 0px)
+    rotate(var(--sprinkle_top_yellow-rot1, 0deg))
+    rotate(var(--sprinkle_top_yellow-rot2, 0deg))
+    scale(var(--sprinkle_top_yellow-sx1, 1), var(--sprinkle_top_yellow-sy1, 1));
+
+  opacity: calc(var(--sprinkle_top_yellow-op1, 1) * var(--sprinkle_top_yellow-op2, 1));
+
+  will-change: transform, opacity;
+
+  /* Three aligned animations:
+     [0] fall-in (one-shot)    : 420ms duration, starts at 640ms
+     [1] landing squash (one-shot): 60ms duration, starts when fall finishes (640+420 = 1060ms)
+     [2] gentle settle (one-shot): 300ms duration, begins at fall end to softly correct rotation
+     All animations mutate only custom properties (no 'transform' in keyframes). */
+  animation-name: 
+    sprinkle_top_yellow-fall-420ms,
+    sprinkle_top_yellow-squash-60ms,
+    sprinkle_top_yellow-settle-300ms;
+  animation-duration: 420ms, 60ms, 300ms;
+  animation-timing-function: cubic-bezier(0.2,0.7,0.2,1), ease-out, ease-in-out;
+  animation-delay: 640ms, 1060ms, 1060ms;
+  animation-iteration-count: 1, 1, 1;
+  animation-fill-mode: both, both, both;
+  animation-direction: normal, normal, normal;
+}
+
+/* Fall: opacity 0→1, ty1 -44px → 0, tx1 -6px → 0, rot1 12deg → -4deg */
+@keyframes sprinkle_top_yellow-fall-420ms {
+  0% {
+    --sprinkle_top_yellow-op1: 0;
+    --sprinkle_top_yellow-ty1: -44px;
+    --sprinkle_top_yellow-tx1: -6px;
+    --sprinkle_top_yellow-rot1: 12deg;
+    --sprinkle_top_yellow-sx1: 1;
+    --sprinkle_top_yellow-sy1: 1;
+  }
+  100% {
+    --sprinkle_top_yellow-op1: 1;
+    --sprinkle_top_yellow-ty1: 0px;
+    --sprinkle_top_yellow-tx1: 0px;
+    /* land with a slight tipped angle; settle animation will correct to 0deg */
+    --sprinkle_top_yellow-rot1: -4deg;
+    --sprinkle_top_yellow-sx1: 1;
+    --sprinkle_top_yellow-sy1: 1;
+  }
+}
+
+/* Squash: quick scaleX stretch -> settle (60ms). Uses sx1/sy1 lanes (different from rotation lanes). */
+@keyframes sprinkle_top_yellow-squash-60ms {
+  0% {
+    --sprinkle_top_yellow-sx1: 1;
+    --sprinkle_top_yellow-sy1: 1;
+  }
+  50% {
+    --sprinkle_top_yellow-sx1: 1.04; /* slight widen */
+    --sprinkle_top_yellow-sy1: 0.96; /* slight flatten */
+  }
+  100% {
+    --sprinkle_top_yellow-sx1: 1;
+    --sprinkle_top_yellow-sy1: 1;
+  }
+}
+
+/* Gentle settle: correct rotation to neutral (rot1 → 0deg) with a soft ease.
+   Starts at the end of fall so the tip straightens while the squash runs concurrently. */
+@keyframes sprinkle_top_yellow-settle-300ms {
+  0% {
+    --sprinkle_top_yellow-rot1: -4deg;
+    /* preserve translation -- no change to tx/ty here */
+  }
+  100% {
+    --sprinkle_top_yellow-rot1: 0deg;
+  }
+}
+
+/* Notes:
+   - Keyframes only modify the custom properties; composing transform is done in the .sprinkle_top_yellow rule.
+   - Delays are aligned so the fall runs 640→1060ms, squash is 1060→1120ms, settle runs 1060→1360ms.
+   - Using small amplitudes keeps the motion elegant and GPU-friendly (will-change promotes compositor optimisation).
+   - No layout or painting properties (like filter) are animated to minimize repaints; opacity + transform lanes keep it fast.
+*/
+
+/* Lanes for sprinkle_left_green (added once) */
+@property --sprinkle_left_green-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -18px; /* starts left */
+}
+@property --sprinkle_left_green-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_left_green-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -40px; /* starts above */
+}
+@property --sprinkle_left_green-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* bounce / idle composition lane */
+}
+@property --sprinkle_left_green-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: -30deg; /* initial tipped pose during fall */
+}
+@property --sprinkle_left_green-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* reserved for micro-wobble if needed later */
+}
+@property --sprinkle_left_green-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_left_green-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_left_green-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* invisible until it falls */
+}
+
+/* Composer rule: compose transform & opacity from lanes.
+   transform-origin derived from group's data-center-relative="26.55,17.30" (relative to 64x64 viewBox). */
+.sprinkle_left_green {
+  transform-box: fill-box;
+  transform-origin: 26.55% 17.30%;
+
+  transform:
+    translate(var(--sprinkle_left_green-tx1, 0px), calc(var(--sprinkle_left_green-ty1, 0px) + var(--sprinkle_left_green-ty2, 0px)))
+    translate(var(--sprinkle_left_green-tx2, 0px), 0px)
+    rotate(var(--sprinkle_left_green-rot1, 0deg))
+    rotate(var(--sprinkle_left_green-rot2, 0deg))
+    scale(var(--sprinkle_left_green-sx1, 1), var(--sprinkle_left_green-sy1, 1));
+
+  opacity: var(--sprinkle_left_green-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Two aligned animations:
+     [0] fall-in (one-shot) : 420ms, starts at 700ms (0.7s → 1.12s)
+     [1] landing bounce (one-shot) : 100ms, starts at 1.12s
+     Both animations only mutate custom properties (no 'transform' in keyframes). */
+  animation-name: sprinkle_left_green-fall-420ms, sprinkle_left_green-bounce-100ms;
+  animation-duration: 420ms, 100ms;
+  animation-timing-function: cubic-bezier(0.22,1,0.36,1), ease-out;
+  animation-delay: 700ms, 1120ms; /* fall starts at 700ms; bounce begins immediately after fall ends */
+  animation-iteration-count: 1, 1;
+  animation-fill-mode: both, both;
+  animation-direction: normal, normal;
+}
+
+/* Fall-in:
+   - opacity 0 -> 1
+   - tx1: -18px -> 0 (horizontal deceleration)
+   - ty1: -40px -> 0 (vertical drop)
+   - rot1: -30deg -> 6deg (lands slightly tipped; bounce will correct)
+   Easing chosen to emulate gravity + horizontal decel (matches brief). */
+@keyframes sprinkle_left_green-fall-420ms {
+  0% {
+    --sprinkle_left_green-op1: 0;
+    --sprinkle_left_green-tx1: -18px;
+    --sprinkle_left_green-ty1: -40px;
+    --sprinkle_left_green-rot1: -30deg;
+    --sprinkle_left_green-sx1: 1;
+    --sprinkle_left_green-sy1: 1;
+  }
+  100% {
+    --sprinkle_left_green-op1: 1;
+    --sprinkle_left_green-tx1: 0px;
+    --sprinkle_left_green-ty1: 0px;
+    /* land slightly tipped; bounce corrects to 2deg then 0 */
+    --sprinkle_left_green-rot1: 6deg;
+    --sprinkle_left_green-sx1: 1;
+    --sprinkle_left_green-sy1: 1;
+  }
+}
+
+/* Landing bounce: quick vertical bounce (~6px) and rotation correction -> 2deg -> 0deg.
+   Uses ty2 lane for vertical bounce so it composes with the fall's ty1 lane without collisions. */
+@keyframes sprinkle_left_green-bounce-100ms {
+  0% {
+    /* start from fall's end pose */
+    --sprinkle_left_green-ty2: 0px;
+    --sprinkle_left_green-rot1: 6deg;
+  }
+  50% {
+    /* quick upward rebound (negative = up in our coordinate composition) */
+    --sprinkle_left_green-ty2: -6px;
+    /* nudge toward small corrective tilt while airborne */
+    --sprinkle_left_green-rot1: 2deg;
+  }
+  100% {
+    /* settle to neutral */
+    --sprinkle_left_green-ty2: 0px;
+    --sprinkle_left_green-rot1: 0deg;
+  }
+}
+
+/* Notes:
+   - All keyframes touch only the custom properties (per project "lanes" pattern) to avoid transform collisions.
+   - Delays are chosen to nest this sprinkle's arrival after the main dough/glaze choreography (bread pop + glaze settle).
+   - ty1 handles the main drop; ty2 handles the short landing bounce so long-period or other lanes won't interfere.
+   - Using will-change and animating only transforms/opacity keeps this GPU-friendly and smooth.
+*/
+
+/* sprinkle_right_white — fall, quick landing-bounce, subtle contact pulse
+   - Uses the project's "lanes" pattern: keyframes only change custom properties (@property).
+   - Transform is composed in the rule (never inside @keyframes) so we avoid collisions with other animations.
+   - Timings are chosen to nest with existing choreography: starts at 610ms, falls 610→920ms, bounce 920→990ms.
+   - transform-origin derived from group's data-center-relative="31.60,14.50" (relative to 64x64 viewBox).
+*/
+
+/* --- lanes (added once) --- */
+@property --sprinkle_right_white-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 12px; /* start slightly right for horizontal drift */
+}
+@property --sprinkle_right_white-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_right_white-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -28px; /* start above the surface */
+}
+@property --sprinkle_right_white-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* landing-bounce / idle composition lane */
+}
+@property --sprinkle_right_white-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 10deg; /* initial tipping angle during fall */
+}
+@property --sprinkle_right_white-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* reserved for micro-wobble if needed later */
+}
+@property --sprinkle_right_white-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_right_white-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_right_white-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* invisible until it falls in */
+}
+@property --sprinkle_right_white-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer rule: builds final transform/opacity from lanes (no 'transform' in keyframes). */
+.sprinkle_right_white {
+  transform-box: fill-box;
+  transform-origin: 31.60% 14.50%;
+
+  transform:
+    translate(var(--sprinkle_right_white-tx1, 0px), calc(var(--sprinkle_right_white-ty1, 0px) + var(--sprinkle_right_white-ty2, 0px)))
+    translate(var(--sprinkle_right_white-tx2, 0px), 0px)
+    rotate(var(--sprinkle_right_white-rot1, 0deg))
+    rotate(var(--sprinkle_right_white-rot2, 0deg))
+    scale(var(--sprinkle_right_white-sx1, 1), var(--sprinkle_right_white-sy1, 1));
+
+  opacity: calc(var(--sprinkle_right_white-op1, 1) * var(--sprinkle_right_white-op2, 1));
+
+  will-change: transform, opacity;
+
+  /* Three aligned animations:
+     [0] fall-in (one-shot)   : 310ms, starts at 610ms, cubic-bezier for snappy ease-out
+     [1] landing-bounce (one-shot): 70ms, starts immediately after fall (920ms)
+     [2] contact-pulse (one-shot): 140ms, starts when bounce begins (920ms) — small scale pulse to imply contact
+     All keyframes mutate only custom properties to avoid transform collisions.
+  */
+  animation-name: 
+    sprinkle_right_white-fall-310ms,
+    sprinkle_right_white-bounce-70ms,
+    sprinkle_right_white-pulse-140ms;
+  animation-duration: 310ms, 70ms, 140ms;
+  animation-timing-function: cubic-bezier(0.25,0.46,0.45,0.94), ease-out, ease-out;
+  animation-delay: 610ms, 920ms, 920ms;
+  animation-iteration-count: 1, 1, 1;
+  animation-fill-mode: both, both, both;
+  animation-direction: normal, normal, normal;
+}
+
+/* Fall-in: opacity 0 -> 1, ty1 -28px -> 0, tx1 12px -> 0, rot1 10deg -> -6deg
+   - Uses main lanes (ty1/tx1/rot1/op1). Ends in a slightly tipped pose corrected by the quick bounce.
+*/
+@keyframes sprinkle_right_white-fall-310ms {
+  0% {
+    --sprinkle_right_white-op1: 0;
+    --sprinkle_right_white-ty1: -28px;
+    --sprinkle_right_white-tx1: 12px;
+    --sprinkle_right_white-rot1: 10deg;
+    --sprinkle_right_white-sx1: 1;
+    --sprinkle_right_white-sy1: 1;
+  }
+  100% {
+    --sprinkle_right_white-op1: 1;
+    --sprinkle_right_white-ty1: 0px;
+    --sprinkle_right_white-tx1: 0px;
+    --sprinkle_right_white-rot1: -6deg; /* landed slightly tipped; bounce will correct */
+    --sprinkle_right_white-sx1: 1;
+    --sprinkle_right_white-sy1: 1;
+  }
+}
+
+/* Landing bounce: very quick vertical rebound (ty2 lane) and rotation correction back toward neutral.
+   - Uses ty2 so this short motion composes cleanly with the fall's ty1 lane (no keyframe collision).
+*/
+@keyframes sprinkle_right_white-bounce-70ms {
+  0% {
+    --sprinkle_right_white-ty2: 0px;
+    --sprinkle_right_white-rot1: -6deg;
+  }
+  50% {
+    /* quick upward rebound (negative = up in composition) */
+    --sprinkle_right_white-ty2: -5px;
+    /* correct tipping towards neutral */
+    --sprinkle_right_white-rot1: -2deg;
+  }
+  100% {
+    --sprinkle_right_white-ty2: 0px;
+    --sprinkle_right_white-rot1: 0deg;
+  }
+}
+
+/* Contact pulse: micro-scale squash/stretch to imply impact.
+   - Animates sx1/sy1 from a tiny overshoot (1.03/0.97) back to neutral.
+   - Runs concurrently with the landing bounce but on separate lanes (sx1/sy1).
+*/
+@keyframes sprinkle_right_white-pulse-140ms {
+  0% {
+    --sprinkle_right_white-sx1: 1.03;
+    --sprinkle_right_white-sy1: 0.97;
+  }
+  60% {
+    /* quick settle past-neutral for a subtle spring feel */
+    --sprinkle_right_white-sx1: 0.99;
+    --sprinkle_right_white-sy1: 1.01;
+  }
+  100% {
+    --sprinkle_right_white-sx1: 1;
+    --sprinkle_right_white-sy1: 1;
+  }
+}
+
+/* Notes:
+   - All motion is confined to custom properties so it composes with the existing bread/glaze timeline
+     without transform collisions. The chosen delays align this sprinkle's fall just after the bread's
+     primary overshoot (bread pop ~0→620ms) and within the glaze settling window (ends ~680ms) so the cascade
+     feels natural.
+   - Using ty1 (main drop) + ty2 (short bounce) keeps the long and short motions orthogonal and predictable.
+   - Only transform & opacity (and composited scale) are animated — this keeps repaints minimal and allows
+     compositor acceleration via will-change.
+*/
+
+/* Lanes for sprinkle_right_blue (added once).
+   Follows the project's "lanes" pattern so keyframes never write `transform` directly.
+   transform-origin derived from group's data-center-relative="28.70,20.50" (relative to 64x64 viewBox).
+*/
+@property --sprinkle_right_blue-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 10px; /* initial horizontal offset (drift) */
+}
+@property --sprinkle_right_blue-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* reserved for micro-offsets if needed */
+}
+@property --sprinkle_right_blue-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -56px; /* start well above the surface for the long fall */
+}
+@property --sprinkle_right_blue-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* landing bounce composition lane */
+}
+@property --sprinkle_right_blue-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: -45deg; /* initial tumble angle during fall */
+}
+@property --sprinkle_right_blue-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* micro-settle/wobble lane after landing */
+}
+@property --sprinkle_right_blue-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* primary scale */
+}
+@property --sprinkle_right_blue-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_right_blue-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* contact-pulse scale (composed after sx1/sy1) */
+}
+@property --sprinkle_right_blue-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_right_blue-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* invisible until it falls in */
+}
+@property --sprinkle_right_blue-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* multiplier slot for subtle contact highlight if needed */
+}
+
+/* Composer: build final transform/opacity from lanes only.
+   - transform-origin uses group's center relative to full SVG: 28.70% 20.50%
+   - Do NOT animate `transform` inside @keyframes; keyframes only change custom properties.
+*/
+.sprinkle_right_blue {
+  transform-box: fill-box;
+  transform-origin: 28.70% 20.50%;
+
+  transform:
+    translate(var(--sprinkle_right_blue-tx1, 0px), calc(var(--sprinkle_right_blue-ty1, 0px) + var(--sprinkle_right_blue-ty2, 0px)))
+    translate(var(--sprinkle_right_blue-tx2, 0px), 0px)
+    rotate(var(--sprinkle_right_blue-rot1, 0deg))
+    rotate(var(--sprinkle_right_blue-rot2, 0deg))
+    scale(var(--sprinkle_right_blue-sx1, 1), var(--sprinkle_right_blue-sy1, 1))
+    scale(var(--sprinkle_right_blue-sx2, 1), var(--sprinkle_right_blue-sy2, 1));
+
+  /* Combined opacity: main fade-in (op1) × multiplier (op2) for any micro highlight */
+  opacity: calc(var(--sprinkle_right_blue-op1, 1) * var(--sprinkle_right_blue-op2, 1));
+
+  will-change: transform, opacity;
+
+  /* Three aligned animations (indexes match):
+     [0] fall-in       : 520ms  (0.76s → 1.28s) — long slow tumble (cubic-bezier tuned for a soft tumble)
+     [1] landing-bounce : 160ms  (starts at 1.28s)  — gentle vertical rebound + rotation settling
+     [2] contact-pulse  : 160ms  (starts at 1.28s)  — tiny scale pulse to imply contact/pressure
+     Delays are chosen to nest with the existing scene: this sprinkle arrives after the main bread/glaze overshoot.
+  */
+  animation-name:
+    sprinkle_right_blue-fall-520ms,
+    sprinkle_right_blue-bounce-160ms,
+    sprinkle_right_blue-pulse-160ms;
+  animation-duration: 520ms, 160ms, 160ms;
+  animation-timing-function: cubic-bezier(0.19,1,0.22,1), ease-out, ease-out;
+  animation-delay: 760ms, 1280ms, 1280ms;
+  animation-iteration-count: 1, 1, 1;
+  animation-fill-mode: both, both, both;
+  animation-direction: normal, normal, normal;
+}
+
+/* Fall-in: opacity 0 → 1, ty1 -56px → 0, tx1 10px → 0, rot1 -45deg → 8deg
+   - Uses main lanes (ty1/tx1/rot1/op1). The long duration + cubic-bezier produce a soft tumbling arrival.
+*/
+@keyframes sprinkle_right_blue-fall-520ms {
+  0% {
+    --sprinkle_right_blue-op1: 0;
+    --sprinkle_right_blue-ty1: -56px;
+    --sprinkle_right_blue-tx1: 10px;
+    --sprinkle_right_blue-rot1: -45deg;
+    --sprinkle_right_blue-sx1: 1;
+    --sprinkle_right_blue-sy1: 1;
+    --sprinkle_right_blue-rot2: 0deg;
+  }
+  100% {
+    --sprinkle_right_blue-op1: 1;
+    --sprinkle_right_blue-ty1: 0px;
+    --sprinkle_right_blue-tx1: 0px;
+    /* lands with a small tipped angle — bounce will correct toward settle */
+    --sprinkle_right_blue-rot1: 8deg;
+    --sprinkle_right_blue-sx1: 1;
+    --sprinkle_right_blue-sy1: 1;
+  }
+}
+
+/* Landing bounce: short vertical rebound (ty2 lane) and rotation correction toward ~1deg.
+   - ty2 is separate so the short bounce composes cleanly with the long fall (ty1).
+*/
+@keyframes sprinkle_right_blue-bounce-160ms {
+  0% {
+    --sprinkle_right_blue-ty2: 0px;
+    --sprinkle_right_blue-rot1: 8deg;
+    --sprinkle_right_blue-rot2: 0deg;
+  }
+  40% {
+    /* brief rebound upward (negative in composition = visually up) and partial rotation correction */
+    --sprinkle_right_blue-ty2: -7px;
+    --sprinkle_right_blue-rot1: 4deg;
+  }
+  80% {
+    /* settle into a small final tilt */
+    --sprinkle_right_blue-ty2: 2px;
+    --sprinkle_right_blue-rot1: 1.5deg;
+  }
+  100% {
+    --sprinkle_right_blue-ty2: 0px;
+    /* final gentle settle to ~1deg */
+    --sprinkle_right_blue-rot1: 1deg;
+    --sprinkle_right_blue-rot2: 0deg;
+  }
+}
+
+/* Contact pulse: tiny squash/stretch (sx2/sy2 lanes) to imply contact pressure.
+   Runs concurrently with the bounce but on separate lanes so there are no collisions.
+*/
+@keyframes sprinkle_right_blue-pulse-160ms {
+  0% {
+    --sprinkle_right_blue-sx2: 1;
+    --sprinkle_right_blue-sy2: 1;
+    --sprinkle_right_blue-op2: 1;
+  }
+  30% {
+    /* quick, subtle squash/stretch */
+    --sprinkle_right_blue-sx2: 1.06;
+    --sprinkle_right_blue-sy2: 0.95;
+    /* slight transient highlight (kept conservative) */
+    --sprinkle_right_blue-op2: 1;
+  }
+  70% {
+    /* pass slightly through neutral for a small spring feel */
+    --sprinkle_right_blue-sx2: 0.99;
+    --sprinkle_right_blue-sy2: 1.02;
+    --sprinkle_right_blue-op2: 1;
+  }
+  100% {
+    --sprinkle_right_blue-sx2: 1;
+    --sprinkle_right_blue-sy2: 1;
+    --sprinkle_right_blue-op2: 1;
+  }
+}
+
+/* Notes:
+   - All motion is expressed via numeric/length custom properties (@property) so keyframes never write `transform` directly.
+   - Choreography: fall 0.76→1.28s; bounce+contact 1.28→~1.44s — chosen to nest with the other sprinkle + glaze timings in the scene.
+   - Using dedicated lanes (ty1 vs ty2, rot1 vs rot2, sx1 vs sx2) prevents animation collisions and makes composition predictable.
+   - Only transform & opacity multipliers are animated (no filters or paint-only properties) to keep this GPU-friendly and minimize repaints.
+*/
+
+/* Lanes for sprinkle_bottom_purple (added once). 
+   Follows the project's "lanes" pattern so keyframes never write `transform` directly.
+   Choreography: pop starts at 820ms and runs for 280ms (820 → 1100ms). */
+@property --sprinkle_bottom_purple-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --sprinkle_bottom_purple-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  /* initial: held below the surface so it can pop up */
+  initial-value: 18px;
+}
+@property --sprinkle_bottom_purple-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* reserved for idle bob / composition if needed later */
+}
+@property --sprinkle_bottom_purple-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  /* initial tipped pose for the pop */
+  initial-value: 6deg;
+}
+@property --sprinkle_bottom_purple-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* reserved for micro-wobble */
+}
+@property --sprinkle_bottom_purple-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.92; /* start slightly small */
+}
+@property --sprinkle_bottom_purple-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.92;
+}
+@property --sprinkle_bottom_purple-op1 {
+  syntax: '<number>';
+  inherits: false;
+  /* start invisible until it pops in */
+  initial-value: 0;
+}
+
+/* Composer rule: build final transform/opacity from lanes only.
+   transform-origin chosen near the lower sprinkle area relative to the 64x64 viewBox.
+   (Picked to align this bottom sprinkle with the donut's lower-right quadrant while avoiding visual clipping.) */
+.sprinkle_bottom_purple {
+  transform-box: fill-box;
+  transform-origin: 32.5% 52.0%;
+
+  transform:
+    translate(var(--sprinkle_bottom_purple-tx1, 0px), calc(var(--sprinkle_bottom_purple-ty1, 0px) + var(--sprinkle_bottom_purple-ty2, 0px)))
+    rotate(var(--sprinkle_bottom_purple-rot1, 0deg))
+    rotate(var(--sprinkle_bottom_purple-rot2, 0deg))
+    scale(var(--sprinkle_bottom_purple-sx1, 1), var(--sprinkle_bottom_purple-sy1, 1));
+
+  opacity: var(--sprinkle_bottom_purple-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Single pop animation (one-shot) timed to nest into the scene:
+     - Starts at 820ms (matches coordination with other sprinkles/glaze/bread)
+     - Duration 280ms (820 → 1100ms)
+     - Uses a snappy cubic-bezier per brief to read as a small 'pop from below' with a gentle overshoot.
+     Keyframes mutate only custom properties (lanes) to avoid transform collisions.
+  */
+  animation-name: sprinkle_bottom_purple-pop-280ms;
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.2,0.9,0.3,1);
+  animation-delay: 820ms;
+  animation-iteration-count: 1;
+  animation-fill-mode: both; /* hold final settled state so it composes with other idle motions */
+  animation-direction: normal;
+}
+
+/* Pop: upward-from-below landing with a small overshoot then settle.
+   - 0%: off -> down (18px), small (0.92), tipped (6deg), invisible
+   - 60%: arrive + slight overshoot (small scale overshoot + slight negative ty to go past final)
+   - 85%: small recoil back toward final
+   - 100%: settled (ty=0, scale=1, rot=0, visible)
+   All keyframes only set custom properties (no `transform` used here). */
+@keyframes sprinkle_bottom_purple-pop-280ms {
+  0% {
+    --sprinkle_bottom_purple-op1: 0;
+    --sprinkle_bottom_purple-ty1: 18px;
+    --sprinkle_bottom_purple-sx1: 0.92;
+    --sprinkle_bottom_purple-sy1: 0.92;
+    --sprinkle_bottom_purple-rot1: 6deg;
+  }
+
+  /* reach & slight overshoot */
+  60% {
+    --sprinkle_bottom_purple-op1: 1;
+    /* small upward overshoot so the motion reads springy */
+    --sprinkle_bottom_purple-ty1: -4px;
+    /* gentle overshoot in scale so the contact reads lively */
+    --sprinkle_bottom_purple-sx1: 1.04;
+    --sprinkle_bottom_purple-sy1: 1.04;
+    /* pass slightly through neutral to feel organic */
+    --sprinkle_bottom_purple-rot1: -2deg;
+  }
+
+  /* small pull-back */
+  85% {
+    --sprinkle_bottom_purple-op1: 1;
+    --sprinkle_bottom_purple-ty1: 3px;
+    --sprinkle_bottom_purple-sx1: 0.98;
+    --sprinkle_bottom_purple-sy1: 0.98;
+    --sprinkle_bottom_purple-rot1: 1deg;
+  }
+
+  /* settled */
+  100% {
+    --sprinkle_bottom_purple-op1: 1;
+    --sprinkle_bottom_purple-ty1: 0px;
+    --sprinkle_bottom_purple-sx1: 1;
+    --sprinkle_bottom_purple-sy1: 1;
+    --sprinkle_bottom_purple-rot1: 0deg;
+  }
+}
+
+/* Notes:
+   - This animation strictly follows the "lanes" pattern used elsewhere so it composes with other animations
+     (bread pop, glaze settle, other sprinkles) without transform collisions.
+   - Delay 820ms places the pop inside the broader choreography (after bread pop + glaze settle phases),
+     producing a pleasant staggered cascade of sprinkles.
+   - Using will-change and animating only transform/opacity lanes keeps it GPU-friendly and avoids repaints.
+*/
+
+/* sprinkle_bottom_yellow — self-contained lane-based animation
+   - Follows the project's "lanes" pattern: keyframes only modify @property custom properties.
+   - Composer rule builds the final `transform` and `opacity`.
+   - Timing chosen to nest with the existing choreography (starts at 900ms, arrives ~1.22s).
+   - Small amplitudes to avoid visual collision and keep GPU-friendly (only transform & opacity animated).
+*/
+
+/* --- lanes (added once) --- */
+@property --sprinkle_bottom_yellow-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 8px; /* initial horizontal offset during fall */
+}
+@property --sprinkle_bottom_yellow-tx2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* reserved for micro-offsets (unused now) */
+}
+@property --sprinkle_bottom_yellow-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: -34px; /* start well above the surface */
+}
+@property --sprinkle_bottom_yellow-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* landing-bounce composition lane */
+}
+@property --sprinkle_bottom_yellow-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 20deg; /* main rotate lane used for the fall -> landed tipped pose */
+}
+@property --sprinkle_bottom_yellow-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* settle/correction lane: added after fall to avoid collisions */
+}
+@property --sprinkle_bottom_yellow-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* primary scale (used by squash) */
+}
+@property --sprinkle_bottom_yellow-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_bottom_yellow-sx2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* reserved (not used) */
+}
+@property --sprinkle_bottom_yellow-sy2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --sprinkle_bottom_yellow-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0; /* start invisible until it falls in */
+}
+@property --sprinkle_bottom_yellow-op2 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1; /* multiplier slot (unused but kept for composition parity) */
+}
+
+/* Composer rule: build final transform/opacity from lanes
+   transform-origin chosen near the lower sprinkle area relative to the 64x64 viewBox
+   so the motion reads locally and avoids clipping against nearby elements. */
+.sprinkle_bottom_yellow {
+  transform-box: fill-box;
+  transform-origin: 30.5% 50.5%;
+
+  transform:
+    translate(var(--sprinkle_bottom_yellow-tx1, 0px),
+              calc(var(--sprinkle_bottom_yellow-ty1, 0px) + var(--sprinkle_bottom_yellow-ty2, 0px)))
+    translate(var(--sprinkle_bottom_yellow-tx2, 0px), 0px)
+    rotate(var(--sprinkle_bottom_yellow-rot1, 0deg))
+    rotate(var(--sprinkle_bottom_yellow-rot2, 0deg))
+    scale(var(--sprinkle_bottom_yellow-sx1, 1), var(--sprinkle_bottom_yellow-sy1, 1))
+    scale(var(--sprinkle_bottom_yellow-sx2, 1), var(--sprinkle_bottom_yellow-sy2, 1));
+
+  opacity: calc(var(--sprinkle_bottom_yellow-op1, 1) * var(--sprinkle_bottom_yellow-op2, 1));
+
+  will-change: transform, opacity;
+
+  /* Three aligned animations:
+     [0] fall-in (one-shot)      : 320ms, starts at 900ms
+     [1] landing bounce (one-shot): 80ms,  starts at fall end (1220ms)
+     [2] settle rotation (one-shot): 240ms, starts at fall end (1220ms)
+     All keyframes mutate only the custom properties to avoid transform collisions with other scene animations.
+  */
+  animation-name: 
+    sprinkle_bottom_yellow-fall-320ms,
+    sprinkle_bottom_yellow-bounce-80ms,
+    sprinkle_bottom_yellow-settle-240ms;
+  animation-duration: 320ms, 80ms, 240ms;
+  animation-timing-function: cubic-bezier(0.17,0.67,0.3,1), ease-out, ease-in-out;
+  animation-delay: 900ms, 1220ms, 1220ms;
+  animation-iteration-count: 1, 1, 1;
+  animation-fill-mode: both, both, both;
+  animation-direction: normal, normal, normal;
+}
+
+/* Fall-in: opacity 0 -> 1, ty1 -34px -> 0, tx1 8px -> 0, rot1 20deg -> -2deg
+   - Uses rot1/tx1/ty1/op1 lanes. Ends in a slightly tipped pose; settle will correct to neutral.
+*/
+@keyframes sprinkle_bottom_yellow-fall-320ms {
+  0% {
+    --sprinkle_bottom_yellow-op1: 0;
+    --sprinkle_bottom_yellow-ty1: -34px;
+    --sprinkle_bottom_yellow-tx1: 8px;
+    --sprinkle_bottom_yellow-rot1: 20deg;
+    --sprinkle_bottom_yellow-sx1: 1;
+    --sprinkle_bottom_yellow-sy1: 1;
+  }
+  /* slight approach/overshoot to make the landing feel organic */
+  60% {
+    --sprinkle_bottom_yellow-op1: 1;
+    --sprinkle_bottom_yellow-ty1: -6px;
+    --sprinkle_bottom_yellow-tx1: 2px;
+    --sprinkle_bottom_yellow-rot1: -10deg; /* pass through for a springy feel */
+  }
+  100% {
+    --sprinkle_bottom_yellow-op1: 1;
+    --sprinkle_bottom_yellow-ty1: 0px;
+    --sprinkle_bottom_yellow-tx1: 0px;
+    --sprinkle_bottom_yellow-rot1: -2deg; /* landed slightly tipped; settle will neutralize */
+    --sprinkle_bottom_yellow-sx1: 1;
+    --sprinkle_bottom_yellow-sy1: 1;
+  }
+}
+
+/* Landing bounce: very quick squash/stretch and small vertical rebound.
+   - Uses ty2 (short bounce) and sx1/sy1 (squash) so the fall (ty1) and bounce remain orthogonal.
+*/
+@keyframes sprinkle_bottom_yellow-bounce-80ms {
+  0% {
+    --sprinkle_bottom_yellow-ty2: 0px;
+    --sprinkle_bottom_yellow-sx1: 1;
+    --sprinkle_bottom_yellow-sy1: 1;
+  }
+  50% {
+    --sprinkle_bottom_yellow-ty2: -5px;     /* quick up-rebound */
+    --sprinkle_bottom_yellow-sx1: 1.06;     /* slight widen */
+    --sprinkle_bottom_yellow-sy1: 0.94;     /* slight flatten */
+  }
+  100% {
+    --sprinkle_bottom_yellow-ty2: 0px;
+    --sprinkle_bottom_yellow-sx1: 1;
+    --sprinkle_bottom_yellow-sy1: 1;
+  }
+}
+
+/* Settle: subtle rotation correction to reach exact neutral orientation.
+   - Uses rot2 lane so it composes with rot1 (rot1 + rot2 = final visual rotation).
+   - Running concurrently with the short bounce but on separate lanes avoids collisions.
+*/
+@keyframes sprinkle_bottom_yellow-settle-240ms {
+  0% {
+    --sprinkle_bottom_yellow-rot2: 0deg;
+  }
+  100% {
+    /* rot1 ended at -2deg; adding +2deg here yields 0deg final (neutral) */
+    --sprinkle_bottom_yellow-rot2: 2deg;
+  }
+}
+
+/* Notes:
+   - All keyframes only change custom properties (@property) — no 'transform' inside @keyframes to prevent collisions.
+   - Choreography places this sprinkle arrival after the bread/glaze overshoot so the cascade feels natural.
+   - Using separate lanes (ty1 vs ty2, rot1 vs rot2, sx1/sy1) ensures short and long motions compose predictably.
+   - Only transform & opacity are animated to keep the work compositor-friendly and minimize repaints.
+*/
+
+/* final_idle_cohesion: very subtle group-level idle to keep the scene feeling alive.
+   - Uses the project's "lanes" pattern: keyframes only mutate custom properties (@property).
+   - Adds lanes once and composes transform/opacity in the .final_idle_cohesion rule.
+   - Start delay chosen to begin after the longest sprinkle choreography finishes (~1.44s).
+   - Bob: ±2px vertical at 6s period. Rotation: ±0.5deg at 8s period. Both extremely low amplitude.
+   - Respects prefers-reduced-motion.
+*/
+
+/* -- lanes (added once) */
+@property --final_idle_cohesion-tx1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --final_idle_cohesion-ty1 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+@property --final_idle_cohesion-ty2 {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px; /* idle bob composes here */
+}
+@property --final_idle_cohesion-rot1 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --final_idle_cohesion-rot2 {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg; /* idle rotation composes here */
+}
+@property --final_idle_cohesion-sx1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --final_idle_cohesion-sy1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+@property --final_idle_cohesion-op1 {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
+
+/* Composer: build final transform/opacity from lanes only.
+   transform-origin chosen to align with the donut's visual center (derived from existing group origins).
+   This keeps the small rotation visually coherent with bread_ring+glaze_layer composition.
+*/
+.final_idle_cohesion {
+  transform-box: fill-box;
+  /* center chosen to match the main bread_ring/glaze composition (approx from the SVG data-center-relative) */
+  transform-origin: 29.85% 40.35%;
+
+  transform:
+    translate(var(--final_idle_cohesion-tx1, 0px), calc(var(--final_idle_cohesion-ty1, 0px) + var(--final_idle_cohesion-ty2, 0px)))
+    rotate(var(--final_idle_cohesion-rot1, 0deg))
+    rotate(var(--final_idle_cohesion-rot2, 0deg))
+    scale(var(--final_idle_cohesion-sx1, 1), var(--final_idle_cohesion-sy1, 1));
+
+  opacity: var(--final_idle_cohesion-op1, 1);
+
+  will-change: transform, opacity;
+
+  /* Two synchronized idle motions:
+     [0] vertical bob (6s)  — very slow, ±2px
+     [1] micro rotation (8s) — very slow, ±0.5deg
+     Animations use longhand lists aligned by index.
+     Delay ~1440ms so these begin after the earlier landing choreography has completed.
+  */
+  animation-name: final_idle_cohesion-bob-6s, final_idle_cohesion-rot-8s;
+  animation-duration: 6s, 8s;
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-delay: 1440ms, 1440ms;
+  animation-iteration-count: infinite, infinite;
+  animation-fill-mode: both, both;
+  animation-direction: normal, normal; /* keyframes already define full oscillation */
+}
+
+/* Bob: subtle long-period vertical motion. Uses ty2 lane so it composes with any other translate lanes. */
+@keyframes final_idle_cohesion-bob-6s {
+  0%   { --final_idle_cohesion-ty2: 0px; }
+  25%  { --final_idle_cohesion-ty2: -2px; }
+  50%  { --final_idle_cohesion-ty2: 0px; }
+  75%  { --final_idle_cohesion-ty2: 2px; }
+  100% { --final_idle_cohesion-ty2: 0px; }
+}
+
+/* Rotation: imperceptible slow oscillation (±0.5deg). Uses rot2 lane so it never collides with other rot lanes. */
+@keyframes final_idle_cohesion-rot-8s {
+  0%   { --final_idle_cohesion-rot2: -0.5deg; }
+  25%  { --final_idle_cohesion-rot2:  0deg; }
+  50%  { --final_idle_cohesion-rot2:  0.5deg; }
+  75%  { --final_idle_cohesion-rot2:  0deg; }
+  100% { --final_idle_cohesion-rot2: -0.5deg; }
+}
+
+/* Accessibility: respect reduced motion preferences by disabling the idle animations. */
+@media (prefers-reduced-motion: reduce) {
+  .final_idle_cohesion {
+    animation-name: none !important;
+    transition: none !important;
+    will-change: auto !important;
+    /* reset idle lanes to neutral */
+    --final_idle_cohesion-ty2: 0px !important;
+    --final_idle_cohesion-rot2: 0deg !important;
+  }
+}
+
+/* Note:
+   - This rule set is self-contained and safe to add alongside the existing lane-based animations:
+     it only mutates its own --final_idle_cohesion-* custom properties and never writes 'transform'
+     inside @keyframes (avoids collision with other animations).
+   - The chosen transform-origin is aligned with the donut's main grouping so the micro-rotation reads coherent.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg aria-hidden="true" class="iconify iconify--emojione" height="800px" preserveaspectratio="xMidYMid meet" role="img" viewbox="0 0 64 64" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="bread_ring-group" data-bounds="-11.1,-23.7,48.6,57.0" data-center="18.75,16.65" data-center-relative="29.85,40.35" data-logical-parent="donut" data-paint-order="0" data-semantic-type="bread_ring">
+     <path class="iconify iconify--emojione bread_ring" d="M2 33.3C2 46.4 15.4 57 32 57s30-10.6 30-23.7S48.6 9.6 32 9.6S2 20.2 2 33.3m18.9 2.2c0-3.8 5-6.9 11.1-6.9s11.1 3.1 11.1 6.9c0 3.8-5 6.9-11.1 6.9s-11.1-3.1-11.1-6.9" fill="#ffd170" id="target_element_129490106982832">
+     </path>
+    </g>
+    <g class="glaze_layer-group" data-bounds="-9.2,-11.1,26.9,62.0" data-center="8.85,25.45" data-center-relative="18.05,36.55" data-logical-parent="topping" data-paint-order="1" data-semantic-type="glaze_layer">
+     <path class="iconify iconify--emojione glaze_layer" d="M2 26.9c0 1.9.2 3.7.7 5.4c.6 2.3 1 6.2 2.3 8.1c.7.9 2.2-.3 3.4-.3c2.2 0 2.6 4.9 5.3 4.9c4 0 2.1 3.3 7.6 3.3c2.9 0 4.2-2.7 5.7-2.7c3.8 0 3.6 5.1 7.3 5.1c3.8 0 3.6-6 7.1-6c3.4 0 4.1 3.1 6.7 3.1c2.8 0 2.1-9.2 5.2-9.2c3.6 0 5.6-1.4 6.4-2.7c1.5-2.6 2.3-5.6 2.3-8.9C62 16.4 48.6 7 32 7S2 16.4 2 26.9m18.9.3c0-1.2 1.3-2.1 2.2-3.1c.7-.7 1.2-2.6 2.2-3.2c1.9-1 3.6 2.5 6.3 2.5c1.4 0 4.3-2.4 5.5-2.2c2 .5 1.2 1.8 2.4 2.9c1.3 1.1 3.5 1.6 3.5 3.1c0 3.8-2.4 6.9-11.1 6.9c-8.5 0-11-3.1-11-6.9" fill="#ff4085" id="target_element_129490105678912">
+     </path>
+    </g>
+    <g class="sprinkle_right_blue" data-bounds="-6.1,-2.1,51.3,38.9" data-center="22.60,18.40" data-center-relative="28.70,20.50" data-logical-parent="sprinkles" data-merged-count="2" data-paint-order="2" data-semantic-type="sprinkle_right_blue">
+     <path class="iconify iconify--emojione group sprinkle_right_blue" d="M40.5 38.9l-5.8 3c-.9.5-1.8-1.1-.8-1.5l5.8-3c.9-.6 1.7 1 .8 1.5" fill="#63b6e6" id="target_element_129490105663712">
+     </path>
+     <path class="iconify iconify--emojione group sprinkle_right_blue" d="M51.3 19.8l-6.1-2.1c-1-.3-.4-2 .6-1.7l6.2 2.1c.9.4.3 2-.7 1.7" fill="#63b6e6" id="target_element_129490105671152">
+     </path>
+    </g>
+    <g class="sprinkle_top_purple-group" data-bounds="-6.2,-2.4,28.9,33.1" data-center="11.35,15.35" data-center-relative="17.55,17.75" data-logical-parent="sprinkles" data-merged-count="2" data-paint-order="3" data-semantic-type="sprinkle_top_purple">
+     <path class="iconify iconify--emojione group sprinkle_top_purple" d="M17.5 33.1l-6.2 2.1c-1 .3-1.6-1.3-.6-1.7l6.2-2.1c1-.3 1.6 1.4.6 1.7" fill="#9729cc" id="target_element_129490105673872">
+     </path>
+     <path class="iconify iconify--emojione group sprinkle_top_purple" d="M28.9 15.6l-6-2.4c-1-.4-.3-2 .6-1.6l6 2.4c1 .4.4 2-.6 1.6" fill="#9729cc" id="target_element_129490105672672">
+     </path>
+    </g>
+    <g class="sprinkle_right_white" data-bounds="-6.2,-2.1,57.0,26.9" data-center="25.40,12.40" data-center-relative="31.60,14.50" data-logical-parent="sprinkles" data-merged-count="2" data-paint-order="4" data-semantic-type="sprinkle_right_white">
+     <path class="iconify iconify--emojione group sprinkle_right_white" d="M12.6 26.9L6.8 24c-.9-.5-.2-2 .8-1.6l5.8 2.9c.9.5.2 2.1-.8 1.6" fill="#ffffff" id="target_element_129490105669472">
+     </path>
+     <path class="iconify iconify--emojione group sprinkle_right_white" d="M57 24.8l-6.2 2.1c-1 .3-1.6-1.3-.6-1.7l6.2-2.1c1.1-.3 1.6 1.3.6 1.7" fill="#ffffff" id="target_element_129490105679472">
+     </path>
+    </g>
+    <g class="sprinkle_top_yellow" data-bounds="-6.5,-1.8,42.8,40.4" data-center="18.15,19.30" data-center-relative="24.65,21.10" data-logical-parent="sprinkles" data-merged-count="2" data-paint-order="5" data-semantic-type="sprinkle_top_yellow">
+     <path class="iconify iconify--emojione group sprinkle_top_yellow" d="M25.4 40.4l-6.5.3c-1 0-1.1-1.7-.1-1.8l6.5-.3c1.1 0 1.2 1.8.1 1.8" fill="#fff080" id="target_element_129490105668432">
+     </path>
+     <path class="iconify iconify--emojione group sprinkle_top_yellow" d="M42.8 11.9l-6.3 1.8c-1 .3-1.5-1.4-.5-1.7l6.3-1.8c1-.2 1.5 1.4.5 1.7" fill="#fff080" id="target_element_129490105664672">
+     </path>
+    </g>
+    <g class="sprinkle_left_green" data-bounds="-6.5,-1.8,46.6,32.8" data-center="20.05,15.50" data-center-relative="26.55,17.30" data-logical-parent="sprinkles" data-merged-count="2" data-paint-order="6" data-semantic-type="sprinkle_left_green">
+     <path class="iconify iconify--emojione group sprinkle_left_green" d="M46.6 32.8l6.5.3c1 0 1 1.8-.1 1.8l-6.5-.3c-1.1-.1-1-1.8.1-1.8" fill="#84e060" id="target_element_129490105674752">
+     </path>
+     <path class="iconify iconify--emojione group sprinkle_left_green" d="M18.6 17.3L12.3 19c-1 .3-1.5-1.4-.4-1.7l6.3-1.7c1-.2 1.4 1.4.4 1.7" fill="#84e060" id="target_element_129490105679072">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>

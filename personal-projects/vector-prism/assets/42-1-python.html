@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* logo_wrapper: top-level group pop-in + micro settle.
+   ViewBox is 0 0 32 32, so transform-origin at 50% 50% centers on (16,16).
+   We use lane-1 for the main arrival, lane-2 for the tiny post-settle wobble. */
+
+/* Typed custom properties (lanes). Add once. */
+@property --logo_wrapper-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --logo_wrapper-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --logo_wrapper-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --logo_wrapper-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+@property --logo_wrapper-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --logo_wrapper-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --logo_wrapper-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --logo_wrapper-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+/* Optional FX lanes (not animated here, reserved for future coherence). */
+@property --logo_wrapper-blur1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-blur2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --logo_wrapper-bright1 { syntax: '<number>'; initial-value: 1; inherits: false; }
+@property --logo_wrapper-bright2 { syntax: '<number>'; initial-value: 1; inherits: false; }
+
+/* Composer: builds the actual transform/filter/opacity from lanes. */
+.logo_wrapper {
+  transform-box: view-box;           /* center relative to the SVG viewBox for stable motion */
+  transform-origin: 50% 50%;
+  transform:
+    translate(var(--logo_wrapper-tx1, 0px), var(--logo_wrapper-ty1, 0px))
+    rotate(var(--logo_wrapper-rot1, 0deg))
+    scale(var(--logo_wrapper-sx1, 1), var(--logo_wrapper-sy1, 1))
+    translate(var(--logo_wrapper-tx2, 0px), var(--logo_wrapper-ty2, 0px))
+    rotate(var(--logo_wrapper-rot2, 0deg))
+    scale(var(--logo_wrapper-sx2, 1), var(--logo_wrapper-sy2, 1));
+  /* If op2 is left at 1, it won’t affect final opacity; safe multiply for future layering. */
+  opacity: calc(var(--logo_wrapper-op1, 1) * var(--logo_wrapper-op2, 1));
+  filter:
+    blur(var(--logo_wrapper-blur1, 0px)) brightness(var(--logo_wrapper-bright1, 1))
+    blur(var(--logo_wrapper-blur2, 0px)) brightness(var(--logo_wrapper-bright2, 1));
+
+  /* Performance */
+  will-change: transform, opacity, filter;
+
+  /* Animations (aligned indexes) */
+  animation-name: logo_wrapper__kf_pop_in, logo_wrapper__kf_micro_wobble;
+  animation-duration: 1000ms, 220ms;
+  animation-delay: 0ms, 980ms; /* micro wobble begins as the pop settles */
+  animation-timing-function: cubic-bezier(0.17, 0.89, 0.32, 1.28), ease-out;
+  animation-fill-mode: both, both;
+  animation-iteration-count: 1, 1;
+}
+
+/* Primary arrival: lively pop-in for the full mark.
+   Note: translateY starts at 8px (not 12px) to avoid viewBox clipping at scale(0.70). */
+@keyframes logo_wrapper__kf_pop_in {
+  0% {
+    --logo_wrapper-ty1: 8px;     /* tuned for 32x32 viewBox to avoid clipping with scale */
+    --logo_wrapper-sx1: 0.70;
+    --logo_wrapper-sy1: 0.70;
+    --logo_wrapper-rot1: -4deg;
+    --logo_wrapper-op1: 0;
+  }
+  70% {
+    --logo_wrapper-ty1: 0px;
+    --logo_wrapper-sx1: 1.02;
+    --logo_wrapper-sy1: 1.02;
+    --logo_wrapper-rot1: 0deg;
+    --logo_wrapper-op1: 1;
+  }
+  100% {
+    --logo_wrapper-ty1: 0px;
+    --logo_wrapper-sx1: 1;
+    --logo_wrapper-sy1: 1;
+    --logo_wrapper-rot1: 0deg;
+    --logo_wrapper-op1: 1;
+  }
+}
+
+/* Post-settle micro wobble: tiny, single-pass settle (non-looping). */
+@keyframes logo_wrapper__kf_micro_wobble {
+  0% {
+    --logo_wrapper-sx2: 1;
+    --logo_wrapper-sy2: 1;
+    --logo_wrapper-rot2: 0deg;
+  }
+  54.545% { /* ~120ms of 220ms */
+    --logo_wrapper-sx2: 1.015;
+    --logo_wrapper-sy2: 1.015;
+    --logo_wrapper-rot2: 0.6deg;
+  }
+  100% {
+    --logo_wrapper-sx2: 1;
+    --logo_wrapper-sy2: 1;
+    --logo_wrapper-rot2: 0deg;
+  }
+}
+
+/* blue_body: top-left arrival of the blue half, staggered behind the overall pop.
+   ViewBox is 0 0 32 32; transform-origin 60% 45% ≈ (19.2, 14.4) to keep the arc natural. */
+
+/* Typed custom properties (lanes) — add once for blue_body. */
+@property --blue_body-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --blue_body-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --blue_body-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --blue_body-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+@property --blue_body-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+@property --blue_body-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --blue_body-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+@property --blue_body-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+/* Optional FX lanes (reserved for coherence across elements). */
+@property --blue_body-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+@property --blue_body-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+@property --blue_body-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+@property --blue_body-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+@property --blue_body-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+/* Composer: build transform/filter/opacity from lanes for the blue path. */
+.blue_body {
+  transform-box: view-box;
+  transform-origin: 60% 45%;
+  transform:
+    translate(var(--blue_body-tx1, 0px), var(--blue_body-ty1, 0px))
+    rotate(var(--blue_body-rot1, 0deg))
+    scale(var(--blue_body-sx1, 1), var(--blue_body-sy1, 1))
+    translate(var(--blue_body-tx2, 0px), var(--blue_body-ty2, 0px))
+    rotate(var(--blue_body-rot2, 0deg))
+    scale(var(--blue_body-sx2, 1), var(--blue_body-sy2, 1));
+  opacity: calc(var(--blue_body-op1, 1) * var(--blue_body-op2, 1));
+  filter:
+    blur(var(--blue_body-blur1, 0px)) brightness(var(--blue_body-bright1, 1))
+    blur(var(--blue_body-blur2, 0px)) brightness(var(--blue_body-bright2, 1));
+
+  /* Performance */
+  will-change: transform, filter, opacity;
+
+  /* Animations: lane-1 motion, lane-2 subtle brightness lift. */
+  animation-name: blue_body__kf_arrival_pop, blue_body__kf_flash_brightness;
+  animation-duration: 650ms, 420ms;
+  animation-delay: 120ms, 160ms; /* lightly staggered to harmonize with the overall mark */
+  animation-timing-function: cubic-bezier(0.21, 0.96, 0.35, 1.2), ease-out;
+  animation-fill-mode: both, both;
+  animation-iteration-count: 1, 1;
+}
+
+/* Lane-1: arrival pop for the top-left blue body.
+   480ms of 650ms ≈ 73.846% for the near-settle waypoint. */
+@keyframes blue_body__kf_arrival_pop {
+  0% {
+    --blue_body-tx1: -16px;
+    --blue_body-ty1: -10px;
+    --blue_body-rot1: -8deg;
+    --blue_body-sx1: 1.03;
+    --blue_body-sy1: 1.03;
+    --blue_body-op1: 1;
+  }
+  73.846% { /* ~480ms */
+    --blue_body-tx1: 0px;
+    --blue_body-ty1: 0px;
+    --blue_body-rot1: 0deg;
+    --blue_body-sx1: 1.005;
+    --blue_body-sy1: 1.005;
+    --blue_body-op1: 1;
+  }
+  100% {
+    --blue_body-tx1: 0px;
+    --blue_body-ty1: 0px;
+    --blue_body-rot1: 0deg;
+    --blue_body-sx1: 1;
+    --blue_body-sy1: 1;
+    --blue_body-op1: 1;
+  }
+}
+
+/* Lane-2: subtle brightness lift that fades as it settles; preserves brand color. */
+@keyframes blue_body__kf_flash_brightness {
+  0%   { --blue_body-bright2: 1.10; }
+  100% { --blue_body-bright2: 1.00; }
+}
+
+/* yellow_body: bottom-right arrival of the yellow half, harmonized with existing pop/wobble.
+     ViewBox is 0 0 32 32; transform-origin 40% 55% ≈ (12.8, 17.6) to pivot near the inner elbow.
+     Lane-1 = motion; Lane-2 = subtle brightness lift (brand-safe). */
+
+  /* Typed custom properties (lanes) — add once for yellow_body. */
+  @property --yellow_body-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_body-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_body-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_body-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --yellow_body-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_body-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_body-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_body-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes reserved for coherence across elements. */
+  @property --yellow_body-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_body-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_body-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_body-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --yellow_body-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build transform/filter/opacity from lanes for the yellow path. */
+  .yellow_body {
+    transform-box: view-box;
+    transform-origin: 40% 55%;
+    transform:
+      translate(var(--yellow_body-tx1, 0px), var(--yellow_body-ty1, 0px))
+      rotate(var(--yellow_body-rot1, 0deg))
+      scale(var(--yellow_body-sx1, 1), var(--yellow_body-sy1, 1))
+      translate(var(--yellow_body-tx2, 0px), var(--yellow_body-ty2, 0px))
+      rotate(var(--yellow_body-rot2, 0deg))
+      scale(var(--yellow_body-sx2, 1), var(--yellow_body-sy2, 1));
+    opacity: calc(var(--yellow_body-op1, 1) * var(--yellow_body-op2, 1));
+    filter:
+      blur(var(--yellow_body-blur1, 0px)) brightness(var(--yellow_body-bright1, 1))
+      blur(var(--yellow_body-blur2, 0px)) brightness(var(--yellow_body-bright2, 1));
+
+    /* Performance */
+    will-change: transform, filter, opacity;
+
+    /* Animations: lane-1 motion staggered behind blue; lane-2 subtle brightness flash. */
+    animation-name: yellow_body__kf_arrival_pop, yellow_body__kf_flash_brightness;
+    animation-duration: 650ms, 420ms;
+    animation-delay: 180ms, 220ms; /* begins after logo_wrapper start and behind blue_body */
+    animation-timing-function: cubic-bezier(0.21, 0.96, 0.35, 1.2), ease-out;
+    animation-fill-mode: both, both;
+    animation-iteration-count: 1, 1;
+  }
+
+  /* Lane-1: arrival pop from bottom-right.
+     480ms of 650ms ≈ 73.846% for the near-settle waypoint. */
+  @keyframes yellow_body__kf_arrival_pop {
+    0% {
+      --yellow_body-tx1: 16px;
+      --yellow_body-ty1: 12px;
+      --yellow_body-rot1: 8deg;
+      --yellow_body-sx1: 1.03;
+      --yellow_body-sy1: 1.03;
+      --yellow_body-op1: 1;
+    }
+    73.846% { /* ~480ms */
+      --yellow_body-tx1: 0px;
+      --yellow_body-ty1: 0px;
+      --yellow_body-rot1: 0deg;
+      --yellow_body-sx1: 1.005;
+      --yellow_body-sy1: 1.005;
+      --yellow_body-op1: 1;
+    }
+    100% {
+      --yellow_body-tx1: 0px;
+      --yellow_body-ty1: 0px;
+      --yellow_body-rot1: 0deg;
+      --yellow_body-sx1: 1;
+      --yellow_body-sy1: 1;
+      --yellow_body-op1: 1;
+    }
+  }
+
+  /* Lane-2: subtle brightness lift that fades; preserves brand color. */
+  @keyframes yellow_body__kf_flash_brightness {
+    0%   { --yellow_body-bright2: 1.10; }
+    100% { --yellow_body-bright2: 1.00; }
+  }
+
+/* blue_eye: small circular eye on the blue half.
+     - Uses fill-box so 50% 50% pivots exactly at the eye’s center.
+     - Timed to appear after the blue/yellow bodies begin arriving and before the logo micro wobble.
+     - Lane-1 = motion+opacity pop; Lane-2 reserved for future micro FX. */
+
+  /* Typed custom properties (lanes) — add once for blue_eye. */
+  @property --blue_eye-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --blue_eye-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_eye-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_eye-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --blue_eye-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --blue_eye-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_eye-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_eye-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes reserved for coherence across elements. */
+  @property --blue_eye-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_eye-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --blue_eye-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --blue_eye-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --blue_eye-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build transform/filter/opacity from lanes for the eye. */
+  .blue_eye {
+    transform-box: fill-box;         /* use the eye’s own bounds to center scale nicely */
+    transform-origin: 50% 50%;
+    transform:
+      translate(var(--blue_eye-tx1, 0px), var(--blue_eye-ty1, 0px))
+      rotate(var(--blue_eye-rot1, 0deg))
+      scale(var(--blue_eye-sx1, 1), var(--blue_eye-sy1, 1))
+      translate(var(--blue_eye-tx2, 0px), var(--blue_eye-ty2, 0px))
+      rotate(var(--blue_eye-rot2, 0deg))
+      scale(var(--blue_eye-sx2, 1), var(--blue_eye-sy2, 1));
+    opacity: calc(var(--blue_eye-op1, 1) * var(--blue_eye-op2, 1));
+    filter:
+      blur(var(--blue_eye-blur1, 0px)) brightness(var(--blue_eye-bright1, 1))
+      blur(var(--blue_eye-blur2, 0px)) brightness(var(--blue_eye-bright2, 1));
+
+    /* Performance */
+    will-change: transform, opacity, filter;
+
+    /* Animation: soft pop-in timed to follow body arrivals (starts at 340ms). */
+    animation-name: blue_eye__kf_pop_in;
+    animation-duration: 260ms;
+    animation-delay: 340ms; /* behind blue/yellow bodies, well before wrapper micro wobble */
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation-fill-mode: both; /* use backwards fill so it’s hidden during delay */
+    animation-iteration-count: 1;
+  }
+
+  /* Lane-1: pop-in with slight vertical settle, tuned for 32x32 viewBox.
+     160ms of 260ms ≈ 61.538% for the overshoot waypoint. */
+  @keyframes blue_eye__kf_pop_in {
+    0% {
+      --blue_eye-sx1: 0.20;
+      --blue_eye-sy1: 0.20;
+      --blue_eye-ty1: -2px;  /* gentle lift; avoids collision with the head contour at y≈2 */
+      --blue_eye-op1: 0;
+    }
+    61.538% { /* ~160ms */
+      --blue_eye-sx1: 1.05;
+      --blue_eye-sy1: 1.05;
+      --blue_eye-ty1: 0px;
+      --blue_eye-op1: 1;
+    }
+    100% {
+      --blue_eye-sx1: 1;
+      --blue_eye-sy1: 1;
+      --blue_eye-ty1: 0px;
+      --blue_eye-op1: 1;
+    }
+  }
+
+/* yellow_eye: small circular eye on the yellow half.
+     - Uses fill-box with 50% 50% origin so scale pops from its center without shifting.
+     - Timed to follow body arrivals (starts at 380ms), slightly after blue_eye (340ms),
+       and well before the wrapper micro wobble, avoiding visual collision near y≈27. */
+
+  /* Typed custom properties (lanes) — add once for yellow_eye. */
+  @property --yellow_eye-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_eye-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_eye-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_eye-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_eye-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_eye-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --yellow_eye-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_eye-ty2 { syntax: '<length>'; inherits: false; initial-value: 0px; }
+  @property --yellow_eye-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_eye-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_eye-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_eye-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes reserved for coherence across elements. */
+  @property --yellow_eye-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_eye-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_eye-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_eye-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_eye-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --yellow_eye-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build transform/filter/opacity from lanes for the yellow eye. */
+  .yellow_eye {
+    transform-box: fill-box;        /* center on the eye’s bounds for precise scaling */
+    transform-origin: 50% 50%;
+    transform:
+      translate(var(--yellow_eye-tx1, 0px), var(--yellow_eye-ty1, 0px))
+      rotate(var(--yellow_eye-rot1, 0deg))
+      scale(var(--yellow_eye-sx1, 1), var(--yellow_eye-sy1, 1))
+      translate(var(--yellow_eye-tx2, 0px), var(--yellow_eye-ty2, 0px))
+      rotate(var(--yellow_eye-rot2, 0deg))
+      scale(var(--yellow_eye-sx2, 1), var(--yellow_eye-sy2, 1));
+    opacity: calc(var(--yellow_eye-op1, 1) * var(--yellow_eye-op2, 1));
+    filter:
+      blur(var(--yellow_eye-blur1, 0px)) brightness(var(--yellow_eye-bright1, 1))
+      blur(var(--yellow_eye-blur2, 0px)) brightness(var(--yellow_eye-bright2, 1));
+
+    /* Performance */
+    will-change: transform, opacity, filter;
+
+    /* Animation: soft pop-in with a slight downward settle; aligns with other arrivals. */
+    animation-name: yellow_eye__kf_pop_in;
+    animation-duration: 260ms;
+    animation-delay: 380ms; /* begins after blue_eye (340ms) and behind yellow_body (180ms) */
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation-fill-mode: both;      /* backwards fill keeps it hidden during delay */
+    animation-iteration-count: 1;
+  }
+
+  /* Lane-1: pop-in with gentle downward start to avoid the inner elbow contour at y≈27.
+     160ms of 260ms ≈ 61.538% for the overshoot waypoint. */
+  @keyframes yellow_eye__kf_pop_in {
+    0% {
+      --yellow_eye-sx1: 0.20;
+      --yellow_eye-sy1: 0.20;
+      --yellow_eye-ty1: 2px;  /* slight drop; prevents overlap with surrounding yellow arc */
+      --yellow_eye-op1: 0;
+    }
+    61.538% { /* ~160ms */
+      --yellow_eye-sx1: 1.05;
+      --yellow_eye-sy1: 1.05;
+      --yellow_eye-ty1: 0px;
+      --yellow_eye-op1: 1;
+    }
+    100% {
+      --yellow_eye-sx1: 1;
+      --yellow_eye-sy1: 1;
+      --yellow_eye-ty1: 0px;
+      --yellow_eye-op1: 1;
+    }
+  }
+
+/* blue_mouth_slot: slim horizontal notch on the blue body.
+     - Scales out from the left edge (0% 50%) after the bodies begin arriving,
+       and just before the eyes (blue_eye at 340ms), avoiding visual overlap.
+     - Lane-1 drives the reveal (scaleX + opacity). Lane-2 reserved for future micro FX. */
+
+  /* Typed custom properties (lanes) — declare once for blue_mouth_slot */
+  @property --blue_mouth_slot-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --blue_mouth_slot-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_mouth_slot-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_mouth_slot-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --blue_mouth_slot-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --blue_mouth_slot-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_mouth_slot-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --blue_mouth_slot-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes (reserved for coherence across elements) */
+  @property --blue_mouth_slot-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --blue_mouth_slot-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --blue_mouth_slot-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --blue_mouth_slot-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --blue_mouth_slot-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build final transform/filter/opacity using two lanes */
+  .blue_mouth_slot {
+    transform-box: fill-box;      /* anchor to the slot’s own bounds for precise scaling */
+    transform-origin: 0% 50%;     /* left-center: expands rightward across the notch */
+    transform:
+      translate(var(--blue_mouth_slot-tx1, 0px), var(--blue_mouth_slot-ty1, 0px))
+      rotate(var(--blue_mouth_slot-rot1, 0deg))
+      scale(var(--blue_mouth_slot-sx1, 1), var(--blue_mouth_slot-sy1, 1))
+      translate(var(--blue_mouth_slot-tx2, 0px), var(--blue_mouth_slot-ty2, 0px))
+      rotate(var(--blue_mouth_slot-rot2, 0deg))
+      scale(var(--blue_mouth_slot-sx2, 1), var(--blue_mouth_slot-sy2, 1));
+    opacity: calc(var(--blue_mouth_slot-op1, 1) * var(--blue_mouth_slot-op2, 1));
+    filter:
+      blur(var(--blue_mouth_slot-blur1, 0px)) brightness(var(--blue_mouth_slot-bright1, 1))
+      blur(var(--blue_mouth_slot-blur2, 0px)) brightness(var(--blue_mouth_slot-bright2, 1));
+
+    /* Performance */
+    will-change: transform, opacity, filter;
+
+    /* Animations: reveal scales out smoothly before eyes appear (at 340/380ms) */
+    animation-name: blue_mouth_slot__kf_reveal_scale;
+    animation-duration: 300ms;
+    animation-delay: 280ms; /* behind body arrivals (120/180ms), ahead of blue_eye (340ms) */
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    animation-fill-mode: both;  /* backwards keeps it hidden during delay */
+    animation-iteration-count: 1;
+  }
+
+  /* Lane-1: horizontal grow with gentle overshoot, opacity fade-in.
+     210ms of 300ms = 70% for the overshoot waypoint. */
+  @keyframes blue_mouth_slot__kf_reveal_scale {
+    0% {
+      --blue_mouth_slot-sx1: 0;
+      --blue_mouth_slot-op1: 0;
+    }
+    70% { /* ~210ms */
+      --blue_mouth_slot-sx1: 1.06;
+      --blue_mouth_slot-op1: 1;
+    }
+    100% {
+      --blue_mouth_slot-sx1: 1;
+      --blue_mouth_slot-op1: 1;
+    }
+  }
+
+/* yellow_mouth_slot: small horizontal notch on the yellow body (lower-right).
+     - Uses fill-box so origin can sit on the slot bounds reliably across viewBox (0 0 32 32).
+     - Origin at 100% 50% grows inward (right → left), mirroring blue_mouth_slot.
+     - Timed to start after yellow_body (180ms) and before yellow_eye (380ms), avoiding overlap. */
+
+  /* Typed custom properties (lanes) — declare once for yellow_mouth_slot */
+  @property --yellow_mouth_slot-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_mouth_slot-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_mouth_slot-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_mouth_slot-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --yellow_mouth_slot-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --yellow_mouth_slot-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_mouth_slot-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --yellow_mouth_slot-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes reserved for coherence */
+  @property --yellow_mouth_slot-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --yellow_mouth_slot-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_mouth_slot-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --yellow_mouth_slot-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --yellow_mouth_slot-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build final transform/filter/opacity using two lanes */
+  .yellow_mouth_slot {
+    transform-box: fill-box;      /* anchor to the slot’s bounds for precise scaling */
+    transform-origin: 100% 50%;   /* right-center: expands leftward across the notch */
+    transform:
+      translate(var(--yellow_mouth_slot-tx1, 0px), var(--yellow_mouth_slot-ty1, 0px))
+      rotate(var(--yellow_mouth_slot-rot1, 0deg))
+      scale(var(--yellow_mouth_slot-sx1, 1), var(--yellow_mouth_slot-sy1, 1))
+      translate(var(--yellow_mouth_slot-tx2, 0px), var(--yellow_mouth_slot-ty2, 0px))
+      rotate(var(--yellow_mouth_slot-rot2, 0deg))
+      scale(var(--yellow_mouth_slot-sx2, 1), var(--yellow_mouth_slot-sy2, 1));
+    opacity: calc(var(--yellow_mouth_slot-op1, 1) * var(--yellow_mouth_slot-op2, 1));
+    filter:
+      blur(var(--yellow_mouth_slot-blur1, 0px)) brightness(var(--yellow_mouth_slot-bright1, 1))
+      blur(var(--yellow_mouth_slot-blur2, 0px)) brightness(var(--yellow_mouth_slot-bright2, 1));
+
+    /* Performance */
+    will-change: transform, opacity, filter;
+
+    /* Animation: reveal scales out smoothly before yellow_eye (380ms) and after bodies begin */
+    animation-name: yellow_mouth_slot__kf_reveal_scale;
+    animation-duration: 300ms;
+    animation-delay: 320ms; /* behind blue_mouth_slot (280ms) and ahead of blue/yellow eyes (340/380ms) */
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
+    animation-fill-mode: both;  /* backwards keeps it hidden during delay */
+    animation-iteration-count: 1;
+  }
+
+  /* Lane-1: horizontal grow with gentle overshoot, opacity fade-in.
+     210ms of 300ms = 70% for the overshoot waypoint. */
+  @keyframes yellow_mouth_slot__kf_reveal_scale {
+    0% {
+      --yellow_mouth_slot-sx1: 0;
+      --yellow_mouth_slot-op1: 0;
+    }
+    70% { /* ~210ms */
+      --yellow_mouth_slot-sx1: 1.06;
+      --yellow_mouth_slot-op1: 1;
+    }
+    100% {
+      --yellow_mouth_slot-sx1: 1;
+      --yellow_mouth_slot-op1: 1;
+    }
+  }
+
+/* sheen_highlight: single-pass diagonal sheen sweep clipped to the logo.
+     ViewBox is 0 0 32 32, so translate distances are computed to fully cross the mark.
+     Start at -120% (-38.4px) of viewBox width and exit at +140% (+44.8px), rotated 20deg.
+     Begins after primary arrivals (≥380ms) and overlaps lightly before the wrapper micro wobble (~980–1200ms). */
+
+  /* Typed custom properties (lanes) — declare once for sheen_highlight. */
+  @property --sheen_highlight-tx1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-ty1 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-rot1 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --sheen_highlight-sx1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --sheen_highlight-sy1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --sheen_highlight-op1 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  @property --sheen_highlight-tx2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-ty2 { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-rot2 { syntax: '<angle>';  initial-value: 0deg; inherits: false; }
+  @property --sheen_highlight-sx2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --sheen_highlight-sy2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+  @property --sheen_highlight-op2 { syntax: '<number>';  initial-value: 1;    inherits: false; }
+
+  /* Optional FX lanes (reserved for coherence across elements). */
+  @property --sheen_highlight-blur1   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-blur2   { syntax: '<length>'; initial-value: 0px; inherits: false; }
+  @property --sheen_highlight-bright1 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --sheen_highlight-bright2 { syntax: '<number>'; initial-value: 1;   inherits: false; }
+  @property --sheen_highlight-stroke1 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+  @property --sheen_highlight-stroke2 { syntax: '<number>'; initial-value: 0;   inherits: false; }
+
+  /* Composer: build transform/filter/opacity. The rect should sit above bodies with a clipPath.
+     transform-box view-box keeps motion stable relative to 32×32 canvas. */
+  .sheen_highlight {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    transform:
+      translate(var(--sheen_highlight-tx1, 0px), var(--sheen_highlight-ty1, 0px))
+      rotate(var(--sheen_highlight-rot1, 0deg))
+      scale(var(--sheen_highlight-sx1, 1), var(--sheen_highlight-sy1, 1))
+      translate(var(--sheen_highlight-tx2, 0px), var(--sheen_highlight-ty2, 0px))
+      rotate(var(--sheen_highlight-rot2, 0deg))
+      scale(var(--sheen_highlight-sx2, 1), var(--sheen_highlight-sy2, 1));
+    opacity: calc(var(--sheen_highlight-op1, 1) * var(--sheen_highlight-op2, 1));
+    filter:
+      blur(var(--sheen_highlight-blur1, 0px)) brightness(var(--sheen_highlight-bright1, 1))
+      blur(var(--sheen_highlight-blur2, 0px)) brightness(var(--sheen_highlight-bright2, 1));
+
+    /* Blend gently so the white sheen lifts color without washout. */
+    mix-blend-mode: screen;
+    pointer-events: none;
+
+    /* Performance */
+    will-change: transform, opacity, filter;
+
+    /* Animation: soft sweep timed after eyes (340/380ms), before/overlapping wrapper wobble. */
+    animation-name: sheen_highlight__kf_sweep;
+    animation-duration: 700ms;
+    animation-delay: 600ms;
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+    animation-iteration-count: 1;
+  }
+
+  /* Lane-1 motion and opacity only.
+     Waypoints mapped to plan: 150ms (21.429%), 550ms (78.571%), end at 700ms.
+     Distances derived from viewBox width (32px): -120% = -38.4px, +140% = +44.8px. */
+  @keyframes sheen_highlight__kf_sweep {
+    0% {
+      --sheen_highlight-tx1: -38.4px;   /* enters from left beyond canvas */
+      --sheen_highlight-ty1: 0px;
+      --sheen_highlight-rot1: 20deg;    /* fixed diagonal sheen angle */
+      --sheen_highlight-sx1: 1;
+      --sheen_highlight-sy1: 1;
+      --sheen_highlight-op1: 0;         /* hidden during delay/backwards fill */
+    }
+    21.429% { /* ~150ms */
+      --sheen_highlight-op1: 0.35;      /* peak lift without overpowering brand */
+    }
+    78.571% { /* ~550ms */
+      --sheen_highlight-op1: 0.18;      /* soften while crossing the center */
+    }
+    100% {
+      --sheen_highlight-tx1: 44.8px;    /* exits to right beyond canvas */
+      --sheen_highlight-rot1: 20deg;    /* stays at the same angle for a clean sweep */
+      --sheen_highlight-op1: 0;         /* fade out as it clears the mark */
+    }
+  }
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg fill="none" height="800px" viewbox="0 0 32 32" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <lineargradient gradientunits="userSpaceOnUse" id="paint0_linear_87_8204" x1="12.4809" x2="12.4809" y1="2" y2="22.7407">
+     <stop stop-color="#327EBD">
+     </stop>
+     <stop offset="1" stop-color="#1565A7">
+     </stop>
+    </lineargradient>
+    <lineargradient gradientunits="userSpaceOnUse" id="paint1_linear_87_8204" x1="19.519" x2="19.519" y1="9.25928" y2="30">
+     <stop stop-color="#FFDA4B">
+     </stop>
+     <stop offset="1" stop-color="#F9C600">
+     </stop>
+    </lineargradient>
+   </defs>
+   <g class="root-animation-group">
+    <g class="blue_body-group" data-bounds="2.0,2.0,23.0,23.0" data-center="12.48,12.48" data-center-relative="10.48,10.48" data-logical-parent="blue_character" data-paint-order="0" data-semantic-type="blue_body">
+     <path class="blue_body" clip-rule="evenodd" d="M13.0164 2C10.8193 2 9.03825 3.72453 9.03825 5.85185V8.51852H15.9235V9.25926H5.97814C3.78107 9.25926 2 10.9838 2 13.1111L2 18.8889C2 21.0162 3.78107 22.7407 5.97814 22.7407H8.27322V19.4815C8.27322 17.3542 10.0543 15.6296 12.2514 15.6296H19.5956C21.4547 15.6296 22.9617 14.1704 22.9617 12.3704V5.85185C22.9617 3.72453 21.1807 2 18.9836 2H13.0164ZM12.0984 6.74074C12.8589 6.74074 13.4754 6.14378 13.4754 5.40741C13.4754 4.67103 12.8589 4.07407 12.0984 4.07407C11.3378 4.07407 10.7213 4.67103 10.7213 5.40741C10.7213 6.14378 11.3378 6.74074 12.0984 6.74074Z" fill="url(#paint0_linear_87_8204)" fill-rule="evenodd" id="target_element_136280225313584">
+     </path>
+    </g>
+    <g class="yellow_body-group" data-bounds="12.5,9.0,30.0,30.0" data-center="21.26,19.52" data-center-relative="8.74,10.48" data-logical-parent="yellow_character" data-paint-order="1" data-semantic-type="yellow_body">
+     <path class="yellow_body" clip-rule="evenodd" d="M18.9834 30C21.1805 30 22.9616 28.2755 22.9616 26.1482V23.4815L16.0763 23.4815L16.0763 22.7408L26.0217 22.7408C28.2188 22.7408 29.9998 21.0162 29.9998 18.8889V13.1111C29.9998 10.9838 28.2188 9.25928 26.0217 9.25928L23.7266 9.25928V12.5185C23.7266 14.6459 21.9455 16.3704 19.7485 16.3704L12.4042 16.3704C10.5451 16.3704 9.03809 17.8296 9.03809 19.6296L9.03809 26.1482C9.03809 28.2755 10.8192 30 13.0162 30H18.9834ZM19.9015 25.2593C19.1409 25.2593 18.5244 25.8562 18.5244 26.5926C18.5244 27.329 19.1409 27.9259 19.9015 27.9259C20.662 27.9259 21.2785 27.329 21.2785 26.5926C21.2785 25.8562 20.662 25.2593 19.9015 25.2593Z" fill="url(#paint1_linear_87_8204)" fill-rule="evenodd" id="target_element_136280225302544">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>
