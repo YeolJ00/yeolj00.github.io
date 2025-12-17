@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* Head subtle breathing + reactive twitch
+       - Uses transform (GPU-friendly) only for best performance.
+       - transform-box: fill-box with transform-origin placed near the bottom center
+         of the head so the head appears to lift/tilt naturally where it joins the body.
+       - The breathing loop is long and slow; the twitch is a short accent played on-demand
+         (add/remove the "twitch" class, or toggle a parent like #rabbit.twitch).
+       - Keyframe names are unique to avoid conflicts with other SVG animations.
+    */
+
+    .head_base {
+        /* Make SVG transforms behave relative to the shape's bounding box */
+        transform-box: fill-box;
+        -webkit-transform-box: fill-box;
+
+        /* Pivot roughly at the join between head and body (approx. 50% width, 85% height) */
+        transform-origin: 50% 85%;
+        -webkit-transform-origin: 50% 85%;
+
+        /* Hint to the browser to optimize for transform changes */
+        will-change: transform;
+
+        /* Primary breathing animation (keeps bunny alive) */
+        animation: hb_breathe_ae1 4.5s ease-in-out infinite;
+    }
+
+    /* When a twitch is required (e.g. on nose wiggle), add .twitch to the head element
+       or to the rabbit group (#rabbit.twitch .head_base). This composes the short
+       twitch animation on top of the ongoing breathing loop. */
+    .head_base.twitch {
+        animation: hb_breathe_ae1 4.5s ease-in-out infinite,
+                   hb_twitch_ae1 220ms cubic-bezier(.2,.9,.2,1) 1;
+    }
+
+    /* Alternate trigger pattern: toggle the class on the group if that's easier in JS */
+    #rabbit.twitch .head_base {
+        animation: hb_breathe_ae1 4.5s ease-in-out infinite,
+                   hb_twitch_ae1 220ms cubic-bezier(.2,.9,.2,1) 1;
+    }
+
+    /* --- Keyframes --- */
+
+    /* Gentle breathing: small vertical shift + slight vertical scale to suggest inhale/exhale.
+       Values are intentionally tiny (2px / 1%) to avoid collisions with ears and body. */
+    @keyframes hb_breathe_ae1 {
+        0%   { transform: translateY(0) scaleY(1); }
+        50%  { transform: translateY(-2px) scaleY(1.01); }
+        100% { transform: translateY(0) scaleY(1); }
+    }
+
+    /* Short accent/twitch: quick nudge up and tiny rotation left-right then settle.
+       Keeps the motion subtle and fast to read as a reflex without disrupting the breathing loop. */
+    @keyframes hb_twitch_ae1 {
+        0%   { transform: translateY(0) rotate(0deg) scaleY(1); }
+        20%  { transform: translateY(-3px) rotate(-2.5deg) scaleY(1.02); }
+        60%  { transform: translateY(-1.5px) rotate(2deg)  scaleY(1.01); }
+        100% { transform: translateY(0) rotate(0deg) scaleY(1); }
+    }
+
+    /* Performance reminder: these animations only affect transform (no layout/paint), and
+       are tiny in magnitude to ensure they blend with other animated elements (ears, nose)
+       without visual clipping or overlap. */
+
+/* Left outer ear — subtle independent sway + micro twitch
+   - Pivot placed at the ear base so rotations look natural relative to the head.
+   - Uses transform-only animations (GPU-friendly). Small translateY added to
+     make the rotation read as a soft, physical sway/twitch.
+   - Idle sway is slightly phase-offset (0.15s) so the two ears don't move lock-step.
+   - When a twitch is needed, add the "twitch" class to the ear element
+     or to the parent group (e.g. #rabbit.twitch .left_outer_ear). The short
+     twitch animation temporarily overrides the idle transform and returns to neutral,
+     allowing the idle loop to continue uninterrupted.
+   - Keyframe names are unique to avoid collisions with existing animations.
+*/
+
+.left_outer_ear {
+    /* keep transforms relative to the shape's box and pivot at the ear base */
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+    transform-origin: 50% 95%;
+    -webkit-transform-origin: 50% 95%;
+
+    /* hint for the browser */
+    will-change: transform;
+
+    /* gentle, phase-shifted idle sway */
+    animation: le_outer_sway_ae2 5.2s cubic-bezier(.4,.0,.2,1) 0.15s infinite;
+}
+
+/* Triggering the micro twitch: compose the short twitch on top of the ongoing sway.
+   The twitch animation is listed second so it overrides transform while active,
+   then both return to the idle loop. */
+.left_outer_ear.twitch,
+#rabbit.twitch .left_outer_ear {
+    animation: le_outer_sway_ae2 5.2s cubic-bezier(.4,.0,.2,1) 0.15s infinite,
+               le_outer_twitch_ae2 160ms cubic-bezier(.2,.9,.2,1) 1;
+}
+
+/* --- Keyframes --- */
+
+/* Idle sway: very small rotation and tiny vertical shift to imply a soft pendulum.
+   The midpoint leans slightly inward (-2.2deg) to read as a relaxed ear posture. */
+@keyframes le_outer_sway_ae2 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    50%  { transform: rotate(-2.2deg) translateY(-1px); }
+    100% { transform: rotate(0deg) translateY(0); }
+}
+
+/* Micro twitch: fast nudge downward (muscle twitch) then rebound past center and settle.
+   Values intentionally small (-6deg -> 4deg) and short (160ms) so the motion reads as an accent
+   without fighting the idle animation. The keyframes return to neutral to avoid pops
+   when the short animation completes.
+*/
+@keyframes le_outer_twitch_ae2 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    25%  { transform: rotate(-6deg) translateY(1.5px); } /* quick downward twitch */
+    65%  { transform: rotate(4deg)  translateY(-1px); }  /* small rebound */
+    100% { transform: rotate(0deg) translateY(0); }      /* settle back into sway */
+}
+
+/* Performance note:
+   - Only the transform property is animated; this avoids layout/paint and keeps FPS high.
+   - Keep amplitude small to prevent overlaps with the head/inner ear; adjust the 95% pivot
+     or tiny translateY values if you change the ear artwork or other animations. */
+
+/* Right outer ear — complementary idle sway + staggered micro-twitch
+   - Pivot placed at the ear base (bottom-center of the ear's bounding box) so rotations
+     look natural relative to the head. Uses transform-only animations for GPU-friendly performance.
+   - Idle duration is 5.6s (slightly different than left ear's 5.2s) with the same easing curve
+     so the motion feels coherent but not perfectly locked together.
+   - Micro-twitch is intentionally a counter-movement to the left-ear twitch (small positive
+     rotation first) and is staggered by ~40ms relative to the left ear to read as two independent
+     muscle twitches. Add the "twitch" class to the element (.right_outer_ear.twitch) or to the
+     parent (#rabbit.twitch .right_outer_ear) to trigger the short accent.
+   - Keyframe names are unique to avoid conflicts with existing animations.
+*/
+.right_outer_ear {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* bottom-center pivot (relative to the ear's own shape) */
+    transform-origin: 50% 95%;
+    -webkit-transform-origin: 50% 95%;
+
+    /* hint to the UA that transforms will change */
+    will-change: transform;
+
+    /* complementary idle sway — subtle rotation + tiny vertical shift */
+    animation: ro_outer_sway_ae3 5.6s cubic-bezier(.4,.0,.2,1) 0s infinite;
+}
+
+/* Compose a short twitch on top of the idle sway when triggered.
+   The twitch is listed second so it temporarily overrides the transform, then both
+   animations continue (idle loop resumes cleanly). The twitch includes a 40ms delay
+   to stagger it relative to the left ear's twitch for naturalness. */
+.right_outer_ear.twitch,
+#rabbit.twitch .right_outer_ear {
+    animation: ro_outer_sway_ae3 5.6s cubic-bezier(.4,.0,.2,1) 0s infinite,
+               ro_outer_twitch_ae3 170ms cubic-bezier(.2,.9,.2,1) 40ms 1;
+}
+
+/* --- Keyframes (unique names) --- */
+
+/* Idle sway: small positive rotation (complementary to left ear's inward lean)
+   with a tiny translateY so the ear movement reads like soft physical motion.
+   Values are deliberately small to avoid clipping against head or inner ear art. */
+@keyframes ro_outer_sway_ae3 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    50%  { transform: rotate(1.8deg) translateY(-1px); }
+    100% { transform: rotate(0deg) translateY(0); }
+}
+
+/* Micro-twitch: short counter-twitch that pushes the ear outward briefly then rebounds.
+   Timing and amplitude chosen to be read as a quick reflex — small, fast, and non-disruptive.
+   The sequence returns to neutral to avoid pops when the single-run animation completes. */
+@keyframes ro_outer_twitch_ae3 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    30%  { transform: rotate(5deg) translateY(1px); }   /* quick outward nudge */
+    70%  { transform: rotate(-3deg) translateY(-1px); } /* small rebound past center */
+    100% { transform: rotate(0deg) translateY(0); }    /* settle back into idle sway */
+}
+
+/* Performance notes:
+   - Only the transform property is animated (no layout/paint), keeping FPS high.
+   - Keep amplitudes small; if you change artwork or ear position, adjust the 95% pivot
+     or the tiny translateY values to avoid visual overlap with the head or inner ear.
+*/
+
+/* left_inner_ear — subtle parallax follow + slightly larger elastic response
+   - Matches left_outer_ear's pivot so the inner ear visually follows the outer rotation.
+   - Uses transform-only animations (GPU friendly). Small scale added to simulate skin/stretch.
+   - Idle loop is driven from the same period as the outer ear (5.2s) but delayed ~40ms
+     and uses a slightly slower ease-out curve so the inner ear lags (parallax).
+   - A short "twitch" composes on top of the idle loop when .twitch is applied (or
+     #rabbit.twitch is toggled). The twitch is slightly larger/softer than the outer-ear
+     twitch and is offset by ~40ms to read as a secondary muscle response.
+   - Keyframe names are unique to avoid collisions with existing animations.
+   - Transform origin chosen to match .left_outer_ear (bottom-center of the ear shape).
+*/
+.left_inner_ear {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* pivot at ear base (match outer ear) so rotations align naturally */
+    transform-origin: 50% 95%;
+    -webkit-transform-origin: 50% 95%;
+
+    will-change: transform;
+
+    /* follow the outer ear's idle (5.2s) but lag slightly (40ms) and use ease-out for softer settle */
+    animation: li_inner_follow_ae4 5.2s ease-out 0.19s infinite;
+}
+
+/* Compose an inner-ear twitch on top of the idle loop when triggered.
+   The twitch starts slightly after the outer-ear twitch (~40ms) to create a natural delay.
+   Animation order places the idle first so the short twitch temporarily overrides transform. */
+.left_inner_ear.twitch,
+#rabbit.twitch .left_inner_ear {
+    animation: li_inner_follow_ae4 5.2s ease-out 0.19s infinite,
+               li_inner_twitch_ae4 200ms cubic-bezier(.2,.9,.2,1) 40ms 1;
+}
+
+/* Idle follow: a slightly larger rotation and micro-scale than the outer ear so the pink
+   inner ear reads as more elastic (parallax). Values are intentionally tiny to avoid clipping. */
+@keyframes li_inner_follow_ae4 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    50%  { transform: rotate(-3.8deg) translateY(-1.2px) scale(1.01); }
+    100% { transform: rotate(0deg) translateY(0) scale(1); }
+}
+
+/* Inner-ear twitch: faster, slightly larger elastic accent that rebounds and settles.
+   Returns to neutral to avoid visual pops and to let the idle loop continue seamlessly. */
+@keyframes li_inner_twitch_ae4 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    25%  { transform: rotate(-8deg) translateY(1.8px) scale(1.01); } /* quick inward twitch */
+    65%  { transform: rotate(6deg)  translateY(-1px)  scale(1.005); } /* rebound */
+    100% { transform: rotate(0deg) translateY(0) scale(1); }           /* settle */
+}
+
+/* Performance note:
+   - Only transform is animated (no layout/paint) to keep rendering efficient.
+   - Amplitudes are kept deliberately small; if artwork changes, adjust the 95% pivot
+     or the tiny translate/scale values to avoid overlaps with the head/outer ear. */
+
+/* right_inner_ear
+   - Mirrors the left inner-ear behaviour but follows the right_outer_ear.
+   - Pivot matches .right_outer_ear (bottom-center) so the pink inner shape visually follows
+     the outer ear rotation and keeps parallax consistent.
+   - Idle follow is slightly larger than the outer-ear idle (subtle extra rotation + tiny scale)
+     to read as softer, more elastic skin inside the ear. It is phase-lagged ~40ms so the
+     right_inner_ear feels like a secondary layer following the outer-ear motion.
+   - A short twitch may be composed on top of the idle loop by adding .twitch to the element
+     or toggling #rabbit.twitch .right_inner_ear. The twitch is offset by ~40ms and returns
+     to neutral so the idle loop resumes cleanly.
+   - Only transform is animated (rotate/translate/scale) for best performance.
+*/
+
+.right_inner_ear {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* bottom-center pivot to match the outer ear's anchor so rotations line up */
+    transform-origin: 50% 95%;
+    -webkit-transform-origin: 50% 95%;
+
+    will-change: transform;
+
+    /* follow the right outer-ear idle (5.6s) with a small lag so the inner ear lags behind */
+    animation: ri_inner_follow_ae5 5.6s ease-out 0.04s infinite;
+}
+
+/* Compose a short inner-ear twitch on top of the idle follow when triggered.
+   Idle is listed first so the single-run twitch temporarily overrides transform then
+   returns control to the idle loop. The twitch has a small 40ms offset to read as
+   a secondary muscle response after outer-ear twitch. */
+.right_inner_ear.twitch,
+#rabbit.twitch .right_inner_ear {
+    animation: ri_inner_follow_ae5 5.6s ease-out 0.04s infinite,
+               ri_inner_twitch_ae5 200ms cubic-bezier(.2,.9,.2,1) 40ms 1;
+}
+
+/* --- Keyframes --- */
+
+/* Idle follow: slightly larger rotation + micro-scale than the outer ear so this inner piece
+   reads as softer tissue (parallax). Values are intentionally tiny to prevent clipping. */
+@keyframes ri_inner_follow_ae5 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    50%  { transform: rotate(3.8deg) translateY(-1.2px) scale(1.01); }
+    100% { transform: rotate(0deg) translateY(0) scale(1); }
+}
+
+/* Inner-ear twitch: quick outward nudge then an elastic rebound back to neutral.
+   Returns to neutral so the idle loop continues without visual pops. */
+@keyframes ri_inner_twitch_ae5 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    25%  { transform: rotate(8deg) translateY(1.8px) scale(1.01); }  /* quick outward twitch */
+    65%  { transform: rotate(-6deg) translateY(-1px)  scale(1.005); } /* rebound */
+    100% { transform: rotate(0deg) translateY(0) scale(1); }          /* settle */
+}
+
+/* Performance note:
+   - Only transform is animated (no layout/paint), keeping GPU acceleration and high FPS.
+   - Amplitudes and durations intentionally small for subtlety and to avoid overlap with the head/outer ear.
+*/
+
+/* LEFT EYE — subtle blink cycle
+   - Animates only 'transform' (translateY + scaleY) for GPU-friendly performance.
+   - Pivot is the eye's center so scaleY collapses the circle into a natural eyelid motion.
+   - Default cycle length sits comfortably between the requested 2.8–4.5s window;
+     use JS to randomize --le-blink-cycle per element for organic jitter.
+   - Provide helper classes (.manualBlink, .doubleBlinkTrigger) so a small JS routine
+     can trigger double-blinks / one-off blinks with the stated probabilities
+     (CSS alone cannot randomly schedule blinks).
+   - Keyframe names are unique to avoid collisions.
+*/
+
+/* Base behavior (infinite blinking cadence).
+   - --le-blink-cycle: total period from one blink start to the next (default 3.8s).
+     Adjust with JS to randomize between ~2.8s and ~4.5s (e.g. Math.random()).
+   - --le-eye-ease: easing for the long cadence; the short single blink uses a tighter curve.
+*/
+.left_eye{
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* eye located at cx=23.5 cy=42.5; center-of-shape -> 50% 50% */
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* hint for the browser */
+    will-change: transform;
+
+    /* cadence: default period; override per-element via inline style or JS (see notes) */
+    --le-blink-cycle: 3.8s;
+    --le-eye-ease: cubic-bezier(.2,.8,.2,1);
+
+    /* Primary idle cadence (single blink per cycle). The keyframes compress to a brief window
+       at the start of the cycle (roughly 0–360ms) and then rest until the next cycle.
+       Using both translateY and scaleY gives a subtle eyelid curvature feel. */
+    animation: le_eye_blink_ae6 var(--le-blink-cycle) var(--le-eye-ease) infinite;
+    /* keep the eye crisp when paused/resumed */
+    animation-fill-mode: both;
+}
+
+/* Single-shot blink useful for JS-triggered blinks (one iteration only).
+   - Use by adding the .manualBlink class dynamically (JS should remove it when done).
+*/
+.left_eye.manualBlink{
+    animation: le_eye_single_ae6 360ms cubic-bezier(.2,.9,.2,1) 0s 1 both;
+}
+
+/* Double-blink helper: schedules a second single blink shortly after the first.
+   - Apply this class momentarily via JS to get a quick 'double' (timings ~200–320ms between blinks).
+   - The second animation uses a delay (220ms) so it reads as a natural follow-up blink.
+*/
+.left_eye.doubleBlinkTrigger{
+    animation:
+      le_eye_single_ae6 360ms cubic-bezier(.2,.9,.2,1) 0s 1 both,
+      le_eye_single_ae6 320ms cubic-bezier(.2,.9,.2,1) 220ms 1 both;
+}
+
+/* Pause helper (optional) */
+.left_eye.blinkPause{
+    animation-play-state: paused;
+}
+
+/* --- Keyframes --- */
+
+/* Idle blink placed at the start of each cycle:
+   - 0% -> start open
+   - ~3.2% -> closed (120ms into cycle)
+   - ~4.7% -> still closed (180ms)
+   - ~9.5% -> reopened (360ms)
+   - remainder stays open
+   Percentages are derived from the recommended ms timings over the default cycle (3.8s).
+*/
+@keyframes le_eye_blink_ae6 {
+    0%    { transform: translateY(0) scaleY(1); }
+    3.2%  { transform: translateY(0.35px) scaleY(0.08); }  /* close (≈120ms) */
+    4.7%  { transform: translateY(0.35px) scaleY(0.08); }  /* hold (120–180ms) */
+    9.5%  { transform: translateY(0)       scaleY(1); }    /* open (≈360ms) */
+    100%  { transform: translateY(0)       scaleY(1); }    /* remain open until next cycle */
+}
+
+/* Precise single-blink keyframe used for manual/double triggers.
+   - Shorter, snappier easing so triggered blinks read as fast reflexes.
+*/
+@keyframes le_eye_single_ae6 {
+    0%   { transform: translateY(0) scaleY(1); }
+    33%  { transform: translateY(0.45px) scaleY(0.08); } /* close quickly (~120ms of a 360ms animation) */
+    50%  { transform: translateY(0.45px) scaleY(0.08); } /* short hold */
+    100% { transform: translateY(0)      scaleY(1); }    /* open and settle */
+}
+
+/* NOTES & INTEGRATION SUGGESTIONS (do not modify CSS here — use JS):
+   - To achieve the requested random cadence and double-blink probability, use a tiny JS routine:
+       * assign each eye a randomized --le-blink-cycle value in the 2800–4500ms range
+         (element.style.setProperty('--le-blink-cycle', `${random}ms`))
+       * occasionally (10–18% chance after a blink) add the .doubleBlinkTrigger class briefly.
+       * offset right_eye by ~40–90ms by setting element.style.animationDelay or a custom CSS var
+         so the two eyes rarely close perfectly in sync.
+   - This CSS is intentionally small in transform amplitude (translateY ≤ 0.5px, scaleY floor 0.08)
+     to avoid visual collisions with nearby facial elements (nose, mouth) given the artwork geometry.
+   - All animations affect only 'transform' (no layout/paint), keeping the animation GPU-friendly.
+*/
+
+/* Right eye — complementary blink timed slightly off the left eye
+   - Matches left_eye behavior (scaleY + translateY) but uses a small consistent
+     offset so perfect synchronization is rare.
+   - Transform origin set to the eye centre (circle at cx=40.5 cy=42.5 → use 50% 50%
+     relative to the eye shape). Using transform-only animations for best GPU performance.
+   - Keyframe names are unique (re_eye_...) to avoid conflicts with existing animations.
+   - Default cycle mirrors the left eye (3.8s) but exposes vars so JS may randomize both
+     eyes while preserving a small default offset (~70ms).
+   - Manual and double-blink helper classes provided so JS can trigger one-off blinks.
+   - Animation-fill-mode: both keeps the eye crisp when paused/resumed.
+*/
+.right_eye{
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* pivot at the circle centre */
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    will-change: transform;
+
+    /* defaults mirror left eye but with a small built-in offset to reduce exact sync */
+    --re-blink-cycle: 3.8s;                    /* default period (match left_eye's cadence) */
+    --re-eye-ease: cubic-bezier(.2,.8,.2,1);
+    --re-blink-offset: 70ms;                   /* consistent offset (tweak 60–90ms as desired) */
+
+    /* idle blink cadence (infinite). The offset is applied as an initial delay so the
+       right eye rarely lines up perfectly with the left; JS can still set its own delay/vars. */
+    animation: re_eye_blink_ae7 var(--re-blink-cycle) var(--re-eye-ease) var(--re-blink-offset) infinite;
+    animation-fill-mode: both;
+}
+
+/* One-off/manual blink (JS should add/remove this class when triggering a manual blink).
+   - No offset here so manual triggers fire immediately when applied. */
+.right_eye.manualBlink{
+    animation: re_eye_single_ae7 360ms cubic-bezier(.2,.9,.2,1) 0s 1 both;
+}
+
+/* Double blink helper: schedules a follow-up blink ~220ms after the first.
+   - Useful to reproduce natural double-blink behaviour (apply briefly via JS).
+*/
+.right_eye.doubleBlinkTrigger{
+    animation:
+      re_eye_single_ae7 360ms cubic-bezier(.2,.9,.2,1) 0s 1 both,
+      re_eye_single_ae7 320ms cubic-bezier(.2,.9,.2,1) 220ms 1 both;
+}
+
+/* Pause helper (useful when suspending animations for low-power or focus states) */
+.right_eye.blinkPause{
+    animation-play-state: paused;
+}
+
+/* --- Keyframes (unique names) --- */
+/* Idle blink: same timing envelope as left_eye (short close then hold, reopen),
+   scaled to tiny translateY and scaleY to avoid collisions with nose/mouth.
+   Percentages mirror the left_eye's keyframes so behavior is visually consistent,
+   but the applied animation offset keeps the motion from being perfectly synchronous. */
+@keyframes re_eye_blink_ae7 {
+    0%    { transform: translateY(0) scaleY(1); }
+    3.2%  { transform: translateY(0.35px) scaleY(0.08); }  /* close (≈120ms) */
+    4.7%  { transform: translateY(0.35px) scaleY(0.08); }  /* hold (≈120–180ms) */
+    9.5%  { transform: translateY(0)       scaleY(1); }    /* open (≈360ms) */
+    100%  { transform: translateY(0)       scaleY(1); }    /* remain open until next cycle */
+}
+
+/* Precise single-blink keyframe used for manual/double triggers.
+   - Snappier curve matches left_eye.single behavior so triggered blinks feel identical. */
+@keyframes re_eye_single_ae7 {
+    0%   { transform: translateY(0) scaleY(1); }
+    33%  { transform: translateY(0.45px) scaleY(0.08); } /* close quickly (~120ms of a 360ms animation) */
+    50%  { transform: translateY(0.45px) scaleY(0.08); } /* short hold */
+    100% { transform: translateY(0)      scaleY(1); }    /* open and settle */
+}
+
+/* Performance notes:
+   - Only 'transform' is animated (translateY + scaleY) to avoid layout/paint and keep GPU acceleration.
+   - Amplitudes are intentionally tiny (translate ≤ 0.5px, scaleY floor 0.08) to prevent overlap with nearby facial features.
+   - If you randomize blink cadence via JS, prefer adjusting --re-blink-cycle per-element and optionally
+     set a small animationDelay per element to achieve a natural desynchronization between the two eyes. */
+
+/* Nose wiggle & sniff animations
+   - Optimized: only 'transform' is animated (GPU-friendly).
+   - Transform origin chosen as the nose path's center (50% 50%) so rotations/scale look natural.
+   - Two layers:
+       1) nt_idle_sniff_ae8  -> occasional micro-sniff compressed into the start of a longer cycle
+          (use JS to randomize --nt-idle-cycle between ~3.5s and ~7s for organic timing).
+       2) nt_active_wiggle_ae8 -> single-run, more emphatic wiggle triggered by hover/tap/JS.
+   - The active wiggle is composed on top of the idle loop by listing it second; it temporarily
+     overrides transform while running and then the idle loop continues.
+   - Keyframe names are unique to avoid collisions with existing rules.
+*/
+
+/* Base nose behaviour */
+.nose_tip{
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* pivot at the geometric centre of the small nose path */
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* hint to the UA so compositing stays fast */
+    will-change: transform;
+
+    /* Idle cycle: total period from one micro-sniff to the next.
+       Default sits in the mid-range; use JS to randomize per element between 3500ms–7000ms:
+         el.style.setProperty('--nt-idle-cycle', `${randBetween(3500,7000)}ms`);
+       This keeps micro-sniffs occasional and non-robotic. */
+    --nt-idle-cycle: 5200ms;
+
+    /* Idle animation compresses a short micro-sniff into the early portion of the longer cycle.
+       The sniff itself remains subtle (rotate ±≈3.5–4deg, translateY ≈±1.2px, tiny scale changes). */
+    animation: nt_idle_sniff_ae8 var(--nt-idle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite;
+    animation-fill-mode: both;
+}
+
+/* Hover / manual / programmatic trigger for the emphatic single wiggle.
+   - The active wiggle runs once (no loop) and uses a slightly larger amplitude.
+   - Use JS to trigger by adding/removing the .manualWiggle class (recommended for touch).
+   - Hover is provided for desktop interactivity; mobile should be triggered with .manualWiggle. */
+.nose_tip:hover,
+.nose_tip.manualWiggle {
+    animation:
+      /* keep idle running (first) so it resumes when the single-run completes */
+      nt_idle_sniff_ae8 var(--nt-idle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite,
+      /* single emphatic wiggle; both ensures a clean settle */
+      nt_active_wiggle_ae8 780ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* For quick programmatic nudges (e.g. click/tap feedback) you can use a short variation:
+   add .quickWiggle via JS to apply a slightly shorter active wiggle (runs once). */
+.nose_tip.quickWiggle {
+    animation:
+      nt_idle_sniff_ae8 var(--nt-idle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite,
+      nt_active_wiggle_ae8 620ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* --- Keyframes --- */
+
+/* Micro-sniff compressed into the start of the cycle:
+   - This uses small rotation/translate/scale so the nose reads as a gentle sniff without
+     colliding with the mouth shape below.
+   - The sniff is short relative to the overall cycle to keep it occasional.
+   - Percentages chosen so the "active" part occupies ~10–14% of the cycle (adjust via --nt-idle-cycle). */
+@keyframes nt_idle_sniff_ae8 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    4%   { transform: rotate(-3.5deg) translateY(-1.2px) scale(0.995); } /* tiny nip up-left */
+    9%   { transform: rotate(3.8deg)  translateY(1.2px)  scale(1.02);  } /* quick counter swing/sniff */
+    12%  { transform: rotate(-1.5deg) translateY(-0.6px) scale(0.99); } /* small rebound */
+    16%  { transform: rotate(0deg)     translateY(0)      scale(1);    } /* settle */
+    100% { transform: rotate(0deg)     translateY(0)      scale(1);    } /* rest until next cycle */
+}
+
+/* Emphatic single-run wiggle (user interaction / deliberate spot animation)
+   - Follows the requested motion profile with stronger rotation/translation and a slight squash
+     on contact (scaleX/scaleY combined via uniform scale to keep it simple for GPUs).
+   - Values chosen so the motion reads clearly but stays small enough to avoid clipping into the mouth.
+   - Unique name avoids conflicts with other components. */
+@keyframes nt_active_wiggle_ae8 {
+    0%   { transform: rotate(0deg)    translateY(0)   scale(1);    }
+    20%  { transform: rotate(-10deg)  translateY(-3px) scale(0.98); } /* strong nip up-left with slight squash */
+    50%  { transform: rotate(8deg)    translateY(2px)  scale(0.995); } /* big opposite swing down-right */
+    75%  { transform: rotate(-6deg)   translateY(-1px) scale(0.99);  } /* small rebound */
+    100% { transform: rotate(0deg)    translateY(0)   scale(1);     } /* settle cleanly back to idle */
+}
+
+/* Integration notes (non-invasive):
+   - To randomize idle timing and avoid synchronized sniffs, set --nt-idle-cycle per element from JS:
+       el.style.setProperty('--nt-idle-cycle', `${randBetween(3500,7000)}ms`);
+   - Trigger an active wiggle on touch/click by briefly adding .manualWiggle and removing it after the animation:
+       el.classList.add('manualWiggle');
+       setTimeout(() => el.classList.remove('manualWiggle'), 900);
+   - If you want nearby ears to react when the nose wiggles, toggle a parent class (e.g. #rabbit.nose_active)
+     and have your JS-side code (or an extended stylesheet) momentarily increase ear twitch amplitude/duration.
+   - All transforms are lightweight (no layout/paint), so this will remain performant even when multiple elements animate.
+*/
+
+/* Mouth follow-through & blink-reaction animations
+   - Targets both mouth_curve paths (there are two symmetrical curves).
+   - Transform origin set to each element's center (50% 50%) so scaleX/translateY read naturally.
+   - Idle breathing is phase-locked to the head's 4.5s breathe loop (small delay for gentle follow-through).
+   - Nose-follow and blink reactions are single-run accents composed on top of the idle loop so they
+     temporarily override transform and then let the idle resume.
+   - Animations affect only 'transform' (GPU-friendly). Keep amplitudes tiny to avoid collision with nose/mouth geometry.
+   - Usage:
+       * To make mouth react to a nose wiggle: toggle .noseFollow on the mouth elements or toggle
+         #rabbit.nose_active on the parent group (JS: add class briefly, remove after ~250ms).
+       * To make mouth react to a blink: add .blinkReact to the mouth element (one-shot) or toggle
+         #rabbit.blink_active on the parent to affect both simultaneously.
+   - Notes on coordinates: the two mouth paths are centred around x≈32, y≈57 in the 64×64 viewBox.
+     Using transform-box:fill-box + transform-origin:50% 50% keeps the origin correct regardless of artwork edits.
+*/
+
+/* Base styling for all mouth pieces */
+.mouth_curve {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+    will-change: transform;
+
+    /* Idle follow subtle breathing:
+       - period matches head (4.5s) so the mouth gently follows the head inhale/exhale.
+       - tiny vertical travel (±0.8px) and micro horizontal scale for soft squish follow-through.
+       - slight phase offset (120ms) gives a natural lag relative to the head inhale so the mouth reads as secondary motion.
+    */
+    animation: mouth_idle_follow_ae9 4.5s ease-in-out 120ms infinite;
+    animation-fill-mode: both;
+}
+
+/* Nose-triggered follow: compose a single-run accent on top of the idle loop.
+   Apply either .noseFollow to .mouth_curve or toggle #rabbit.nose_active on the parent group.
+   The single-run animation is short (~220ms) and uses a subtle scaleX expansion (1 -> 1.03 -> 1)
+   with a quick downward/upward nudge so the mouth reads as a physical follow-through to the nose motion.
+*/
+.mouth_curve.noseFollow,
+#rabbit.nose_active .mouth_curve {
+    animation:
+      mouth_idle_follow_ae9 4.5s ease-in-out 120ms infinite,
+      mouth_nose_follow_ae9 220ms cubic-bezier(.2,.9,.2,1) 0s 1 both;
+}
+
+/* Blink-triggered expression: small downward nudge + tiny horizontal tighten so the face briefly expresses attention.
+   Use .blinkReact for one-off or toggle #rabbit.blink_active for the group. Short (~240ms) and subtle.
+*/
+.mouth_curve.blinkReact,
+#rabbit.blink_active .mouth_curve {
+    animation:
+      mouth_idle_follow_ae9 4.5s ease-in-out 120ms infinite,
+      mouth_blink_follow_ae9 240ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* --- Keyframes (unique names) --- */
+
+/* Idle follow: tiny vertical float and micro scaleX to match the head breathe.
+   TranslateY uses sub-pixel values to avoid strong motion; scaleX ranges around 0.998–1.002.
+*/
+@keyframes mouth_idle_follow_ae9 {
+    0%   { transform: translateY(0)      scaleX(1); }
+    50%  { transform: translateY(-0.8px) scaleX(1.002); } /* slight lift on inhale */
+    100% { transform: translateY(0)      scaleX(1); }
+}
+
+/* Nose follow: quick downward nudge then rebound and settle with a tiny scaleX puff.
+   Values chosen to remain subtle (so character doesn't read comical), yet visible as follow-through.
+*/
+@keyframes mouth_nose_follow_ae9 {
+    0%   { transform: translateY(0)   scaleX(1); }
+    25%  { transform: translateY(-2px) scaleX(1.03); }  /* quick nip upward (follows nose movement) */
+    70%  { transform: translateY(0.6px) scaleX(1.01); } /* small rebound/overshoot */
+    100% { transform: translateY(0)    scaleX(1); }      /* settle back to idle */
+}
+
+/* Blink follow: a small downward tuck and horizontal tighten for expressiveness during a blink.
+   Short, soft curve so it reads as a natural facial response.
+*/
+@keyframes mouth_blink_follow_ae9 {
+    0%   { transform: translateY(0)    scaleX(1); }
+    35%  { transform: translateY(1.2px) scaleX(0.985); } /* tiny tuck with slight tighten */
+    100% { transform: translateY(0)     scaleX(1); }     /* settle back into idle */
+}
+
+/* Performance notes:
+   - Only 'transform' is animated to keep repaints/layout minimal and leverage GPU compositing.
+   - Keep the follow-through amplitudes tiny; if the artwork or mouth geometry changes, tweak the translateY and scaleX endpoints.
+   - Prefer toggling the helper classes from JS (e.g. add .noseFollow / .blinkReact briefly) rather than forcing instant inline styles — this keeps animation timing predictable.
+*/
+
+/* face_outline — intentionally static (no animation)
+   -------------------------------------------------
+   Purpose:
+     - This silhouette should remain visually stable so that all "life" is read through
+       the internal moving parts (ears, eyes, nose, mouth, subtle head breathing).
+     - To avoid accidental silhouette jitter we explicitly prevent animations/transitions
+       from applying (including those inherited from parent toggles like #rabbit.twitch).
+   Coherence:
+     - Transform origin is set to the element's center (50% 50%) which matches the
+       artwork's layout inside the 64×64 viewBox (face sits centrally around x≈32).
+       This keeps the element ready for any future explicit transforms while preventing
+       accidental movement now.
+     - We intentionally do NOT declare keyframes or attach animations here — that would
+       violate the design goal of a stable outline. (If in future a decorative/very-subtle
+       animation is required, add a uniquely named keyframe and a deliberately tiny amplitude;
+       keep it off by default and opt-in via a class.)
+   Performance:
+     - Avoid promoting this element to its own compositing layer (will-change:auto).
+     - Disable pointer events so interactive handlers target inner elements (eyes/nose/etc).
+*/
+
+.face_outline {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* Anchor at the shape's centre so any future transforms behave predictably */
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* Explicitly prevent any animation or transition (including inherited ones) */
+    animation: none !important;
+    transition: none !important;
+
+    /* Do not hint the UA to promote this to a separate layer (keeps paint cheaper) */
+    will-change: auto;
+
+    /* Silhouette shouldn't capture pointer events; inner features are interactive */
+    pointer-events: none;
+}
+
+/* Defensive override: ensure face_outline remains static even if a parent group toggles animations. */
+#rabbit .face_outline {
+    animation: none !important;
+    transition: none !important;
+}
+
+/* inner_shading_and_cheeks — subtle ephemeral feedback for blinks & nose wiggles
+   - Animates only opacity and transform (translateY) for best performance (no layout/paint).
+   - Pivot set to element centre so the tiny vertical offset reads as a soft shadow shift beneath the eye/cheek.
+   - Two single-run accents provided:
+       * blink reaction: quick ~120–200ms fade (slight darken -> translate down) to emulate eyelid shadow change
+       * nose reaction: quick ~200–240ms brightness bump (slight lighten -> translate up) to emulate cheek compression/brightening
+   - Unique keyframe names chosen to avoid collisions with existing rules.
+   - Use JS to toggle .manualBlink / .manualNose (or toggle parent flags #rabbit.blink_active / #rabbit.nose_active)
+     so the accents compose with the existing eye/mouth/nose animations and then return to neutral.
+*/
+
+/* Base: lightweight hints & transform origin appropriate to the cheek regions */
+.inner_shading_and_cheeks {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* animate only opacity and transform for GPU compositing */
+    will-change: opacity, transform;
+
+    /* keep a stable default; do not force opacity here in case artwork uses a different base */
+}
+
+/* BLINK: short, subtle darkening and tiny downward shift (120–200ms)
+   - Duration chosen at 180ms to sit comfortably in the requested window and read as a reflex.
+   - The opacity target reduces by ~8% (visually subtle). TranslateY is small (≤0.6px) to avoid clipping.
+*/
+.inner_shading_and_cheeks.blinkReact,
+#rabbit.blink_active .inner_shading_and_cheeks,
+.inner_shading_and_cheeks.manualBlink {
+    animation: is_shade_blink_ae10 180ms cubic-bezier(.2,.9,.2,1) 0s 1 both;
+}
+
+/* NOSE: quick brightness/opacity bump and tiny upward shift (~200–240ms)
+   - Matches the nose wiggle timing profile (short accent) so cheek shading reads as a follow-through.
+   - Opacity increases by ~8% at peak; translateY lifts subtly to suggest compression/brightness.
+*/
+.inner_shading_and_cheeks.noseFollow,
+#rabbit.nose_active .inner_shading_and_cheeks,
+.inner_shading_and_cheeks.manualNose {
+    animation: is_shade_nose_ae11 220ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* Small helper to pause shading accents when the app wants to suspend non-essential motion */
+.inner_shading_and_cheeks.motionPause {
+    animation-play-state: paused !important;
+}
+
+/* --- Keyframes --- */
+
+/* Blink accent:
+   - 0%: neutral
+   - 30%: peak darken + tiny downward shift (reads as eyelid shadow increasing)
+   - 100%: return to neutral smoothly
+*/
+@keyframes is_shade_blink_ae10 {
+    0%   { opacity: 1; transform: translateY(0); }
+    30%  { opacity: 0.92; transform: translateY(0.6px); } /* subtle shadow increase (≈ -8% opacity) */
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Nose accent:
+   - 0%: neutral
+   - 25%: quick brightness bump and slight lift (cheek appears a touch brighter/pressed)
+   - 70%: small rebound toward neutral
+   - 100%: fully settled
+*/
+@keyframes is_shade_nose_ae11 {
+    0%   { opacity: 1; transform: translateY(0); }
+    25%  { opacity: 1.08; transform: translateY(-0.6px); } /* +8% opacity bump, small lift */
+    70%  { opacity: 1.02; transform: translateY(-0.2px); } /* soft rebound */
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Integration notes (do not modify here — use JS to trigger):
+   - To trigger a blink reaction from JS: toggle .manualBlink on the shading element and remove it after ~200ms.
+   - To trigger the nose reaction: toggle .manualNose and remove it after ~260ms.
+   - Prefer toggling parent flags (#rabbit.blink_active / #rabbit.nose_active) to affect multiple shading pieces simultaneously.
+   - These accents only animate opacity & transform to remain GPU-friendly and avoid layout/paint costs.
+*/
+
+/* Coordinator & interactive trigger timings for the small rect used as a timing/interaction handle.
+   Purpose:
+     - Acts as a lightweight, GPU-only timing marker (transform-only) that syncs comfortably with
+       the existing head/ears breathing cycles (4.5s) and the nose idle wiggle window (≈3500–7000ms).
+     - Provides selectors that let pointer/JS-driven interactions on this rect temporarily layer
+       additional single-run accents onto nose/ears without modifying existing component rules.
+   Notes:
+     - All keyframe names are unique (it_..._aeXX) to avoid collisions.
+     - Only 'transform' and 'opacity' are animated to keep things composited on the GPU.
+     - Use JS to randomize --it-wiggle-cycle and to toggle the .manualWiggle class for touch/click.
+*/
+
+/* Base: make the tiny guide rect interactive, use its bounding box as transform reference.
+   Keep visual fill transparent (it was a guideline) but allow pointer interactions.
+*/
+.interactive_triggers_and_timing_guidelines {
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* expose as interactive control (cursor) and keep pointer hits reliable */
+    pointer-events: all;
+    cursor: pointer;
+
+    /* hint to the UA that transforms will change for smooth compositing */
+    will-change: transform, opacity;
+
+    /* Default timing variables (adjust from JS for organic jitter) */
+    --it-coord-breathe: 4500ms;     /* matches head breathing */
+    --it-wiggle-cycle: 5200ms;      /* default micro-wiggle cadence (JS may randomize 3500–7000ms) */
+
+    /* Compose two lightweight layers:
+       1) Coordination idle (phase-locked to head breathing period)
+       2) Long-period micro-nudge (acts like an occasional sniff/wiggle timing marker)
+       The micro-nudge uses a long period so it can be randomized by JS (setProperty '--it-wiggle-cycle').
+    */
+    animation:
+      it_coord_idle_ae12 var(--it-coord-breathe) ease-in-out 0s infinite,
+      it_auto_nudge_ae13 var(--it-wiggle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite;
+    animation-fill-mode: both;
+}
+
+/* Manual/tap/click helper:
+   - Add this class from JS (or via :active/hover on pointer devices) to request a single, stronger wiggle.
+   - It composes a single-run accent on top of the idle loops; remove it after ~900ms in JS.
+*/
+.interactive_triggers_and_timing_guidelines.manualWiggle {
+    animation:
+      it_coord_idle_ae12 var(--it-coord-breathe) ease-in-out 0s infinite, /* keep base breathing */
+      it_auto_nudge_ae13 var(--it-wiggle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite, /* keep long-cycle marker */
+      it_manual_wiggle_ae14 740ms cubic-bezier(.22,.9,.3,1) 0s 1 both; /* single emphatic wiggle */
+}
+
+/* Hover for desktop:
+   - Mirrors manualWiggle for pointer hover feedback; mobile should use .manualWiggle via JS.
+*/
+.interactive_triggers_and_timing_guidelines:hover {
+    /* short and snappy to feel responsive on hover */
+    animation:
+      it_coord_idle_ae12 var(--it-coord-breathe) ease-in-out 0s infinite,
+      it_auto_nudge_ae13 var(--it-wiggle-cycle) cubic-bezier(.2,.8,.2,1) 0s infinite,
+      it_manual_wiggle_ae14 620ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* --- Interaction impact on nearby parts (composed via sibling selectors)
+   These rules temporarily layer single-run accents onto nose/ears/inner ears when the trigger rect is used.
+   They deliberately list the single-run accent after existing idle animations so the accent overrides transform
+   while active and then the original idle loops resume.
+   Using sibling selectors (~) keeps the CSS self-contained and avoids editing the original element rules.
+*/
+
+/* Nose strong wiggle when the trigger is activated (hover or manualWiggle).
+   We do not alter the nose's default idle sniff here; we compose an additional single-run animation.
+*/
+.interactive_triggers_and_timing_guidelines:hover ~ .nose_tip,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .nose_tip {
+    animation:
+      /* keep the nose idle sniff (if present) running — we don't override it permanently here */
+      nt_idle_sniff_ae8 var(--nt-idle-cycle,5200ms) cubic-bezier(.2,.8,.2,1) 0s infinite,
+      /* add an emphatic wiggle (single-run) that composes transiently */
+      it_nt_active_ae14 760ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* Small amplification of ear micro-twitches to read as follow-through when nose wiggles.
+   The ear animations already exist on the ear elements; we add a single-run accent on top of them.
+   Left ear accent (slightly inward-first twitch) */
+.interactive_triggers_and_timing_guidelines:hover ~ .left_outer_ear,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .left_outer_ear {
+    animation:
+      le_outer_sway_ae2 5.2s cubic-bezier(.4,.0,.2,1) 0.15s infinite, /* preserve original idle */
+      it_le_outer_twitch_ae15 180ms cubic-bezier(.2,.9,.2,1) 0s 1 both;
+}
+
+/* Right ear accent — small staggered counter-twitch (40ms later feel provided by keyframe timing) */
+.interactive_triggers_and_timing_guidelines:hover ~ .right_outer_ear,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .right_outer_ear {
+    animation:
+      ro_outer_sway_ae3 5.6s cubic-bezier(.4,.0,.2,1) 0s infinite, /* preserve original idle */
+      it_ro_outer_twitch_ae16 190ms cubic-bezier(.2,.9,.2,1) 30ms 1 both;
+}
+
+/* Inner ears follow-through accents (so the pink inner shapes feel elastic with the outer twitch) */
+.interactive_triggers_and_timing_guidelines:hover ~ .left_inner_ear,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .left_inner_ear {
+    animation:
+      li_inner_follow_ae4 5.2s ease-out 0.19s infinite,
+      it_li_inner_twitch_ae17 210ms cubic-bezier(.2,.9,.2,1) 40ms 1 both;
+}
+.interactive_triggers_and_timing_guidelines:hover ~ .right_inner_ear,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .right_inner_ear {
+    animation:
+      ri_inner_follow_ae5 5.6s ease-out 0.04s infinite,
+      it_ri_inner_twitch_ae18 210ms cubic-bezier(.2,.9,.2,1) 40ms 1 both;
+}
+
+/* Mouth follow-through: subtle single-run puff/down-nudge when the trigger activates.
+   This composes on top of the mouth idle follow so the face reads as physically coherent. */
+.interactive_triggers_and_timing_guidelines:hover ~ .mouth_curve,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .mouth_curve {
+    animation:
+      mouth_idle_follow_ae9 4.5s ease-in-out 120ms infinite,
+      it_mouth_nudge_ae19 220ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* Inner shading/cheeks subtle accent (opacity & tiny translate) to read as follow-through */
+.interactive_triggers_and_timing_guidelines:hover ~ .inner_shading_and_cheeks,
+.interactive_triggers_and_timing_guidelines.manualWiggle ~ .inner_shading_and_cheeks {
+    animation:
+      is_shade_nose_ae11 220ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+}
+
+/* --- Keyframes (unique names) --- */
+
+/* Coordination idle: very small vertical float + micro scale — phase-locked to head breathing (4.5s). */
+@keyframes it_coord_idle_ae12 {
+    0%   { transform: translateY(0) scale(1); }
+    50%  { transform: translateY(-0.6px) scale(1.0008); } /* tiny lift on inhale */
+    100% { transform: translateY(0) scale(1); }
+}
+
+/* Long-period micro-nudge marker:
+   - Intentionally small and compresses its 'active' motion into the first ~12% of the cycle,
+     leaving long rest so JS can randomize period without visual jitter.
+*/
+@keyframes it_auto_nudge_ae13 {
+    0%   { transform: rotate(0deg) translateY(0); opacity: 1; }
+    4%   { transform: rotate(-3.2deg) translateY(-1.0px); opacity: 1; }  /* quick nip */
+    9%   { transform: rotate(3.5deg)  translateY(1.2px);  opacity: 1; }  /* counter */
+    14%  { transform: rotate(-1.2deg) translateY(-0.5px); opacity: 1; }  /* small rebound */
+    20%  { transform: rotate(0deg)    translateY(0);     opacity: 1; }
+    100% { transform: rotate(0deg)    translateY(0);     opacity: 1; }  /* rest until next cycle */
+}
+
+/* Manual/hover wiggle emitted by the trigger — single-run, larger amplitude (composed on nose/ears via sibling rules). */
+@keyframes it_manual_wiggle_ae14 {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); }
+    18%  { transform: translateY(-3px) rotate(-8deg)  scale(0.985); }  /* sharp nip */
+    48%  { transform: translateY(3px)  rotate(7deg)   scale(1.005); }  /* opposite swing */
+    72%  { transform: translateY(-1px) rotate(-4deg)  scale(0.995); }  /* rebound */
+    100% { transform: translateY(0)    rotate(0deg)   scale(1); }      /* settle */
+}
+
+/* Nose accent target (applied to the nose element when the rect triggers an action).
+   Matches the energetic profile used elsewhere but keeps a unique name so we don't duplicate rules.
+*/
+@keyframes it_nt_active_ae14 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    20%  { transform: rotate(-10deg) translateY(-3px) scale(0.98); }
+    50%  { transform: rotate(8deg)   translateY(2.6px)  scale(1.002); }
+    75%  { transform: rotate(-6deg)  translateY(-1px)  scale(0.995); }
+    100% { transform: rotate(0deg)   translateY(0)      scale(1); }
+}
+
+/* Ear accents (single-run) to briefly increase twitch amplitude without changing idle loops. */
+@keyframes it_le_outer_twitch_ae15 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    25%  { transform: rotate(-9deg) translateY(2px); }  /* quick inward/down for left ear */
+    65%  { transform: rotate(5deg)  translateY(-1px);}  /* small rebound */
+    100% { transform: rotate(0deg) translateY(0); }
+}
+@keyframes it_ro_outer_twitch_ae16 {
+    0%   { transform: rotate(0deg) translateY(0); }
+    30%  { transform: rotate(7deg) translateY(1.5px);}  /* outward nudge for right ear */
+    70%  { transform: rotate(-4deg) translateY(-1px);} /* rebound */
+    100% { transform: rotate(0deg) translateY(0); }
+}
+
+/* Inner ear accents (so inner pink shapes stretch along with the outer ear twitch) */
+@keyframes it_li_inner_twitch_ae17 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    25%  { transform: rotate(-10deg) translateY(2px) scale(1.01); }
+    60%  { transform: rotate(6deg) translateY(-1px) scale(1.002); }
+    100% { transform: rotate(0deg) translateY(0) scale(1); }
+}
+@keyframes it_ri_inner_twitch_ae18 {
+    0%   { transform: rotate(0deg) translateY(0) scale(1); }
+    25%  { transform: rotate(10deg) translateY(1.8px) scale(1.01); }
+    65%  { transform: rotate(-6deg) translateY(-1px) scale(1.002); }
+    100% { transform: rotate(0deg) translateY(0) scale(1); }
+}
+
+/* Mouth nudge follow-through (single-run) */
+@keyframes it_mouth_nudge_ae19 {
+    0%   { transform: translateY(0) scaleX(1); }
+    25%  { transform: translateY(-2px) scaleX(1.025); }
+    70%  { transform: translateY(0.6px) scaleX(1.01); }
+    100% { transform: translateY(0) scaleX(1); }
+}
+
+/* --- Accessibility: prefers-reduced-motion support --- */
+@media (prefers-reduced-motion: reduce) {
+    /* Disable all non-essential motion originating from this control.
+       Keep the rect interactive but turn off composited animations. */
+    .interactive_triggers_and_timing_guidelines,
+    .interactive_triggers_and_timing_guidelines:hover,
+    .interactive_triggers_and_timing_guidelines.manualWiggle {
+        animation: none !important;
+    }
+
+    /* Prevent any added single-run accents from being applied via sibling selectors. */
+    .interactive_triggers_and_timing_guidelines:hover ~ *,
+    .interactive_triggers_and_timing_guidelines.manualWiggle ~ * {
+        animation: none !important;
+    }
+
+    /* Eyes should remain the only subtle motion: slow the blink cadence considerably
+       so motion is extremely reduced but the character still feels alive.
+       We use an !important override to ensure the eye cadence is adjusted for reduced-motion.
+       (If the host app prefers absolutely no motion, set these to 'paused' instead.) */
+    .left_eye,
+    .right_eye {
+        animation-duration: 8s !important;
+        animation-delay: 0ms !important;
+        animation-timing-function: cubic-bezier(.2,.8,.2,1) !important;
+    }
+}
+
+/* Performance & integration notes (short):
+   - Prefer toggling .manualWiggle from JS for touch/click interactions:
+       el.classList.add('manualWiggle');
+       setTimeout(() => el.classList.remove('manualWiggle'), 900);
+   - Randomize the long-period micro-nudge with:
+       el.style.setProperty('--it-wiggle-cycle', `${randBetween(3500,7000)}ms`);
+   - This CSS intentionally leaves existing element idle animations untouched and composes short single-run
+     accents on top by applying additional animations to the sibling targets only while the trigger is active.
+*/
+
+/* Elements intentionally static by default to avoid visual clutter.
+   This rule keeps decorative pieces motionless unless a designer explicitly opts-in
+   (either by adding .subtleLife or toggling the parent #rabbit.decorative). */
+.elements_with_no_animation_by_default {
+    /* Make transforms relative to each element's own bounding box (robust to artwork edits) */
+    transform-box: fill-box;
+    -webkit-transform-box: fill-box;
+
+    /* Use centre-of-shape pivot so any optional motion reads as gentle, balanced floating */
+    transform-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+
+    /* We do not animate these by default; leave them visually stable.
+       Pointer-events disabled so interactive handlers target inner features instead. */
+    will-change: auto;
+    animation: none !important;
+    pointer-events: none;
+}
+
+/* Opt-in subtle life:
+   - Apply .subtleLife directly, or toggle the parent #rabbit.decorative to activate
+     gentle, GPU-friendly motion that harmonizes with existing cycles (head 4.5s, nose ~5.2s).
+   - Motion is intentionally tiny: slow vertical drift + low-frequency opacity breath.
+   - Both animations affect only transform and opacity (no layout/paint). */
+.elements_with_no_animation_by_default.subtleLife,
+#rabbit.decorative .elements_with_no_animation_by_default {
+    will-change: transform, opacity;
+
+    /* Compose two lightweight layers:
+       1) very slow vertical float (period chosen to avoid locking with head/ears; 9s)
+       2) long, gentle opacity breathe (offset and different period so motion is non-repetitive)
+       Values are tiny (translate ≤ 1.2px, rotation ≤ 0.6deg) to avoid overlap with animated facial parts. */
+    animation:
+        ewan_decor_float_ae20 9s ease-in-out 0s infinite,
+        ewan_decor_shimmer_ae21 7.2s ease-in-out 1.1s infinite;
+
+    /* keep these decorative pieces from stealing pointer events while animated */
+    pointer-events: none;
+}
+
+/* A single-run 'ping' accent for designers who occasionally want a subtle punctuation
+   (e.g. on hover or programmatic highlight). Use the .ping helper briefly then remove it via JS.
+   The accent composes on top of the idle loops (listed second so it temporarily overrides transform). */
+.elements_with_no_animation_by_default.ping,
+#rabbit.decorative .elements_with_no_animation_by_default.ping {
+    animation:
+        ewan_decor_float_ae20 9s ease-in-out 0s infinite,
+        ewan_decor_shimmer_ae21 7.2s ease-in-out 1.1s infinite,
+        ewan_decor_ping_ae22 640ms cubic-bezier(.22,.9,.3,1) 0s 1 both;
+    pointer-events: none;
+}
+
+/* --- Keyframes (unique names; transform + opacity only) --- */
+
+/* Slow float:
+   - Very small vertical travel and micro rotation to read as ambient parallax.
+   - Period chosen to not lock with the head's 4.5s inhalation; this 9s period drifts independently. */
+@keyframes ewan_decor_float_ae20 {
+    0%   { transform: translateY(0px) rotate(0deg) scale(1); }
+    35%  { transform: translateY(-1.2px) rotate(0.45deg) scale(1.0004); } /* gentle lift & tilt */
+    65%  { transform: translateY(0.8px)  rotate(-0.35deg) scale(0.9996); } /* soft settle opposite */
+    100% { transform: translateY(0px)   rotate(0deg) scale(1); }
+}
+
+/* Very gentle shimmer:
+   - Subtle opacity modulation to suggest slight material/lighting variation (keeps values within 0.92–1.00).
+   - Phase offset (via 1.1s start) helps the shimmer feel independent of other cycles. */
+@keyframes ewan_decor_shimmer_ae21 {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    20%  { opacity: 0.96; transform: translateY(-0.3px) scale(1); } /* tiny lift at dimmest */
+    50%  { opacity: 0.92; transform: translateY(0.2px)  scale(1); } /* faint trough */
+    80%  { opacity: 0.98; transform: translateY(-0.15px) scale(1); } /* return */
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Ping accent (single-run):
+   - A soft emphasis (tiny scale + quick lift then settle) that won't overlap or clip with facial elements.
+   - Runs once and returns to the idle loops already listed on the element. */
+@keyframes ewan_decor_ping_ae22 {
+    0%   { transform: translateY(0) scale(1); opacity: 1; }
+    20%  { transform: translateY(-2px) scale(1.018); opacity: 1; }  /* quick, visible but small punctuation */
+    55%  { transform: translateY(1px)  scale(0.995); opacity: 0.98; } /* rebound */
+    100% { transform: translateY(0)    scale(1); opacity: 1; }      /* settle back to idle */
+}
+
+/* --- Accessibility / performance --- */
+
+/* When the user requests reduced motion, keep these decorative elements stationary
+   (they are non-essential to the character's expression). */
+@media (prefers-reduced-motion: reduce) {
+    .elements_with_no_animation_by_default.subtleLife,
+    #rabbit.decorative .elements_with_no_animation_by_default,
+    .elements_with_no_animation_by_default.ping,
+    #rabbit.decorative .elements_with_no_animation_by_default.ping {
+        animation: none !important;
+        will-change: auto;
+    }
+}
+
+/* Integration notes:
+   - To enable subtle life for selected decorative pieces, add the .subtleLife class or toggle
+     the parent (#rabbit.decorative). Example:
+         document.querySelectorAll('.elements_with_no_animation_by_default').forEach(el => el.classList.add('subtleLife'));
+   - To emit a single ping accent for emphasis, add .ping and remove it after ~700ms:
+         el.classList.add('ping'); setTimeout(() => el.classList.remove('ping'), 740);
+   - All animations restrict themselves to transform and opacity to remain GPU-friendly and avoid layout/paint costs.
+   - Amplitudes are intentionally tiny (translate ≤ ~2px, rotation ≤ ~0.6deg) so these decorative motions will not collide
+     with the main facial animations (head/ears/eyes/nose) in the 64×64 viewBox.
+*/
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg height="800px" viewbox="0 0 64 64" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <defs>
+    <style>
+     .cls-1{fill:#dbd9d9;}.cls-2{fill:#aeaeaf;}.cls-3{fill:#d37b93;}.cls-4{fill:#eaeaea;}.cls-5{fill:#2d2d2d;}
+    </style>
+   </defs>
+   <title>
+   </title>
+   <g class="group" id="rabbit">
+    <path class="cls-1 left_outer_ear" d="M30,13V26.1A21,21,0,0,0,14,36.18V13a8,8,0,1,1,16,0Z" id="target_element_2973955817072">
+    </path>
+    <path class="cls-2 right_outer_ear" d="M50,13V36.18A21,21,0,0,0,34,26.1V13a8,8,0,1,1,16,0Z" id="target_element_2973955817232">
+    </path>
+    <path class="cls-1 right_outer_ear" d="M50,13V36.18A21,21,0,0,0,34,26.1V13a8,8,0,1,1,16,0Z" id="target_element_2973955817312">
+    </path>
+    <path class="cls-3 left_inner_ear" d="M25,13V27.21a20.41,20.41,0,0,0-6,3.3V13a3,3,0,0,1,6,0Z" id="target_element_2973955817392">
+    </path>
+    <path class="cls-4 head_base" d="M53,47A12,12,0,0,1,41,59H23A12,12,0,0,1,11,47a20.94,20.94,0,0,1,8-16.49,20.41,20.41,0,0,1,6-3.3,20.75,20.75,0,0,1,5-1.11,20,20,0,0,1,4,0,20.75,20.75,0,0,1,5,1.11,20.41,20.41,0,0,1,6,3.3A21,21,0,0,1,53,47Z" id="target_element_2973955997760">
+    </path>
+    <path class="cls-1 mouth_curve" d="M28.5,57A4.51,4.51,0,0,1,24,52.5a1,1,0,0,1,2,0,2.5,2.5,0,0,0,5,0,1,1,0,0,1,2,0A4.51,4.51,0,0,1,28.5,57Z" id="target_element_2973955997840">
+    </path>
+    <path class="cls-1 mouth_curve" d="M35.5,57A4.51,4.51,0,0,1,31,52.5a1,1,0,0,1,2,0,2.5,2.5,0,0,0,5,0,1,1,0,0,1,2,0A4.51,4.51,0,0,1,35.5,57Z" id="target_element_2973955997920">
+    </path>
+    <path class="cls-3 right_inner_ear" d="M45,13V30.51a20.41,20.41,0,0,0-6-3.3V13a3,3,0,0,1,6,0Z" id="target_element_2973955998000">
+    </path>
+    <rect class="cls-1 interactive_triggers_and_timing_guidelines" height="3" id="target_element_2973955998080" width="2" x="31" y="50">
+    </rect>
+    <path class="cls-3 nose_tip" d="M32,52h0l-2.23-1.19A1.49,1.49,0,0,1,29,49.48h0A1.43,1.43,0,0,1,30.39,48h3.22A1.43,1.43,0,0,1,35,49.48h0a1.49,1.49,0,0,1-.77,1.33Z" id="target_element_2973955998240">
+    </path>
+    <circle class="cls-5 right_eye" cx="40.5" cy="42.5" id="target_element_2973955998400" r="1.5">
+    </circle>
+    <circle class="cls-5 left_eye" cx="23.5" cy="42.5" id="target_element_2973955998560" r="1.5">
+    </circle>
+   </g>
+  </svg>
+ </body>
+</html>
