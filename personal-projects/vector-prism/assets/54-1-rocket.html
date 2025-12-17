@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>
+   SVG Animation
+  </title>
+  <style>
+   /* Lanes / custom properties for rocket_body motion (added once) */
+    @property --rocket_body-tx1 {
+        syntax: "<length>";
+        inherits: false;
+        initial-value: 0px;
+    }
+    @property --rocket_body-ty1 {
+        syntax: "<length>";
+        inherits: false;
+        initial-value: 0px;
+    }
+    @property --rocket_body-rot1 {
+        syntax: "<angle>";
+        inherits: false;
+        initial-value: 0deg;
+    }
+    @property --rocket_body-sx1 {
+        syntax: "<number>";
+        inherits: false;
+        initial-value: 1;
+    }
+    @property --rocket_body-sy1 {
+        syntax: "<number>";
+        inherits: false;
+        initial-value: 1;
+    }
+
+    /* Keyframes animate only the custom properties (no 'transform' inside keyframes) */
+    @keyframes rocket_body_shift_y {
+        /* subtle bob up to -6px and back to origin (vertical lane) */
+        0%   { --rocket_body-ty1: 0px; }
+        50%  { --rocket_body-ty1: -6px; }
+        100% { --rocket_body-ty1: 0px; }
+    }
+
+    @keyframes rocket_body_tilt {
+        /* tiny forward tilt to imply thrust */
+        0%   { --rocket_body-rot1: 0deg; }
+        50%  { --rocket_body-rot1: -2.2deg; }
+        100% { --rocket_body-rot1: 0deg; }
+    }
+
+    @keyframes rocket_body_breathe_scale {
+        /* micro scale pulse for a soft camera/ship breathing effect */
+        0%   { --rocket_body-sx1: 1;     --rocket_body-sy1: 1; }
+        50%  { --rocket_body-sx1: 1.005; --rocket_body-sy1: 1.005; }
+        100% { --rocket_body-sx1: 1;     --rocket_body-sy1: 1; }
+    }
+
+    /* Composer: apply the lanes to the rocket. 
+       Target both .rocket_body (the path) and .rocket_body-group so the body + fins
+       (logical/visual cluster) move together. Transform origin chosen from
+       the group's center data-center="204.80,272.00" to avoid visual drift or clipping.
+    */
+    .rocket_body,
+    .rocket_body-group {
+        transform-box: fill-box; /* ensure SVG transforms use element bounding box */
+        /* explicit origin (derived from data-center of rocket body group) */
+        transform-origin: 204.8px 272px;
+        will-change: transform;
+        /* Compose transform from animated custom properties (keeps keyframes property-only) */
+        transform: translate(var(--rocket_body-tx1, 0px), var(--rocket_body-ty1, 0px))
+                   rotate(var(--rocket_body-rot1, 0deg))
+                   scale(var(--rocket_body-sx1, 1), var(--rocket_body-sy1, 1));
+        /* Animation lanes: three synchronized animations (aligned indexes) */
+        animation-name: rocket_body_shift_y, rocket_body_tilt, rocket_body_breathe_scale;
+        animation-duration: 3s, 3s, 3s;
+        animation-timing-function: ease-in-out, ease-in-out, ease-in-out;
+        animation-delay: 0s, 0s, 0s; /* phase-start: immediate */
+        animation-iteration-count: infinite, infinite, infinite;
+        animation-direction: normal, normal, normal;
+        animation-fill-mode: both, both, both;
+    }
+
+    /* Respect reduced-motion preference: collapse animations to a single paint state */
+    @media (prefers-reduced-motion: reduce) {
+        .rocket_body,
+        .rocket_body-group {
+            animation-duration: 0.001s, 0.001s, 0.001s;
+            animation-iteration-count: 1, 1, 1;
+            transform: translate(0px, 0px) rotate(0deg) scale(1);
+        }
+    }
+
+    /* Notes:
+       - The three lanes are intentionally independent and lightweight to avoid layout thrash.
+       - We animate custom properties (length/angle/number) so compositing remains GPU-friendly.
+       - transform-origin was set in SVG user-space pixels to align motion with the rocket's visual center (data-center).
+       - This setup avoids collisions with nearby animated elements (fins/exhaust) by using a small vertical offset (-6px) and ultra-subtle scale/rotation.
+    */
+
+/* Added once: custom property lane for left fin rotation (keeps keyframes property-only for compositor) */
+@property --left_side_fin-rot1 {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+/* Soft springy sway for the left fin.
+   - Small amplitude: -1.5deg ↔ 1.5deg to look springy not floppy.
+   - Duration 1.4s, cubic-bezier easing to match the gentle feel of the rocket body.
+   - Negative delay (-0.18s) offsets this fin relative to the rocket_body lanes so motion feels asynchronous.
+   - Keyframes animate only the custom property (no 'transform' inside keyframes) for best performance.
+*/
+@keyframes left_side_fin_sway {
+    0%   { --left_side_fin-rot1: -1.5deg; }
+    100% { --left_side_fin-rot1:  1.5deg; }
+}
+
+/* Composer: apply the lane to the fin path and its logical group so the fin rotates about its root.
+   transform-origin uses the group's data-center (user-space coords) so rotation pivots where the fin meets the body.
+   Keep transform composition outside keyframes and reference the custom property.
+*/
+.left_side_fin,
+.left_side_fin-group {
+    transform-box: fill-box; /* ensure transform uses element bounds */
+    /* transform-origin derived from the SVG group data-center: 203.38,137.29 (user-space px) */
+    transform-origin: 203.38px 137.29px;
+    will-change: transform;
+
+    /* Compose transform from animated custom property only (no transforms in keyframes). */
+    transform: rotate(var(--left_side_fin-rot1, 0deg));
+
+    /* Animation lane: single subtle sway. Aligned to rocket_body timing via a -0.18s phase offset. */
+    animation-name: left_side_fin_sway;
+    animation-duration: 1.4s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-delay: -0.18s; /* phase-shift relative to rocket_body for asynchronous motion */
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-fill-mode: both;
+}
+
+/* Respect reduced-motion preference: collapse to a single paint state */
+@media (prefers-reduced-motion: reduce) {
+    .left_side_fin,
+    .left_side_fin-group {
+        animation-duration: 0.001s;
+        animation-iteration-count: 1;
+        transform: rotate(0deg);
+    }
+}
+
+/* Notes:
+   - This uses a single lightweight custom-property lane so the compositor can animate without layout thrash.
+   - Keeping the transform-origin in SVG user-space pixels aligns the pivot with the visual joint to the rocket body,
+     helping avoid collisions or visual gaps during motion.
+   - The negative animation-delay provides the requested -0.18s start offset relative to the rocket_body lanes.
+*/
+
+/* Right-side fin: subtle inverse-phase sway to complement left_side_fin.
+   - Uses a single custom-property lane (--right_side_fin-rot1) so compositor-only animation occurs.
+   - Duration, easing and amplitude mirror left_side_fin but inverted phase and +0.18s offset.
+   - transform-origin uses the fin group's attachment point in SVG user-space so rotation pivots at the joint.
+   - Kept lightweight for GPU compositing; no 'transform' inside keyframes.
+*/
+
+/* Add the custom-property lane for the right fin rotation (added once). */
+@property --right_side_fin-rot1 {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+/* Inverse sway: 1.5deg -> -1.5deg across the same 1.4s gentle curve used by the left fin. */
+@keyframes right_side_fin_sway {
+    0%   { --right_side_fin-rot1:  1.5deg; }
+    100% { --right_side_fin-rot1: -1.5deg; }
+}
+
+/* Composer rule: apply the lane to the fin path + its logical group so the fin rotates about its joint.
+   - transform-box: fill-box ensures the bounding-box is used.
+   - transform-origin chosen from SVG user-space attachment point (derived from the artwork's layout).
+     If your source includes a data-center on the right_side_fin-group, update the coordinates to match that value;
+     the value below anchors the pivot at the fin->body joint to avoid gaps or collisions during rotation.
+*/
+.right_side_fin,
+.right_side_fin-group {
+    transform-box: fill-box;
+    /* transform-origin should be the user-space attachment point of the right fin.
+       Chosen to align with the artwork's fin joint so the rotation does not separate geometry. */
+    transform-origin: 294.29px 227.74px;
+    will-change: transform;
+
+    /* Compose transform from the animated custom property only (keeps keyframes compositor-friendly). */
+    transform: rotate(var(--right_side_fin-rot1, 0deg));
+
+    /* Animation lane: inverse-phase partner to left_side_fin.
+       - Duration and easing match left_side_fin for cohesion.
+       - Positive 0.18s delay offsets it relative to the left fin's -0.18s, producing natural asymmetry.
+    */
+    animation-name: right_side_fin_sway;
+    animation-duration: 1.4s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    animation-delay: 0.18s; /* +0.18s phase offset relative to left_side_fin */
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation-fill-mode: both;
+}
+
+/* Respect reduced-motion preference: collapse to a single paint state for accessibility/perf. */
+@media (prefers-reduced-motion: reduce) {
+    .right_side_fin,
+    .right_side_fin-group {
+        animation-duration: 0.001s;
+        animation-iteration-count: 1;
+        transform: rotate(0deg);
+    }
+}
+
+/* Lower fin motion lanes (added once) - next free lanes: vertical translation + micro-rotation.
+   Uses compositor-friendly custom properties only (no 'transform' in keyframes) so animation stays GPU-friendly.
+   transform-origin taken from lower_side_fin-group data-center="294.29,227.74" to pivot at the fin root and avoid visual gaps.
+*/
+@property --lower_side_fin-ty1 {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+@property --lower_side_fin-rot1 {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+
+/* Vertical bob lane: 0 -> 3px -> 0 to imply subtle engine vibration transfer */
+@keyframes lower_side_fin_shift_y {
+    0%   { --lower_side_fin-ty1: 0px; }
+    50%  { --lower_side_fin-ty1: 3px; }
+    100% { --lower_side_fin-ty1: 0px; }
+}
+
+/* Micro-rotation lane: -0.8deg -> 0.8deg -> -0.8deg for a soft rocking feel */
+@keyframes lower_side_fin_sway_rot {
+    0%   { --lower_side_fin-rot1: -0.8deg; }
+    50%  { --lower_side_fin-rot1:  0.8deg; }
+    100% { --lower_side_fin-rot1: -0.8deg; }
+}
+
+/* Composer: apply lanes to the fin path + logical group so the whole fin pivots and translates together.
+   The two animations are aligned (same duration/timing) and offset by +0.08s to phase them slightly relative to other fins/body.
+*/
+.lower_side_fin,
+.lower_side_fin-group {
+    transform-box: fill-box;
+    transform-origin: 294.29px 227.74px; /* fin root (user-space) to avoid collision/gaps with the rocket body */
+    will-change: transform;
+
+    /* Compose transform from custom-property lanes only (keeps keyframes compositor-friendly). */
+    transform: translate(var(--lower_side_fin-tx1, 0px), var(--lower_side_fin-ty1, 0px))
+               rotate(var(--lower_side_fin-rot1, 0deg));
+
+    /* Two synchronized lanes: vertical translate + rotation */
+    animation-name: lower_side_fin_shift_y, lower_side_fin_sway_rot;
+    animation-duration: 1.6s, 1.6s;
+    animation-timing-function: ease-in-out, ease-in-out;
+    animation-delay: 0.08s, 0.08s; /* small positive offset to imply engine-coupled vibration */
+    animation-iteration-count: infinite, infinite;
+    animation-direction: normal, normal;
+    animation-fill-mode: both, both;
+}
+
+/* Respect reduced-motion: collapse to a single paint state for accessibility/perf. */
+@media (prefers-reduced-motion: reduce) {
+    .lower_side_fin,
+    .lower_side_fin-group {
+        animation-duration: 0.001s, 0.001s;
+        animation-iteration-count: 1, 1;
+        transform: translate(0px, 0px) rotate(0deg);
+    }
+}
+
+/* center_window: subtle cabin-light pulse that reacts just after the flame_core.
+   - Uses compositor-only custom properties (no 'transform' inside keyframes).
+   - Lanes: --center_window-sx1 / --center_window-sy1 (scale) and --center_window-op1 (opacity).
+   - Starts ~+0.06s after the flame_core peak to feel reactive to thrust.
+*/
+
+/* Add lanes once for center_window motion (scale + opacity). */
+@property --center_window-sx1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --center_window-sy1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --center_window-op1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+
+/* Scale pulse (1 -> 1.04 -> 1) */
+@keyframes center_window_pulse_scale {
+    0%   { --center_window-sx1: 1;     --center_window-sy1: 1; }
+    50%  { --center_window-sx1: 1.04;  --center_window-sy1: 1.04; }
+    100% { --center_window-sx1: 1;     --center_window-sy1: 1; }
+}
+
+/* Opacity pulse (1 -> 0.88 -> 1) to imply a slight dimming when the flame peaks */
+@keyframes center_window_pulse_opacity {
+    0%   { --center_window-op1: 1;   }
+    50%  { --center_window-op1: 0.88; }
+    100% { --center_window-op1: 1;   }
+}
+
+/* Composer: apply lanes to the window path + its logical group.
+   - transform-box: fill-box so the window scales about its own bounds (avoids calculating user-space pivot).
+   - transform-origin: center center keeps the pulse visually centered on the window and avoids collisions with fins/body.
+   - Two aligned lanes (scale + opacity) with the same duration/timing; a small +0.06s delay syncs after flame_core.
+*/
+.center_window,
+.center_window-group {
+    transform-box: fill-box;
+    transform-origin: center center; /* relative pivot keeps animation robust across layout/scales */
+    will-change: transform, opacity;
+
+    /* compose transform from the custom-property lanes only (keeps keyframes compositor-friendly) */
+    transform: scale(var(--center_window-sx1, 1), var(--center_window-sy1, 1));
+    opacity: var(--center_window-op1, 1);
+
+    /* Two synchronized animation lanes (scale, opacity) */
+    animation-name: center_window_pulse_scale, center_window_pulse_opacity;
+    animation-duration: 1.6s, 1.6s;
+    animation-timing-function: ease-in-out, ease-in-out;
+    animation-delay: 0.06s, 0.06s; /* ~+0.06s after flame_core peak for reactive feel */
+    animation-iteration-count: infinite, infinite;
+    animation-direction: normal, normal;
+    animation-fill-mode: both, both;
+}
+
+/* Respect reduced-motion preference: collapse to a single paint state */
+@media (prefers-reduced-motion: reduce) {
+    .center_window,
+    .center_window-group {
+        animation-duration: 0.001s, 0.001s;
+        animation-iteration-count: 1, 1;
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Notes:
+   - Using fill-box + center origin avoids needing exact user-space coords and prevents visual misalignment with neighboring animated parts.
+   - Animating custom properties (scale + opacity) keeps work on the compositor thread for smooth performance.
+   - Delay is intentionally small (+0.06s) to follow the flame_core's visual peak without feeling disconnected.
+*/
+
+/* Nose stripe: intentionally kept static to preserve the rocket silhouette.
+   - We register a tiny set of compositor-safe custom properties (lanes) once so the element
+     can participate in the same transform/opacity composition model used elsewhere, but
+     we do not start any animations. This keeps the stripe perfectly still and avoids
+     visual clutter near the tip while remaining ready for lightweight future tweaks.
+   - transform-box: fill-box + 'center right' origin positions any potential transform
+     around the stripe's local bounds anchored toward the rocket nose (avoids collisions).
+   - No @keyframes are applied to this selector so the stripe is painted statically on load.
+*/
+
+/* Add the nose_stripe lanes (added once) following the project's lane naming convention. */
+@property --nose_stripe-sx1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --nose_stripe-sy1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --nose_stripe-op1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+
+/* Composer: static composer rule using the custom properties (no animations attached). */
+.nose_stripe,
+.nose_stripe-group {
+    transform-box: fill-box;         /* use element bounds for robust pivoting */
+    transform-origin: center right;  /* anchor toward the rocket tip to avoid visual collisions */
+    will-change: transform, opacity;
+
+    /* Compose transform/op from custom properties so any future lanes remain compositor-friendly.
+       By default these lanes are identity values, so the stripe stays visually static. */
+    transform: scale(var(--nose_stripe-sx1, 1), var(--nose_stripe-sy1, 1));
+    opacity: var(--nose_stripe-op1, 1);
+
+    /* No animation-name here by design: stripe remains static to preserve silhouette.
+       Keeping the rule lightweight avoids additional compositor work and prevents accidental motion. */
+}
+
+/* Respect user's reduced-motion preference (keeps stripe static and removes any runtime effects). */
+@media (prefers-reduced-motion: reduce) {
+    .nose_stripe,
+    .nose_stripe-group {
+        transform: scale(1, 1);
+        opacity: 1;
+    }
+}
+
+/* Notes:
+   - This block intentionally avoids creating active keyframes for the nose stripe (per design).
+   - The chosen origin (center right) aligns with the stripe's placement near the rocket nose so
+     any future micro-adjustments won't produce gaps or collisions with the body or fins.
+   - Keeping the lanes registered (but not animated) ensures compatibility with the existing compositing
+     approach used across this SVG (all transforms via custom properties).
+*/
+
+/* Flame core: compositor-friendly lanes + composer rule (added once) */
+/* Lanes: translations (tx1/tx2, ty1/ty2), scale (sx1/sy1), opacity (op1)
+   We animate color via 'fill' in the flicker keyframes (keeps transforms on custom props only).
+*/
+@property --flame_core-tx1 {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+@property --flame_core-ty1 {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+@property --flame_core-tx2 {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+@property --flame_core-ty2 {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 0px;
+}
+@property --flame_core-sx1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --flame_core-sy1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+@property --flame_core-op1 {
+    syntax: "<number>";
+    inherits: false;
+    initial-value: 1;
+}
+
+/* Main flicker / stretch (scale + opacity + color)
+   - 0%: neutral
+   - 35%: compressed X, stretched Y, dimmer, warmer color (FFB800)
+   - 70%: brief over-stretch X, slight dim
+   - 100%: back to neutral
+   Duration: 0.9s ease-in-out looped to sit harmoniously with existing motion.
+   NOTE: no 'transform' inside keyframes — we only set custom properties here.
+*/
+@keyframes flame_core_flicker {
+    0% {
+        --flame_core-sx1: 1;
+        --flame_core-sy1: 1;
+        --flame_core-op1: 1;
+        fill: #FFD400;
+    }
+    35% {
+        --flame_core-sx1: 0.95;
+        --flame_core-sy1: 1.02;
+        --flame_core-op1: 0.86;
+        fill: #FFB800; /* warm peak */
+    }
+    70% {
+        --flame_core-sx1: 1.05;
+        --flame_core-sy1: 1.05;
+        --flame_core-op1: 0.95;
+        fill: #FFD400;
+    }
+    100% {
+        --flame_core-sx1: 1;
+        --flame_core-sy1: 1;
+        --flame_core-op1: 1;
+        fill: #FFD400;
+    }
+}
+
+/* Fast jitter lane: quick micro-translation to add 'spark' flicker (0.3s).
+   Uses small, non-repetitive-ish pattern across multiple key stops for organic feel.
+*/
+@keyframes flame_core_jitter_fast {
+    0% {
+        --flame_core-tx1: 0px;
+        --flame_core-ty1: 0px;
+    }
+    20% {
+        --flame_core-tx1: -1.2px;
+        --flame_core-ty1: -0.8px;
+    }
+    45% {
+        --flame_core-tx1: 1.5px;
+        --flame_core-ty1: 0.6px;
+    }
+    70% {
+        --flame_core-tx1: -0.8px;
+        --flame_core-ty1: 1.0px;
+    }
+    100% {
+        --flame_core-tx1: 0px;
+        --flame_core-ty1: 0px;
+    }
+}
+
+/* Slower wander lane: larger phase for a relaxed natural drift (1.2s).
+   Smaller amplitude than fast lane so combination reads like subtle turbulence.
+*/
+@keyframes flame_core_jitter_slow {
+    0% {
+        --flame_core-tx2: 0px;
+        --flame_core-ty2: 0px;
+    }
+    30% {
+        --flame_core-tx2: -1.0px;
+        --flame_core-ty2: 1.2px;
+    }
+    60% {
+        --flame_core-tx2: 1.0px;
+        --flame_core-ty2: -0.8px;
+    }
+    100% {
+        --flame_core-tx2: 0px;
+        --flame_core-ty2: 0px;
+    }
+}
+
+/* Composer: apply lanes to flame_core path + its logical group so scaling/translations
+   occur around the flame-tail anchor (data-center from SVG group).
+   transform-origin uses the group's user-space center so stretch visually extends away from the rocket.
+   We compose two translates (tx1/ty1 + tx2/ty2) to combine fast+slow jitter, then scale from sx1/sy1.
+*/
+.flame_core,
+.flame_core-group {
+    transform-box: fill-box;
+    /* transform-origin chosen from the flame_core-group data-center: 60.80,345.60 (user-space px) */
+    transform-origin: 60.8px 345.6px;
+    will-change: transform, opacity, fill;
+
+    /* Compose transforms only from custom properties (no transforms inside keyframes). */
+    transform:
+        translate(var(--flame_core-tx1, 0px), var(--flame_core-ty1, 0px))
+        translate(var(--flame_core-tx2, 0px), var(--flame_core-ty2, 0px))
+        scale(var(--flame_core-sx1, 1), var(--flame_core-sy1, 1));
+
+    opacity: var(--flame_core-op1, 1);
+
+    /* Three coordinated lanes:
+       0: flicker (scale + opacity + color) — 0.9s
+       1: jitter fast — 0.3s (alternate to avoid abrupt jumps)
+       2: jitter slow — 1.2s (alternate, slight phase delay)
+    */
+    animation-name: flame_core_flicker, flame_core_jitter_fast, flame_core_jitter_slow;
+    animation-duration: 0.9s, 0.3s, 1.2s;
+    animation-timing-function: ease-in-out, cubic-bezier(0.4,0,0.2,1), ease-in-out;
+    animation-delay: 0s, 0s, 0.06s; /* small offset on slow lane for natural asynchrony */
+    animation-iteration-count: infinite, infinite, infinite;
+    animation-direction: normal, alternate, alternate;
+    animation-fill-mode: both, both, both;
+}
+
+/* Respect reduced-motion preference: collapse flame to a single paint state for accessibility/perf */
+@media (prefers-reduced-motion: reduce) {
+    .flame_core,
+    .flame_core-group {
+        animation-duration: 0.001s, 0.001s, 0.001s;
+        animation-iteration-count: 1, 1, 1;
+        transform: translate(0px, 0px) scale(1);
+        opacity: 1;
+        fill: #FFD400;
+    }
+}
+
+/* Notes:
+   - Transform-origin uses the flame group's user-space center so the flame elongates away from the rocket tail without visual collision.
+   - All motion-affecting transforms are routed through custom properties (lanes) so keyframes remain compositor-friendly.
+   - Color is animated directly in the flicker keyframes to produce a tight warm↔bright shift at the flicker peak.
+   - Two translated lanes (fast + slow) are combined as sequential translate() calls so the compositor composes them efficiently.
+   - Durations/curves chosen to blend with existing body/fin animations while remaining subtly responsive.
+*/
+
+/* flame_glow: soft pulsing halo under the flame.
+       - Lanes added once (compositor-friendly custom properties).
+       - Pulse: scale 1 -> 1.6 -> 1, opacity 0.55 -> 0.14 -> 0.55, blur 6px -> 14px -> 6px.
+       - Duration = 0.9s to match flame_core flicker; small +0.05s delay so glow peaks just after flame_core.
+       - Transform-origin matches flame_core-group data-center: 60.8px 345.6px (user-space pivot at rocket tail).
+       - Uses mix-blend-mode: screen for additive glow. No 'transform' inside keyframes (only custom props).
+    */
+
+    /* Register lanes (add once) */
+    @property --flame_glow-sx1 {
+        syntax: "<number>";
+        inherits: false;
+        initial-value: 1;
+    }
+    @property --flame_glow-sy1 {
+        syntax: "<number>";
+        inherits: false;
+        initial-value: 1;
+    }
+    @property --flame_glow-op1 {
+        syntax: "<number>";
+        inherits: false;
+        initial-value: 0.55;
+    }
+    @property --flame_glow-blur1 {
+        syntax: "<length>";
+        inherits: false;
+        initial-value: 6px;
+    }
+
+    /* Single combined lane keyframes (keeps lanes aligned and simple for compositor) */
+    @keyframes flame_glow_pulse_combined {
+        0% {
+            --flame_glow-sx1: 1;
+            --flame_glow-sy1: 1;
+            --flame_glow-op1: 0.55;
+            --flame_glow-blur1: 6px;
+        }
+        50% {
+            /* Peak of the halo (bigger, softer, dimmer center) */
+            --flame_glow-sx1: 1.6;
+            --flame_glow-sy1: 1.6;
+            --flame_glow-op1: 0.14;
+            --flame_glow-blur1: 14px;
+        }
+        100% {
+            --flame_glow-sx1: 1;
+            --flame_glow-sy1: 1;
+            --flame_glow-op1: 0.55;
+            --flame_glow-blur1: 6px;
+        }
+    }
+
+    /* Composer rule: apply lanes to the glow element and its logical group */
+    .flame_glow,
+    .flame_glow-group {
+        transform-box: fill-box;
+        /* Pivot at the flame_core group's user-space center so the glow expands away from the rocket tail */
+        transform-origin: 60.8px 345.6px;
+        will-change: transform, filter, opacity;
+        pointer-events: none; /* purely decorative */
+
+        /* Compose transform/op/filter from animated custom properties only (no transforms in keyframes). */
+        transform: scale(var(--flame_glow-sx1, 1), var(--flame_glow-sy1, 1));
+        opacity: var(--flame_glow-op1, 0.55);
+        /* CSS filter blur driven by custom property (keeps the blur value on compositor where possible). */
+        filter: blur(var(--flame_glow-blur1, 6px));
+        /* additive blending keeps glow visually "bright" against dark backgrounds */
+        mix-blend-mode: screen;
+
+        /* Single coordinated lane (scale + opacity + blur) */
+        animation-name: flame_glow_pulse_combined;
+        animation-duration: 0.9s;
+        animation-timing-function: ease-in-out;
+        animation-delay: 0.05s; /* ~+0.05s after flame_core peak for natural expansion */
+        animation-iteration-count: infinite;
+        animation-direction: normal;
+        animation-fill-mode: both;
+    }
+
+    /* Respect reduced-motion preference: collapse to static state for accessibility/perf */
+    @media (prefers-reduced-motion: reduce) {
+        .flame_glow,
+        .flame_glow-group {
+            animation-duration: 0.001s;
+            animation-iteration-count: 1;
+            transform: scale(1);
+            opacity: 0.55;
+            filter: blur(6px);
+        }
+    }
+
+    /* Notes:
+       - This block intentionally uses compositor-friendly custom properties only in @keyframes
+         (no 'transform' or other layout-affecting properties inside keyframes).
+       - Duration and slight positive delay align the glow with the existing flame_core flicker (0.9s),
+         causing the glow to visually peak shortly after the flame's elongation for believable expansion.
+       - Using mix-blend-mode: screen is additive and typically yields the desired halo look; if the host page
+         has a non-black background you may prefer 'lighten' — adjust if necessary.
+       - If you'd rather animate an SVG feGaussianBlur stdDeviation within the SVG filter, the same custom
+         properties can be used to drive that attribute via inline style on the feGaussianBlur element.
+    */
+/* CSS code will be added here */
+  </style>
+ </head>
+ <body>
+  <svg class="icon" height="800px" version="1.1" viewbox="0 0 1024 1024" width="800px" xmlns="http://www.w3.org/2000/svg">
+   <g class="root-animation-group">
+    <g class="rocket_body-group" data-bounds="-364.8,-89.6,774.4,633.6" data-center="204.80,272.00" data-center-relative="569.60,361.60" data-logical-children="left_side_fin,right_side_fin,lower_side_fin,center_window,nose_stripe" data-paint-order="0" data-semantic-type="rocket_body">
+     <path class="icon rocket_body" d="M774.4 249.6C563.2 249.6 384 416 364.8 620.8h44.8c211.2 0 390.4-160 416-364.8-19.2 0-32-6.4-51.2-6.4zM633.6 448c-25.6 0-44.8-19.2-44.8-44.8 0-25.6 19.2-44.8 44.8-44.8 25.6 0 44.8 19.2 44.8 44.8 0 25.6-19.2 44.8-44.8 44.8z m128-51.2c-83.2-32-89.6-108.8-89.6-115.2h19.2S704 358.4 774.4 384l-12.8 12.8z" fill="#17A09A" id="target_element_126690552427072">
+     </path>
+    </g>
+    <g class="left_side_fin-group" data-bounds="0.0,-152.7,406.8,427.2" data-center="203.38,137.29" data-center-relative="203.38,289.96" data-logical-parent="rocket_body" data-paint-order="1" data-semantic-type="left_side_fin">
+     <path class="icon left_side_fin" d="M406.75494 427.249408a51.2 102.4 48.198 1 0-152.66872 136.511179 51.2 102.4 48.198 1 0 152.66872-136.511179Z" fill="#17A09A" id="target_element_126690552430352">
+     </path>
+    </g>
+    <g class="lower_side_fin-group" data-bounds="0.0,-152.7,588.6,608.1" data-center="294.29,227.74" data-center-relative="294.29,380.39" data-logical-parent="rocket_body" data-paint-order="2" data-semantic-type="lower_side_fin">
+     <path class="icon lower_side_fin" d="M588.58621 608.131655a51.2 102.4 48.193 1 0-152.656807 136.524501 51.2 102.4 48.193 1 0 152.656807-136.524501Z" fill="#17A09A" id="target_element_126690552419632">
+     </path>
+    </g>
+    <g class="flame_core-group" data-bounds="-83.2,-76.8,204.8,768.0" data-center="60.80,345.60" data-center-relative="144.00,422.40" data-logical-parent="exhaust" data-paint-order="3" data-semantic-type="flame_core">
+     <path class="icon flame_core" d="M204.8 768c6.4 6.4 57.6-6.4 96-44.8 44.8-38.4 57.6-64 44.8-76.8-6.4-12.8-38.4-6.4-83.2 32-38.4 38.4-64 83.2-57.6 89.6z" fill="#FDD000" id="target_element_126690552427712">
+     </path>
+    </g>
+   </g>
+  </svg>
+ </body>
+</html>
