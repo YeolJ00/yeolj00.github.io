@@ -5,7 +5,8 @@
       "Bash(mkdir -p \"c:/Users/Owner/repos/yeolj00.github.io/personal-projects/beenthere-donethat/js\")",
       "WebFetch(domain:localhost)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8082/)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(grep -r src= /c/Users/Owner/repos/yeolj00.github.io/personal-projects/vector-prism/ --include=*.html)"
     ]
   }
 }
