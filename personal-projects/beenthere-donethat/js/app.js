@@ -56,6 +56,12 @@ async function init() {
 
     setupButtons();
 
+    // Check URL param for Korea view
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('view') === 'korea') {
+        await toggleKoreaMap();
+    }
+
     // Hide loading, show map
     await new Promise(r => setTimeout(r, 800));
     await hideLoadingScreen();
@@ -147,11 +153,9 @@ function setupButtons() {
     // Timeline toggle
     document.getElementById('btn-timeline')?.addEventListener('click', toggleTimeline);
 
-    // Logo click - reset view
+    // Logo click - go back to diary
     document.querySelector('.logo')?.addEventListener('click', () => {
-        if (isKoreaMode) toggleKoreaMap();
-        else resetZoom();
-        closeTripPanel();
+        window.location.href = 'index.html';
     });
 }
 

@@ -8,20 +8,41 @@ const anime = window.anime;
 
 // ===== Loading Screen Animations =====
 export function animateLoadingScreen() {
+    // Split title into individual characters (manual splitText for v3)
+    const titleEl = document.querySelector('.loading-title');
+    if (titleEl) {
+        const text = titleEl.textContent.trim();
+        titleEl.innerHTML = '';
+        titleEl.style.opacity = '1';
+        text.split('').forEach((char, i) => {
+            const span = document.createElement('span');
+            span.className = 'letter';
+            span.textContent = char;
+            span.style.display = 'inline-block';
+            span.style.opacity = '0';
+            span.dataset.char = i;
+            titleEl.appendChild(span);
+        });
+    }
+
     const tl = anime.timeline({ easing: 'easeOutExpo' });
 
+    // Flip-open: each character rotates in from behind (like a flip board)
     tl.add({
-        targets: '.loading-title',
+        targets: '.loading-title .letter',
         opacity: [0, 1],
-        translateY: [30, 0],
+        rotateX: [-90, 0],
+        translateY: [20, 0],
+        delay: anime.stagger(180),
         duration: 800,
+        easing: 'easeOutExpo',
     })
     .add({
         targets: '.loading-subtitle',
         opacity: [0, 1],
         translateY: [20, 0],
         duration: 600,
-    }, '-=400')
+    }, '-=300')
     .add({
         targets: '.loading-dot',
         opacity: [0, 1],

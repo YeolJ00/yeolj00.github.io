@@ -282,3 +282,72 @@ export const SAMPLE_KR_TRIPS = [
         country: 'KR',
     },
 ];
+
+// ========================================
+// Diary - Sample Date Entries
+// ========================================
+export const SAMPLE_DATES = [
+    { id: 'd01', date: '2025-09-14', description: '홍대에서 카페 투어. 딸기 케이크가 너무 맛있었다.', thumbnail: 'https://picsum.photos/seed/d01/300/300', images: ['https://picsum.photos/seed/d01a/400/300','https://picsum.photos/seed/d01b/400/300','https://picsum.photos/seed/d01c/400/300','https://picsum.photos/seed/d01d/400/300','https://picsum.photos/seed/d01e/400/300'] },
+    { id: 'd02', date: '2025-09-21', description: '한강에서 치킨 먹으면서 석양 구경.', thumbnail: 'https://picsum.photos/seed/d02/300/300', images: ['https://picsum.photos/seed/d02a/400/300','https://picsum.photos/seed/d02b/400/300','https://picsum.photos/seed/d02c/400/300','https://picsum.photos/seed/d02d/400/300','https://picsum.photos/seed/d02e/400/300','https://picsum.photos/seed/d02f/400/300'] },
+    { id: 'd03', date: '2025-09-28', description: '이태원 브런치 데이트. 팬케이크 맛집 발견!', thumbnail: 'https://picsum.photos/seed/d03/300/300', images: ['https://picsum.photos/seed/d03a/400/300','https://picsum.photos/seed/d03b/400/300','https://picsum.photos/seed/d03c/400/300','https://picsum.photos/seed/d03d/400/300','https://picsum.photos/seed/d03e/400/300'] },
+    { id: 'd04', date: '2025-10-05', description: '북촌 한옥마을 산책. 한복 입고 사진 많이 찍었다.', thumbnail: 'https://picsum.photos/seed/d04/300/300', images: ['https://picsum.photos/seed/d04a/400/300','https://picsum.photos/seed/d04b/400/300','https://picsum.photos/seed/d04c/400/300','https://picsum.photos/seed/d04d/400/300','https://picsum.photos/seed/d04e/400/300','https://picsum.photos/seed/d04f/400/300','https://picsum.photos/seed/d04g/400/300'] },
+    { id: 'd05', date: '2025-10-12', description: '잠실 롯데월드 데이트. 바이킹 같이 탔다!', thumbnail: 'https://picsum.photos/seed/d05/300/300', images: ['https://picsum.photos/seed/d05a/400/300','https://picsum.photos/seed/d05b/400/300','https://picsum.photos/seed/d05c/400/300','https://picsum.photos/seed/d05d/400/300','https://picsum.photos/seed/d05e/400/300'] },
+    { id: 'd06', date: '2025-10-19', description: '성수동 갤러리 투어. 예쁜 카페도 많았다.', thumbnail: 'https://picsum.photos/seed/d06/300/300', images: ['https://picsum.photos/seed/d06a/400/300','https://picsum.photos/seed/d06b/400/300','https://picsum.photos/seed/d06c/400/300','https://picsum.photos/seed/d06d/400/300','https://picsum.photos/seed/d06e/400/300'] },
+    { id: 'd07', date: '2025-10-26', description: '남산타워 야경 데이트. 자물쇠도 걸었다.', thumbnail: 'https://picsum.photos/seed/d07/300/300', images: ['https://picsum.photos/seed/d07a/400/300','https://picsum.photos/seed/d07b/400/300','https://picsum.photos/seed/d07c/400/300','https://picsum.photos/seed/d07d/400/300','https://picsum.photos/seed/d07e/400/300','https://picsum.photos/seed/d07f/400/300'] },
+    { id: 'd08', date: '2025-11-02', description: '단풍 구경하러 남이섬. 날씨가 완벽했다.', thumbnail: 'https://picsum.photos/seed/d08/300/300', images: ['https://picsum.photos/seed/d08a/400/300','https://picsum.photos/seed/d08b/400/300','https://picsum.photos/seed/d08c/400/300','https://picsum.photos/seed/d08d/400/300','https://picsum.photos/seed/d08e/400/300'] },
+    { id: 'd09', date: '2025-11-09', description: '합정 영화관에서 영화 보고 파스타 먹었다.', thumbnail: 'https://picsum.photos/seed/d09/300/300', images: ['https://picsum.photos/seed/d09a/400/300','https://picsum.photos/seed/d09b/400/300','https://picsum.photos/seed/d09c/400/300','https://picsum.photos/seed/d09d/400/300','https://picsum.photos/seed/d09e/400/300'] },
+    { id: 'd10', date: '2025-11-15', description: '경복궁 야간개장. 한복 대여하고 야경 사진 많이 찍었다.', thumbnail: 'https://picsum.photos/seed/d10/300/300', images: ['https://picsum.photos/seed/d10a/400/300','https://picsum.photos/seed/d10b/400/300','https://picsum.photos/seed/d10c/400/300','https://picsum.photos/seed/d10d/400/300','https://picsum.photos/seed/d10e/400/300','https://picsum.photos/seed/d10f/400/300'] },
+    { id: 'd11', date: '2025-11-23', description: '이케아에서 같이 장보고 집에서 요리해 먹었다.', thumbnail: 'https://picsum.photos/seed/d11/300/300', images: ['https://picsum.photos/seed/d11a/400/300','https://picsum.photos/seed/d11b/400/300','https://picsum.photos/seed/d11c/400/300','https://picsum.photos/seed/d11d/400/300','https://picsum.photos/seed/d11e/400/300'] },
+    { id: 'd12', date: '2025-12-06', description: '크리스마스 마켓 구경. 핫초코랑 슈톨렌 먹었다.', thumbnail: 'https://picsum.photos/seed/d12/300/300', images: ['https://picsum.photos/seed/d12a/400/300','https://picsum.photos/seed/d12b/400/300','https://picsum.photos/seed/d12c/400/300','https://picsum.photos/seed/d12d/400/300','https://picsum.photos/seed/d12e/400/300','https://picsum.photos/seed/d12f/400/300'] },
+    { id: 'd13', date: '2025-12-14', description: '광화문 일루미네이션 축제. 너무 예뻤다.', thumbnail: 'https://picsum.photos/seed/d13/300/300', images: ['https://picsum.photos/seed/d13a/400/300','https://picsum.photos/seed/d13b/400/300','https://picsum.photos/seed/d13c/400/300','https://picsum.photos/seed/d13d/400/300','https://picsum.photos/seed/d13e/400/300'] },
+    { id: 'd14', date: '2025-12-24', description: '크리스마스 이브! 이태원에서 디너.', thumbnail: 'https://picsum.photos/seed/d14/300/300', images: ['https://picsum.photos/seed/d14a/400/300','https://picsum.photos/seed/d14b/400/300','https://picsum.photos/seed/d14c/400/300','https://picsum.photos/seed/d14d/400/300','https://picsum.photos/seed/d14e/400/300','https://picsum.photos/seed/d14f/400/300','https://picsum.photos/seed/d14g/400/300'] },
+    { id: 'd15', date: '2025-12-31', description: '연말 카운트다운. 종각에서 보신각 타종 들었다.', thumbnail: 'https://picsum.photos/seed/d15/300/300', images: ['https://picsum.photos/seed/d15a/400/300','https://picsum.photos/seed/d15b/400/300','https://picsum.photos/seed/d15c/400/300','https://picsum.photos/seed/d15d/400/300','https://picsum.photos/seed/d15e/400/300'] },
+    { id: 'd16', date: '2026-01-04', description: '새해 첫 데이트. 뚝섬 한강공원 산책.', thumbnail: 'https://picsum.photos/seed/d16/300/300', images: ['https://picsum.photos/seed/d16a/400/300','https://picsum.photos/seed/d16b/400/300','https://picsum.photos/seed/d16c/400/300','https://picsum.photos/seed/d16d/400/300','https://picsum.photos/seed/d16e/400/300'] },
+    { id: 'd17', date: '2026-01-11', description: '연남동 빈티지 숍 투어. 귀여운 악세사리 샀다.', thumbnail: 'https://picsum.photos/seed/d17/300/300', images: ['https://picsum.photos/seed/d17a/400/300','https://picsum.photos/seed/d17b/400/300','https://picsum.photos/seed/d17c/400/300','https://picsum.photos/seed/d17d/400/300','https://picsum.photos/seed/d17e/400/300'] },
+    { id: 'd18', date: '2026-01-25', description: '설날 연휴에 같이 떡국 끓여 먹었다.', thumbnail: 'https://picsum.photos/seed/d18/300/300', images: ['https://picsum.photos/seed/d18a/400/300','https://picsum.photos/seed/d18b/400/300','https://picsum.photos/seed/d18c/400/300','https://picsum.photos/seed/d18d/400/300','https://picsum.photos/seed/d18e/400/300','https://picsum.photos/seed/d18f/400/300'] },
+];
+
+// Diary animation/layout config
+export const DIARY_ANIM = {
+    bubbleSize: 110,
+    bubbleSizeMobile: 85,
+    spiralBaseRadius: 65,
+    entranceStagger: 60,
+    monthTransitionDuration: 500,
+};
+
+// Month accent colors — seasonal soft tones (keyed by calendar month 1-12)
+export const MONTH_COLORS = {
+    // Winter: cool & muted
+    12: '#8FAABE',  // quiet slate blue
+    1:  '#9DB8CC',  // frosty blue
+    2:  '#B0C4D8',  // pale winter sky
+    // Spring: soft pastels
+    3:  '#A7C4A0',  // budding sage
+    4:  '#C3B1D1',  // soft lavender
+    5:  '#E0B6C1',  // cherry blossom
+    // Summer: warm & bright (but muted)
+    6:  '#D4C69A',  // warm wheat
+    7:  '#D9A892',  // peach sand
+    8:  '#C8B895',  // sun-bleached gold
+    // Autumn: earthy & warm
+    9:  '#C4A67D',  // amber
+    10: '#C08B6E',  // terracotta
+    11: '#A38A7B',  // warm walnut
+};
+
+// Month entrance animation presets (keyed by calendar month 1-12)
+export const MONTH_ENTRANCE_PRESETS = {
+    1:  'snowfall',
+    2:  'heartbeat',
+    3:  'bloom',
+    4:  'raindrops',
+    5:  'spiralIn',
+    6:  'wave',
+    7:  'fireworks',
+    8:  'cascade',
+    9:  'fadeSpiral',
+    10: 'scatter',
+    11: 'curtainDrop',
+    12: 'twinkle',
+};
