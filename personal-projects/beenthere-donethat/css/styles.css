@@ -956,6 +956,431 @@ body {
     background: var(--text-sub);
 }
 
+/* ===== DIARY VIEWPORT ===== */
+.diary-viewport {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== SINGLE MONTH VIEW ===== */
+.month-view {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.month-view-header {
+    position: absolute;
+    top: 72px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.month-title-btn {
+    pointer-events: auto;
+    font-family: var(--font-title);
+    font-size: 32px;
+    color: var(--text);
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 3px;
+    padding: 8px 24px;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.month-title-btn:hover {
+    background: var(--bg-alt);
+    color: var(--month-accent, var(--blue));
+}
+
+.month-date-count {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--text-sub);
+    letter-spacing: 1px;
+}
+
+.month-view-canvas {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative radial gradient background */
+.month-view-canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle at 20% 75%, var(--month-accent, var(--blue-light)) 0%, transparent 50%),
+        radial-gradient(circle at 80% 25%, var(--month-accent, var(--yellow-soft)) 0%, transparent 50%);
+    z-index: 0;
+    transition: opacity 0.6s ease;
+}
+
+/* Subtle dot pattern */
+.month-view-canvas::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.025;
+    pointer-events: none;
+    background-image: radial-gradient(circle, var(--text) 1px, transparent 1px);
+    background-size: 28px 28px;
+    z-index: 0;
+}
+
+/* ===== DATE BUBBLE (Polaroid style) ===== */
+.date-bubble {
+    position: absolute;
+    background: #fff;
+    padding: 6px 6px 28px 6px;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10), 0 6px 20px rgba(0,0,0,0.08);
+    cursor: pointer;
+    will-change: transform;
+    transition: box-shadow 0.3s ease;
+    z-index: 10;
+}
+
+[data-theme="dark"] .date-bubble {
+    background: #2a2a30;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.date-bubble:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.12);
+    z-index: 20;
+}
+
+.date-bubble-img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    background-size: cover;
+    background-position: center;
+    border-radius: 1px;
+}
+
+.date-bubble-date {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 5px 6px;
+    color: var(--text-sub);
+    font-size: 11px;
+    font-weight: 500;
+    text-align: center;
+    font-family: var(--font-body);
+    letter-spacing: 0.5px;
+}
+
+[data-theme="dark"] .date-bubble-date {
+    color: #9E998F;
+}
+
+/* ===== ALL MONTHS OVERVIEW ===== */
+.months-overview {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 100px 32px 100px;
+}
+
+.overview-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.overview-title {
+    font-family: var(--font-title);
+    font-size: 28px;
+    color: var(--text);
+    letter-spacing: 2px;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Overview card: a "box" of stacked polaroids */
+.overview-month-card {
+    cursor: pointer;
+    text-align: center;
+    padding: 12px 8px;
+    transition: transform 0.3s ease;
+}
+
+.overview-month-card:hover {
+    transform: scale(1.03);
+}
+
+.overview-card-stack {
+    position: relative;
+    width: 130px;
+    height: 150px;
+    margin: 0 auto 12px;
+}
+
+/* Individual polaroid in the stack */
+.overview-card-polaroid {
+    position: absolute;
+    background: #fff;
+    padding: 5px 5px 20px 5px;
+    border-radius: 2px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.10), 0 4px 14px rgba(0,0,0,0.07);
+    width: 100px;
+    left: 50%;
+    top: 50%;
+    transform-origin: center center;
+}
+
+[data-theme="dark"] .overview-card-polaroid {
+    background: #2a2a30;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.2);
+}
+
+.overview-card-polaroid img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+    border-radius: 1px;
+}
+
+.overview-card-label {
+    font-family: var(--font-title);
+    font-size: 17px;
+    color: var(--text);
+    letter-spacing: 1px;
+}
+
+.overview-card-count {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 2px;
+}
+
+/* Year divider in overview grid */
+.overview-year-header {
+    grid-column: 1 / -1;
+    font-family: var(--font-title);
+    font-size: 36px;
+    color: var(--text);
+    opacity: 0.25;
+    letter-spacing: 6px;
+    padding: 20px 0 4px;
+    text-align: center;
+}
+
+/* ===== MONTH NAVIGATION BAR ===== */
+.month-nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 80;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 12px 12px 56px;
+    transform: translateY(100%);
+    transition: transform 0.4s ease;
+}
+
+.month-nav-bar.visible {
+    transform: translateY(0);
+}
+
+.month-nav-overview-btn {
+    position: absolute;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-sub);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.month-nav-overview-btn:hover {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+}
+
+.month-nav-pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: 1;
+}
+
+.month-nav-pills::-webkit-scrollbar {
+    display: none;
+}
+
+.month-nav-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-sub);
+    font-size: 13px;
+    font-family: var(--font-body);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.month-nav-btn:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.month-nav-btn.active {
+    background: var(--month-accent, var(--blue));
+    border-color: var(--month-accent, var(--blue));
+    color: white;
+}
+
+/* ===== LOADING TITLE LETTERS (flip-open) ===== */
+.loading-title {
+    perspective: 600px;
+}
+
+.loading-title .letter {
+    display: inline-block;
+    opacity: 0;
+    transform-origin: center bottom;
+}
+
+/* ===== DATE DETAIL PANEL ===== */
+.date-detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    z-index: 300;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.date-detail-overlay.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.date-detail-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.92);
+    width: 520px;
+    max-width: 92vw;
+    max-height: 85vh;
+    background: var(--surface);
+    z-index: 301;
+    border-radius: 24px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2), 0 0 0 1px var(--border);
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.date-detail-header {
+    position: relative;
+    height: 280px;
+    overflow: hidden;
+    border-radius: 24px 24px 0 0;
+}
+
+.date-detail-header img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.date-detail-header-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 24px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.6));
+    color: white;
+}
+
+.date-detail-title {
+    font-family: var(--font-title);
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.date-detail-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(8px);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.date-detail-close:hover {
+    background: rgba(255,255,255,0.35);
+    transform: rotate(90deg);
+}
+
+.date-detail-body {
+    padding: 24px;
+}
+
+/* Dark theme icon fix for diary header buttons */
+[data-theme="dark"] .header-btn img {
+    filter: invert(80%) sepia(5%) saturate(300%) brightness(1.1) !important;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .header {
@@ -981,5 +1406,50 @@ body {
 
     .timeline-content {
         padding: 12px 16px;
+    }
+
+    /* Diary responsive */
+    .month-title-btn {
+        font-size: 24px;
+    }
+
+    .date-bubble {
+        border-width: 2px;
+    }
+
+    .overview-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .overview-card-stack {
+        width: 100px;
+        height: 120px;
+    }
+
+    .overview-card-polaroid {
+        width: 80px;
+    }
+
+    .months-overview {
+        padding: 80px 16px 100px;
+    }
+
+    .overview-card-label {
+        font-size: 15px;
+    }
+
+    .month-nav-bar {
+        padding: 8px 8px 8px 50px;
+    }
+
+    .date-detail-panel {
+        width: 100%;
+        max-width: 100vw;
+        border-radius: 16px;
+    }
+
+    .date-detail-header {
+        height: 200px;
     }
 }

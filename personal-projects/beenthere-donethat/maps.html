@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>머문자리 - 지도</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen">
+        <div class="loading-title">머문자리</div>
+        <div class="loading-subtitle">내가 머문 모든 곳의 기록</div>
+        <div class="loading-dots">
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+            <div class="loading-dot"></div>
+        </div>
+    </div>
+
+    <!-- App -->
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">머문자리</div>
+            <div class="header-controls">
+                <!-- Back to Diary -->
+                <a href="index.html" class="header-btn" title="다이어리">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        <line x1="9" y1="10" x2="15" y2="10"/>
+                        <line x1="12" y1="7" x2="12" y2="13"/>
+                    </svg>
+                </a>
+                <!-- Filter -->
+                <button class="header-btn" id="btn-filter" title="필터">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                </button>
+                <!-- Timeline -->
+                <button class="header-btn" id="btn-timeline" title="타임라인">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"/>
+                        <circle cx="7" cy="12" r="2" fill="currentColor"/>
+                        <circle cx="14" cy="12" r="2" fill="currentColor"/>
+                        <circle cx="19" cy="12" r="2" fill="currentColor"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Korea Map Toggle (separate, bigger button below header controls) -->
+        <button class="map-switcher-btn" id="btn-korea" title="한국 지도">
+            <img class="map-switcher-icon" id="korea-btn-icon" src="assets/korea-icon.svg" alt="Korea">
+            <span class="map-switcher-label" id="korea-btn-label">한국</span>
+        </button>
+
+        <!-- Map -->
+        <div class="map-container" id="map-container"></div>
+
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+            <button class="zoom-btn" id="btn-zoom-in" title="확대">+</button>
+            <div class="zoom-level">100%</div>
+            <button class="zoom-btn" id="btn-zoom-out" title="축소">&minus;</button>
+            <button class="zoom-btn" id="btn-zoom-reset" title="초기화" style="margin-top:8px;font-size:14px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                    <path d="M3 3v5h5"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
