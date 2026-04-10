@@ -247,6 +247,19 @@
             font-size: 0.8rem;
         }
         
+        /* CVPR Badge */
+        .conference-badge {
+            display: inline-block;
+            font-size: 1.3rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin: 1rem 0 1.5rem;
+            background: linear-gradient(135deg, #FF6A8A 0%, #9D4FFF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
         /* Responsive */
         @media (max-width: 992px) {
             .teaser-grid {
@@ -256,22 +269,81 @@
                 grid-template-columns: repeat(3, 1fr);
             }
             .stats-grid {
-                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            .stat-card {
+                flex: 0 0 calc(50% - 1rem);
             }
         }
-        
-        @media (max-width: 576px) {
-            .teaser-grid {
-                grid-template-columns: 1fr;
+
+        @media (max-width: 768px) {
+            h1.text-gradient {
+                font-size: 2.4rem !important;
+            }
+            h4.text-muted {
+                font-size: 1.1rem !important;
             }
             .comparison-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .instruction-text {
+                font-size: 0.95rem;
+                padding: 0.75rem 1rem;
+            }
+            .stat-card {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .stat-card .number {
+                font-size: 2.2rem;
+            }
+            pre code {
+                font-size: 0.75rem;
+            }
+            .scalable-demo-container:hover {
+                max-width: 100%;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .teaser-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            .comparison-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
             .pipeline-visual {
                 flex-direction: column;
             }
             .pipeline-arrow {
                 transform: rotate(90deg);
+            }
+            h1.text-gradient {
+                font-size: 2rem !important;
+            }
+            .container {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+            .col-1 {
+                display: none;
+            }
+            .col-10 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .btn-lg {
+                padding: 0.6rem 1.2rem;
+                font-size: 1rem;
+            }
+            img[src="assets/exp_user_study.png"] {
+                max-width: 100% !important;
+            }
+.row.justify-content-center .col-3 {
+                flex: 0 0 50%;
+                max-width: 50%;
             }
         }
     </style>
@@ -304,8 +376,13 @@
                             <p class="text-primary mb-0" style="font-size: 0.85rem;">jchoo@kaist.ac.kr</p>
                         </div>
                     </div>
-                    <div class="row justify-content-center mt-4 mb-4">
+                    <div class="row justify-content-center mt-4 mb-2">
                         <img src="assets/logo_kaist.svg" class="figure-img img-fluid" style="margin: 0px 50px" width="20%">
+                    </div>
+
+                    <!-- Conference Badge -->
+                    <div class="mt-3 mb-2">
+                        <span class="conference-badge">CVPR 2026 · Highlight</span>
                     </div>
                 </div>
 
