@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>머문자리</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="css/styles.css?v=9">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ko.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -21,6 +24,9 @@
 
     <!-- App -->
     <div id="app">
+        <!-- Top cream strip — shrinks/grows between single-month and overview mode -->
+        <div class="top-strip" id="top-strip"></div>
+
         <!-- Header -->
         <header class="header">
             <div class="logo">머문자리</div>
@@ -73,6 +79,13 @@
             </div>
         </div>
     </div>
+
+    <!-- Upload FAB -->
+    <button class="upload-fab" id="upload-fab" aria-label="새 기록 추가">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="24" height="24">
+            <path d="M12 5v14M5 12h14"/>
+        </svg>
+    </button>
 
     <script type="module" src="js/diary.js"></script>
 </body>

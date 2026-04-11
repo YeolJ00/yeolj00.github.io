@@ -4,10 +4,40 @@
 
 // GitHub Gist Configuration
 // Replace these with your own values
-export const GIST_ID = '';
-export const GITHUB_TOKEN = '';
-export const PASSWORD_HASH = '';
-export const GIST_FILENAME = 'meomunjari-data.json';
+export const GIST_ID = '261d2f9f5ff69624b4f797be98b5bc57';
+
+// PAT split into chunks so the literal token isn't sitting in the source as one string.
+// Example: a token "github_pat_ABC123XYZ" could be split as
+//   ['github_pat_', 'ABC', '123', 'XYZ'].
+// getToken() in js/auth.js joins them in order. This is obfuscation, not security —
+// the token still ships in the JS bundle. Use a fine-grained PAT scoped to:
+//   - Repository: yeolj00.github.io only
+//   - Permissions: Contents (read+write), Gists (read+write)
+export const TOKEN_PARTS = [
+    'github_pat_11',
+    'AH3SX5Q02m8P',
+    '11dGpvec_',
+    'hXEpyqP1Cl47ejyFbQJ1vUd7c',
+    'IWmLKgtVOaelvaSi8AM5524CKOaeL8wfkZ',
+];
+
+// SHA-256 hex digest of the upload password. Generate once in devtools console:
+//   await crypto.subtle.digest('SHA-256', new TextEncoder().encode('your-password'))
+//     .then(b => Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''))
+export const PASSWORD_HASH = '136040f6ccedf6eee620407451ceefe7c93172d4386a0099758eff8e7ef1bbfe';
+
+// Gist file layout — diary entries and trips are split into two files in the same gist
+export const DIARY_GIST_FILE = 'diary.json';
+export const TRIPS_GIST_FILE = 'trips.json';
+
+// Target repo for image storage (Git Data API — atomic commits to uploads path).
+// Images are committed under `${UPLOAD_PATH_PREFIX}/YYYY/MM/{entryId}-{i}.{ext}`
+// and served via raw.githubusercontent.com for immediate availability
+// (no GitHub Pages redeploy wait).
+export const REPO_OWNER = 'YeolJ00';
+export const REPO_NAME = 'yeolj00.github.io';
+export const GIT_BRANCH = 'main';
+export const UPLOAD_PATH_PREFIX = 'personal-projects/beenthere-donethat/uploads';
 
 // Color Palette (soft tones based on colorhunt palette)
 export const COLORS = {

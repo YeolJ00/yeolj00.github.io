@@ -1,7 +1,8 @@
 // ========================================
 // Diary Date Data
 // ========================================
-import { GIST_ID, GITHUB_TOKEN, GIST_FILENAME, SAMPLE_DATES } from './config.js';
+import { GIST_ID, DIARY_GIST_FILE, SAMPLE_DATES } from './config.js';
+import { getToken } from './auth.js';
 
 let cachedDates = null;
 
@@ -13,23 +14,23 @@ export async function loadDates() {
     }
 
     try {
+        const token = getToken();
         const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {},
+            headers: token ? { 'Authorization': `token ${token}` } : {},
         });
 
         if (!response.ok) throw new Error(`Gist fetch failed: ${response.status}`);
 
         const gist = await response.json();
-        const file = gist.files[GIST_FILENAME];
+        const file = gist.files[DIARY_GIST_FILE];
 
         if (!file) {
-            console.log('Gist file not found, using sample dates');
+            console.log(`Gist file ${DIARY_GIST_FILE} not found, using sample dates`);
             cachedDates = [...SAMPLE_DATES];
             return cachedDates;
         }
 
         const data = JSON.parse(file.content);
-        // Support both flat array and { dates: [...] } format
         cachedDates = Array.isArray(data) ? data : (data.dates || []);
         return cachedDates;
     } catch (err) {
@@ -37,6 +38,35 @@ export async function loadDates() {
         cachedDates = [...SAMPLE_DATES];
         return cachedDates;
     }
+}
+
+export async function saveDates(dates) {
+    const token = getToken();
+    if (!GIST_ID) throw new Error('GIST_ID not configured in js/config.js');
+    if (!token) throw new Error('TOKEN_PARTS not configured in js/config.js');
+
+    const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `token ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            files: {
+                [DIARY_GIST_FILE]: {
+                    content: JSON.stringify(dates, null, 2),
+                },
+            },
+        }),
+    });
+
+    if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        throw new Error(`Gist save failed: ${response.status} ${body}`);
+    }
+
+    cachedDates = dates;
+    return true;
 }
 
 export function getDates() {

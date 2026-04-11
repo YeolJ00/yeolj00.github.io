@@ -1,7 +1,8 @@
 // ========================================
 // Gist Data Storage
 // ========================================
-import { GIST_ID, GITHUB_TOKEN, GIST_FILENAME, SAMPLE_TRIPS, SAMPLE_KR_TRIPS } from './config.js';
+import { GIST_ID, TRIPS_GIST_FILE, SAMPLE_TRIPS, SAMPLE_KR_TRIPS } from './config.js';
+import { getToken } from './auth.js';
 
 let cachedTrips = null;
 let cachedKrTrips = null;
@@ -16,13 +17,13 @@ export async function loadTrips() {
 
     try {
         const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-            headers: GITHUB_TOKEN ? { 'Authorization': `token ${GITHUB_TOKEN}` } : {},
+            headers: getToken() ? { 'Authorization': `token ${getToken()}` } : {},
         });
 
         if (!response.ok) throw new Error(`Gist fetch failed: ${response.status}`);
 
         const gist = await response.json();
-        const file = gist.files[GIST_FILENAME];
+        const file = gist.files[TRIPS_GIST_FILE];
 
         if (!file) {
             console.log('Gist file not found, using sample data');
@@ -40,7 +41,8 @@ export async function loadTrips() {
 }
 
 export async function saveTrips(trips) {
-    if (!GIST_ID || !GITHUB_TOKEN) {
+    const token = getToken();
+    if (!GIST_ID || !token) {
         console.warn('Gist not configured, cannot save');
         cachedTrips = trips;
         return false;
@@ -50,12 +52,12 @@ export async function saveTrips(trips) {
         const response = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
             method: 'PATCH',
             headers: {
-                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Authorization': `token ${token}`,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 files: {
-                    [GIST_FILENAME]: {
+                    [TRIPS_GIST_FILE]: {
                         content: JSON.stringify(trips, null, 2),
                     },
                 },

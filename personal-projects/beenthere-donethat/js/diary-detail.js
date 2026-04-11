@@ -89,20 +89,18 @@ export async function openDateDetail(dateEntry) {
         </div>
     `;
 
-    // Animate in
+    // Animate in. Scale/opacity live in CSS transitions (triggered by
+    // .visible) so anime.js never rewrites transform and drops the
+    // translate(-50%, -50%) centering.
     panelEl.style.pointerEvents = 'auto';
     overlayEl.classList.add('visible');
     anime({ targets: overlayEl, opacity: [0, 1], duration: 400, easing: 'easeOutQuad' });
 
-    await anime({
-        targets: panelEl,
-        opacity: [0, 1],
-        scale: [0.92, 1],
-        duration: 500,
-        easing: 'easeOutCubic',
-    }).finished;
+    // Force a reflow so the class add triggers a transition from opacity 0.
+    void panelEl.offsetWidth;
+    panelEl.classList.add('visible');
 
-    panelEl.style.transform = 'translate(-50%, -50%) scale(1)';
+    await new Promise(r => setTimeout(r, 500));
 
     // Stagger body content
     const bodyItems = panelEl.querySelectorAll('.trip-panel-dates, .trip-panel-section-title, .trip-panel-comment, .trip-panel-images');
@@ -120,15 +118,8 @@ export async function closeDateDetail() {
         complete: () => overlayEl.classList.remove('visible'),
     });
 
-    await anime({
-        targets: panelEl,
-        opacity: [1, 0],
-        scale: [1, 0.92],
-        duration: 300,
-        easing: 'easeInCubic',
-    }).finished;
-
-    panelEl.style.opacity = '0';
+    panelEl.classList.remove('visible');
+    await new Promise(r => setTimeout(r, 500));
 
     if (onCloseCallback) onCloseCallback();
 }

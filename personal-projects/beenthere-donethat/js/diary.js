@@ -2,6 +2,7 @@
 // 머문자리 - Diary Main Controller (v2)
 // ========================================
 import { loadDates, getDatesByMonth, getMonthList } from './diary-data.js';
+import { initUploadUI, openCreate, openEdit } from './diary-upload-ui.js';
 import { MONTH_COLORS } from './config.js';
 import {
     renderMonthBubbles, renderOverviewCard,
@@ -52,6 +53,11 @@ async function init() {
     // Init UI
     initDateDetail(handleDetailClose);
     initLightbox();
+    initUploadUI(refreshAfterUpload);
+
+    // Wire upload FAB
+    const fab = document.getElementById('upload-fab');
+    if (fab) fab.addEventListener('click', openCreate);
 
     // Build month list
     state.months = getMonthList();
@@ -68,6 +74,7 @@ async function init() {
 
     // Swipe gestures
     setupSwipe();
+    setupLongPress();
 
     // Window resize → re-render current month
     let resizeTimer;
@@ -84,15 +91,25 @@ async function init() {
     await new Promise(r => setTimeout(r, 600));
     await hideLoadingScreen();
 
-    // Render and animate initial month
-    renderSingleMonth(state.activeMonthKey, false);
-    await animateMonthEntrance(monthViewCanvas, state.activeMonthKey);
+    // Render and animate initial month (or empty state if no entries exist yet)
+    if (state.activeMonthKey) {
+        renderSingleMonth(state.activeMonthKey, false);
+        await animateMonthEntrance(monthViewCanvas, state.activeMonthKey);
+    } else {
+        renderEmptyState();
+    }
 
     animateHeaderEntrance();
 
     // Show month nav bar
     monthNavBar.classList.add('visible');
     anime({ targets: monthNavBar, opacity: [0, 1], duration: 500, easing: 'easeOutCubic' });
+}
+
+function renderEmptyState() {
+    monthTitleBtn.textContent = '아직 기록이 없어요';
+    monthDateCount.textContent = '오른쪽 아래 + 버튼으로 첫 기록을 남겨보세요';
+    monthViewCanvas.innerHTML = '';
 }
 
 // ===== Single Month Rendering =====
@@ -153,6 +170,10 @@ async function enterOverview() {
     state.isTransitioning = true;
     state.mode = 'all-months';
 
+    // Grow the cream strip down to cover the 전체 보기 title. CSS height
+    // transition on .top-strip handles the animation.
+    document.body.classList.add('overview-mode');
+
     // Build overview grid grouped by year
     overviewGrid.innerHTML = '';
     let currentYear = null;
@@ -179,10 +200,28 @@ async function exitOverview(monthKey) {
     state.isTransitioning = true;
     state.mode = 'single-month';
 
+    // Hide the month title so it fades in once the strip has shrunk.
+    anime.set(monthViewHeader, { opacity: 0, translateY: -8 });
+
+    // Shrink the cream strip back to just the logo row. CSS height
+    // transition on .top-strip runs concurrently with the view crossfade.
+    document.body.classList.remove('overview-mode');
+
     await transitionFromOverview(monthsOverview, monthView);
 
     state.activeMonthKey = monthKey;
     renderSingleMonth(monthKey, false);
+
+    // Fade the month title into the space the strip just vacated,
+    // then let animateMonthEntrance bring in the date bubbles.
+    anime({
+        targets: monthViewHeader,
+        opacity: [0, 1],
+        translateY: [-8, 0],
+        duration: 550,
+        easing: 'easeOutCubic',
+    });
+
     await animateMonthEntrance(monthViewCanvas, monthKey);
 
     state.isTransitioning = false;
@@ -242,8 +281,14 @@ function setupSwipe() {
 }
 
 // ===== Bubble Click =====
+let suppressNextBubbleClick = false;
+
 function handleBubbleClick(entry, bubble, container) {
     if (state.isTransitioning) return;
+    if (suppressNextBubbleClick) {
+        suppressNextBubbleClick = false;
+        return;
+    }
 
     if (currentFocusBubble) {
         animateBubbleUnfocus(currentFocusBubble, monthViewCanvas);
@@ -252,6 +297,79 @@ function handleBubbleClick(entry, bubble, container) {
     currentFocusBubble = bubble;
     animateBubbleFocus(bubble, monthViewCanvas);
     openDateDetail(entry);
+}
+
+// ===== Long-press → edit =====
+function setupLongPress() {
+    let pressTimer = null;
+    let pressedBubble = null;
+    let startX = 0, startY = 0;
+    const LONG_PRESS_MS = 550;
+    const MOVE_THRESHOLD = 10;
+
+    const start = (e) => {
+        const bubble = e.target.closest('.date-bubble');
+        if (!bubble) return;
+        const point = e.touches ? e.touches[0] : e;
+        startX = point.clientX;
+        startY = point.clientY;
+        pressedBubble = bubble;
+        pressTimer = setTimeout(() => {
+            const id = bubble.dataset.id;
+            const entry = getDatesByMonth(state.activeMonthKey).find(d => d.id === id);
+            if (entry) {
+                suppressNextBubbleClick = true;
+                openEdit(entry);
+            }
+            pressTimer = null;
+            pressedBubble = null;
+        }, LONG_PRESS_MS);
+    };
+
+    const move = (e) => {
+        if (!pressTimer) return;
+        const point = e.touches ? e.touches[0] : e;
+        const dx = Math.abs(point.clientX - startX);
+        const dy = Math.abs(point.clientY - startY);
+        if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+            pressedBubble = null;
+        }
+    };
+
+    const end = () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+            pressedBubble = null;
+        }
+    };
+
+    monthViewCanvas.addEventListener('mousedown', start);
+    monthViewCanvas.addEventListener('mousemove', move);
+    monthViewCanvas.addEventListener('mouseup', end);
+    monthViewCanvas.addEventListener('mouseleave', end);
+    monthViewCanvas.addEventListener('touchstart', start, { passive: true });
+    monthViewCanvas.addEventListener('touchmove', move, { passive: true });
+    monthViewCanvas.addEventListener('touchend', end);
+    monthViewCanvas.addEventListener('touchcancel', end);
+}
+
+// ===== Refresh after upload/edit/delete =====
+async function refreshAfterUpload() {
+    await loadDates();
+    state.months = getMonthList();
+    // If active month no longer exists (e.g., last entry deleted), fall back to latest
+    if (!state.months.includes(state.activeMonthKey)) {
+        state.activeMonthKey = state.months[state.months.length - 1];
+    }
+    // Rebuild nav pills
+    monthNavPills.innerHTML = '';
+    buildMonthNav();
+    if (state.mode === 'single-month' && state.activeMonthKey) {
+        renderSingleMonth(state.activeMonthKey, false);
+    }
 }
 
 function handleDetailClose() {
