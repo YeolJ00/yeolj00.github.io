@@ -85,11 +85,12 @@ export function renderMonthBubbles(container, monthKey, dateEntries, onBubbleCli
         img.style.backgroundImage = `url(${entry.thumbnail})`;
         bubble.appendChild(img);
 
-        // Date label in the white bottom strip
+        // Date label in the white bottom strip — "1/30 (금)" format
+        const WEEKDAYS_SHORT = ['일', '월', '화', '수', '목', '금', '토'];
         const dateLabel = document.createElement('div');
         dateLabel.className = 'date-bubble-date';
         const d = new Date(entry.date);
-        dateLabel.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
+        dateLabel.textContent = `${d.getMonth() + 1}/${d.getDate()} (${WEEKDAYS_SHORT[d.getDay()]})`;
         bubble.appendChild(dateLabel);
 
         bubble.addEventListener('click', () => onBubbleClick(entry, bubble, container));

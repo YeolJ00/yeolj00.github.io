@@ -474,6 +474,42 @@ async function handleSave() {
     }
 }
 
+// Standalone delete — can be called directly from the detail modal
+// without opening the full edit form. Password-gated + confirmation.
+export async function openDelete(entry) {
+    if (!isAuthed()) {
+        await openPasswordPrompt(() => openDelete(entry));
+        return;
+    }
+    if (!window.confirm('이 기록을 삭제할까요? 사진도 함께 삭제됩니다.')) return;
+
+    // Show a minimal progress panel
+    mode = 'delete';
+    editingEntry = entry;
+    panelEl.innerHTML = `
+        <div class="upload-panel-inner">
+            <h2>삭제 중...</h2>
+            <div class="upload-progress" id="upload-progress" style="display:flex;">
+                <div class="upload-progress-fill" style="width:0%"></div>
+                <span class="upload-progress-text">준비 중...</span>
+            </div>
+        </div>
+    `;
+    showPanel();
+    busy = true;
+    try {
+        await deleteEntry(entry.id, reportProgress);
+        if (onSavedCallback) await onSavedCallback();
+        closeUpload();
+    } catch (err) {
+        console.error(err);
+        alert('삭제 실패: ' + (err.message || err));
+        closeUpload();
+    } finally {
+        busy = false;
+    }
+}
+
 async function handleDelete() {
     if (busy || !editingEntry) return;
     if (!window.confirm('이 기록을 삭제할까요? 사진도 함께 삭제됩니다.')) return;

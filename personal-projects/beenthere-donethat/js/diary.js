@@ -2,7 +2,7 @@
 // 머문자리 - Diary Main Controller (v2)
 // ========================================
 import { loadDates, getDatesByMonth, getMonthList } from './diary-data.js';
-import { initUploadUI, openCreate, openEdit } from './diary-upload-ui.js';
+import { initUploadUI, openCreate, openEdit, openDelete } from './diary-upload-ui.js';
 import { MONTH_COLORS } from './config.js';
 import {
     renderMonthBubbles, renderOverviewCard,
@@ -54,6 +54,18 @@ async function init() {
     initDateDetail(handleDetailClose);
     initLightbox();
     initUploadUI(refreshAfterUpload);
+
+    // Expose edit/delete for the detail modal's button handlers.
+    // closeDateDetail runs first so the detail modal is dismissed before
+    // the upload/delete panel opens.
+    window.__editEntry = (entry) => {
+        closeDateDetail();
+        openEdit(entry);
+    };
+    window.__deleteEntry = (entry) => {
+        closeDateDetail();
+        openDelete(entry);
+    };
 
     // Wire upload FAB
     const fab = document.getElementById('upload-fab');
