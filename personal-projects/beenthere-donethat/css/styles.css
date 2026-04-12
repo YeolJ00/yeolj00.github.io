@@ -2,12 +2,13 @@
    머문자리 (Meomunjari) - Travel Blog
    ======================================== */
 
-/* Fonts */
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+/* Fonts — subsetted to Korean syllables + Latin, WOFF2 compressed.
+   Pretendard is loaded via <link rel="preload"> in index.html to avoid
+   the render-blocking @import. */
 
 @font-face {
     font-family: 'SunBatang-Medium';
-    src: url('../assets/fonts/SunBatang-Medium.ttf') format('truetype');
+    src: url('../assets/fonts/SunBatang-Medium.subset.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;
@@ -15,7 +16,7 @@
 
 @font-face {
     font-family: 'NanumGothic';
-    src: url('../assets/fonts/NanumGothic.ttf') format('truetype');
+    src: url('../assets/fonts/NanumGothic.subset.woff2') format('woff2');
     font-weight: normal;
     font-style: normal;
     font-display: swap;

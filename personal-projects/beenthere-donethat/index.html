@@ -4,8 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>머문자리</title>
+    <!-- Preload critical fonts so the browser fetches them before CSS parsing -->
+    <link rel="preload" href="assets/fonts/SunBatang-Medium.subset.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="assets/fonts/NanumGothic.subset.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- Pretendard: loaded as stylesheet link (not @import) to avoid render-blocking -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="css/styles.css?v=12">
+    <link rel="stylesheet" href="css/styles.css?v=13">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ko.js"></script>
