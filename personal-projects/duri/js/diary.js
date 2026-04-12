@@ -263,11 +263,13 @@ function buildMonthNav() {
 // ===== Swipe Gesture =====
 function setupSwipe() {
     let touchStartX = 0;
+    let touchStartY = 0;
     let touchStartTime = 0;
 
     monthViewCanvas.addEventListener('touchstart', (e) => {
         if (e.touches.length === 1) {
             touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
             touchStartTime = Date.now();
         }
     }, { passive: true });
@@ -276,10 +278,11 @@ function setupSwipe() {
         if (state.isTransitioning) return;
         const touch = e.changedTouches[0];
         const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
         const dt = Date.now() - touchStartTime;
 
-        // Require min 50px swipe within 500ms
-        if (Math.abs(dx) > 50 && dt < 500) {
+        // Only trigger on horizontal swipes (dx > dy), ignore vertical scrolls
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
             const currentIndex = state.months.indexOf(state.activeMonthKey);
             if (dx < 0 && currentIndex < state.months.length - 1) {
                 // Swipe left → next month

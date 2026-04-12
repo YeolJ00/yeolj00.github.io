@@ -29,28 +29,27 @@ export function computeMonthLayout(dateEntries, canvasWidth, canvasHeight) {
     else if (count <= 6) size = isMobile ? 100 : 135;
     else size = isMobile ? 90 : 115;
 
-    const gap = size * 0.2;
+    const gapX = size * 0.2;
+    const gapY = size * 0.8;
     const sorted = [...dateEntries].sort((a, b) => a.date.localeCompare(b.date));
 
     // Calculate grid: how many columns fit in the usable area
     const usableWidth = canvasWidth * 0.8;
-    const usableHeight = canvasHeight * 0.6;
-    const cols = Math.max(2, Math.floor(usableWidth / (size + gap)));
+    const cols = Math.max(2, Math.floor(usableWidth / (size + gapX)));
 
-    // Center the grid
-    const gridWidth = cols * (size + gap) - gap;
+    // Top-align below the month header (header ~100px + title ~70px + margin)
+    const gridWidth = cols * (size + gapX) - gapX;
     const rows = Math.ceil(count / cols);
-    const gridHeight = rows * (size + gap) - gap;
     const startX = (canvasWidth - gridWidth) / 2;
-    const startY = (canvasHeight - gridHeight) / 2 + 20; // offset below header
+    const startY = 210;
 
     return sorted.map((entry, i) => {
         const col = i % cols;
         const row = Math.floor(i / cols);
 
         // Base grid position
-        const baseX = startX + col * (size + gap);
-        const baseY = startY + row * (size + gap);
+        const baseX = startX + col * (size + gapX);
+        const baseY = startY + row * (size + gapY);
 
         // Add organic jitter
         const x = baseX + rand(-8, 8);
@@ -97,6 +96,16 @@ export function renderMonthBubbles(container, monthKey, dateEntries, onBubbleCli
 
         container.appendChild(bubble);
     });
+
+    // Bubbles are absolutely positioned so they don't create content height.
+    // Insert a spacer div to make the container scrollable.
+    if (layout.length) {
+        const maxBottom = Math.max(...layout.map(l => l.y + l.size)) + 100;
+        const spacer = document.createElement('div');
+        spacer.style.height = `${maxBottom}px`;
+        spacer.style.pointerEvents = 'none';
+        container.appendChild(spacer);
+    }
 
     return layout;
 }
