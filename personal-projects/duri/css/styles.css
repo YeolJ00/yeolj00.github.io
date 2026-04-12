@@ -683,16 +683,15 @@ body.overview-mode .top-strip::after {
 }
 
 .trip-panel-images {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 8px;
     margin-bottom: 24px;
 }
 
 .trip-panel-images img {
+    display: block;
     width: 100%;
-    aspect-ratio: 4/3;
-    object-fit: cover;
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -703,8 +702,18 @@ body.overview-mode .top-strip::after {
     box-shadow: 0 4px 16px var(--shadow-md);
 }
 
-.trip-panel-images img:first-child:last-child {
-    grid-column: 1 / -1;
+/* Smart layout rows */
+.img-row-full { width: 100%; }
+.img-row-full img { width: 100%; }
+
+.img-row-pair {
+    display: flex;
+    gap: 8px;
+}
+.img-row-pair img {
+    flex: 1;
+    min-width: 0;
+    object-fit: cover;
 }
 
 /* ===== IMAGE LIGHTBOX ===== */

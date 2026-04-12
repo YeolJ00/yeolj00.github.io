@@ -10,6 +10,51 @@ let panelEl = null;
 let isOpen = false;
 let onCloseCallback = null;
 
+// ===== Smart image layout =====
+// Preloads images off-screen to get dimensions, then builds the final
+// row structure in one shot — no DOM rearrangement, no flash.
+function preloadImage(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve({ src, w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ src, w: 1, h: 1 });
+        img.src = src;
+    });
+}
+
+function buildSmartImagesHtml(imageInfos) {
+    if (imageInfos.length === 0) return '';
+    if (imageInfos.length === 1) {
+        const { src } = imageInfos[0];
+        return `<img src="${escapeHtml(src)}" alt="사진" onclick="window.__openLightbox('${escapeHtml(src)}')">`;
+    }
+
+    let html = '';
+    const portraitBuf = [];
+
+    const flushPortraits = () => {
+        if (!portraitBuf.length) return;
+        html += '<div class="img-row img-row-pair">';
+        portraitBuf.splice(0).forEach(({ src }) => {
+            html += `<img src="${escapeHtml(src)}" alt="사진" onclick="window.__openLightbox('${escapeHtml(src)}')">`;
+        });
+        html += '</div>';
+    };
+
+    imageInfos.forEach(info => {
+        const ratio = info.w / info.h;
+        if (ratio > 1.2) {
+            flushPortraits();
+            html += `<div class="img-row img-row-full"><img src="${escapeHtml(info.src)}" alt="사진" onclick="window.__openLightbox('${escapeHtml(info.src)}')"></div>`;
+        } else {
+            portraitBuf.push(info);
+            if (portraitBuf.length === 2) flushPortraits();
+        }
+    });
+    flushPortraits();
+    return html;
+}
+
 export function initDateDetail(onClose) {
     onCloseCallback = onClose;
 
@@ -50,9 +95,10 @@ export async function openDateDetail(dateEntry) {
     isOpen = true;
 
     const images = dateEntry.images || [];
-    const imagesHtml = images.map(src =>
-        `<img src="${escapeHtml(src)}" alt="사진" loading="lazy" onclick="window.__openLightbox('${escapeHtml(src)}')">`
-    ).join('');
+
+    // Preload images off-screen to get dimensions before building DOM
+    const imageInfos = await Promise.all(images.map(src => preloadImage(src)));
+    const imagesHtml = buildSmartImagesHtml(imageInfos);
 
     panelEl.innerHTML = `
         <div class="date-detail-header">
@@ -120,14 +166,18 @@ export async function openDateDetail(dateEntry) {
     if (editBtn && window.__editEntry) editBtn.addEventListener('click', () => window.__editEntry(dateEntry));
     if (deleteBtn && window.__deleteEntry) deleteBtn.addEventListener('click', () => window.__deleteEntry(dateEntry));
 
+    // Hide body items BEFORE panel becomes visible, so the panel
+    // fade-in doesn't reveal them prematurely.
+    const bodyItems = panelEl.querySelectorAll('.trip-panel-dates, .trip-panel-section-title, .trip-panel-comment, .trip-panel-images');
+    anime.set(bodyItems, { opacity: 0, translateY: 15 });
+
     // Force a reflow so the class add triggers a transition from opacity 0.
     void panelEl.offsetWidth;
     panelEl.classList.add('visible');
 
     await new Promise(r => setTimeout(r, 500));
 
-    // Stagger body content
-    const bodyItems = panelEl.querySelectorAll('.trip-panel-dates, .trip-panel-section-title, .trip-panel-comment, .trip-panel-images');
+    // Now reveal body content with stagger
     staggerFadeIn(bodyItems, 80);
 }
 

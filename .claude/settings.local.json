@@ -9,7 +9,8 @@
       "Bash(grep -r src= /c/Users/Owner/repos/yeolj00.github.io/personal-projects/vector-prism/ --include=*.html)",
       "Bash(git count-objects:*)",
       "Bash(git cat-file:*)",
-      "Read(//c/Users/Owner/repos/yeolj00.github.io/**)"
+      "Read(//c/Users/Owner/repos/yeolj00.github.io/**)",
+      "Bash(npx http-server:*)"
     ]
   }
 }
