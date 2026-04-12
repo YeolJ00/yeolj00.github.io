@@ -17,6 +17,7 @@ let draftSaveTimer = null;
 let busy = false;
 let onSavedCallback = null;
 let datePickerInstance = null;  // flatpickr instance, destroyed on close
+let wakeLock = null;            // Screen Wake Lock to prevent tab suspension during upload
 
 // ========== Init ==========
 
@@ -528,6 +529,21 @@ async function handleDelete() {
     }
 }
 
+async function acquireWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch { /* Wake Lock not available or denied — non-critical */ }
+}
+
+function releaseWakeLock() {
+    if (wakeLock) {
+        try { wakeLock.release(); } catch {}
+        wakeLock = null;
+    }
+}
+
 function setBusyUI(b) {
     const progress = panelEl.querySelector('#upload-progress');
     // Inline style beats any stylesheet rule in specificity — avoids the
@@ -537,6 +553,9 @@ function setBusyUI(b) {
         if (el.classList.contains('upload-close')) return;
         el.disabled = b;
     });
+    // Keep the screen/tab alive while uploading
+    if (b) acquireWakeLock();
+    else releaseWakeLock();
 }
 
 function reportProgress(p) {

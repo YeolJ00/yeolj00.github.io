@@ -35,11 +35,13 @@ export async function createEntry({ date, description, files, thumbnailIndex = 0
         const safeThumbIdx = Math.max(0, Math.min(thumbnailIndex | 0, files.length - 1));
 
         onProgress({ phase: 'resize', current: 0, total: files.length });
-        const fullItems = [];
-        for (let i = 0; i < files.length; i++) {
-            fullItems.push(await makeFullSize(files[i]));
-            onProgress({ phase: 'resize', current: i + 1, total: files.length });
-        }
+        let resizedCount = 0;
+        const fullItems = await Promise.all(files.map(async (f) => {
+            const item = await makeFullSize(f);
+            resizedCount++;
+            onProgress({ phase: 'resize', current: resizedCount, total: files.length });
+            return item;
+        }));
         const thumbItem = await makeThumbnail(files[safeThumbIdx]);
 
         onProgress({ phase: 'commit-start' });
@@ -90,13 +92,15 @@ export async function editEntry(entryId, { date, description, removedImageUrls =
         const oldImages = entry.images || [];
         const keptImages = oldImages.filter(u => !removedImageUrls.includes(u));
 
-        // Resize new files
+        // Resize new files in parallel
         onProgress({ phase: 'resize', current: 0, total: addedFiles.length });
-        const addItems = [];
-        for (let i = 0; i < addedFiles.length; i++) {
-            addItems.push(await makeFullSize(addedFiles[i]));
-            onProgress({ phase: 'resize', current: i + 1, total: addedFiles.length });
-        }
+        let editResizedCount = 0;
+        const addItems = await Promise.all(addedFiles.map(async (f) => {
+            const item = await makeFullSize(f);
+            editResizedCount++;
+            onProgress({ phase: 'resize', current: editResizedCount, total: addedFiles.length });
+            return item;
+        }));
 
         // Resolve the thumbnail directive from thumbChoice. If the user didn't touch the
         // star picker, fall back to the auto-regen heuristic: if the first kept image is

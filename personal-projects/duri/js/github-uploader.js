@@ -98,11 +98,23 @@ async function buildAtomicCommit({ addEntries = [], deletePaths = [], message, o
     const parentSha = await getCurrentRef();
     const baseTreeSha = await getCommitTreeSha(parentSha);
 
+    // Upload blobs in parallel — they're independent API calls that each
+    // return a SHA. Parallelising this is the single biggest speed win
+    // because blob uploads are the heaviest network step.
+    const CONCURRENCY = 4;
+    let uploadedCount = 0;
     const treeEntries = [];
-    for (let i = 0; i < addEntries.length; i++) {
-        if (onProgress) onProgress({ phase: 'asset-upload', current: i + 1, total: addEntries.length });
-        const sha = await createBlob(addEntries[i].blob);
-        treeEntries.push({ path: addEntries[i].path, mode: '100644', type: 'blob', sha });
+
+    // Process in batches of CONCURRENCY to avoid hammering the API
+    for (let start = 0; start < addEntries.length; start += CONCURRENCY) {
+        const batch = addEntries.slice(start, start + CONCURRENCY);
+        const results = await Promise.all(batch.map(async (entry) => {
+            const sha = await createBlob(entry.blob);
+            uploadedCount++;
+            if (onProgress) onProgress({ phase: 'asset-upload', current: uploadedCount, total: addEntries.length });
+            return { path: entry.path, mode: '100644', type: 'blob', sha };
+        }));
+        treeEntries.push(...results);
     }
     for (const path of deletePaths) {
         treeEntries.push({ path, mode: '100644', type: 'blob', sha: null });
