@@ -671,6 +671,7 @@ body.overview-mode .top-strip::after {
     line-height: 1.7;
     color: var(--text);
     margin-bottom: 24px;
+    white-space: pre-wrap;
 }
 
 .trip-panel-section-title {
