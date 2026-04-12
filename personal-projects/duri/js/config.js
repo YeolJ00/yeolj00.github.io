@@ -37,7 +37,7 @@ export const TRIPS_GIST_FILE = 'trips.json';
 export const REPO_OWNER = 'YeolJ00';
 export const REPO_NAME = 'yeolj00.github.io';
 export const GIT_BRANCH = 'main';
-export const UPLOAD_PATH_PREFIX = 'personal-projects/beenthere-donethat/uploads';
+export const UPLOAD_PATH_PREFIX = 'personal-projects/duri/uploads';
 
 // Color Palette (soft tones based on colorhunt palette)
 export const COLORS = {
