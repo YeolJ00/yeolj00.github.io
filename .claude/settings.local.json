@@ -6,7 +6,10 @@
       "WebFetch(domain:localhost)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8082/)",
       "Bash(node -e \":*)",
-      "Bash(grep -r src= /c/Users/Owner/repos/yeolj00.github.io/personal-projects/vector-prism/ --include=*.html)"
+      "Bash(grep -r src= /c/Users/Owner/repos/yeolj00.github.io/personal-projects/vector-prism/ --include=*.html)",
+      "Bash(git count-objects:*)",
+      "Bash(git cat-file:*)",
+      "Read(//c/Users/Owner/repos/yeolj00.github.io/**)"
     ]
   }
 }

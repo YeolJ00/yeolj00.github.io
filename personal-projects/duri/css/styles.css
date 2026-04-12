@@ -1972,14 +1972,10 @@ body.overview-mode .top-strip::after {
 .flatpickr-days {
     border: none;
 }
-.dayContainer {
-    padding: 4px 0;
-}
 .flatpickr-day {
     color: var(--text);
     border-radius: 10px;
     font-weight: 500;
-    max-width: 40px;
     height: 36px;
     line-height: 36px;
     margin: 1px 0;
