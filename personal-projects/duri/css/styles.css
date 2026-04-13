@@ -1092,6 +1092,11 @@ body.overview-mode .top-strip::after {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    overscroll-behavior: none;
+}
+
+@keyframes ptr-spin {
+    to { transform: rotate(360deg); }
 }
 
 /* Decorative radial gradient background */
@@ -1931,17 +1936,7 @@ body.overview-mode .top-strip::after {
     padding: 6px 10px 10px;
     width: auto;
 }
-.flatpickr-innerContainer,
-.flatpickr-rContainer {
-    width: 100%;
-}
-.flatpickr-days {
-    width: 100%;
-}
 .dayContainer {
-    width: 100%;
-    min-width: 0;
-    max-width: none;
     padding: 4px 2px;
 }
 .flatpickr-calendar.arrowTop::before,
@@ -2166,6 +2161,8 @@ body.overview-mode .top-strip::after {
     }
 
     .upload-panel.visible {
+        /* Use dvh so the panel repositions when the virtual keyboard opens */
+        max-height: 92dvh;
         transform: translateY(0);
     }
 

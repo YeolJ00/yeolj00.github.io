@@ -164,6 +164,10 @@ function openPasswordPrompt(onSuccess) {
             resolve(false);
         });
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+        // On mobile, scroll the input into view when the virtual keyboard opens
+        input.addEventListener('focus', () => {
+            setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+        });
         setTimeout(() => input.focus(), 50);
     });
 }

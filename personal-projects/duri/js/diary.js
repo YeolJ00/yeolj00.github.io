@@ -87,8 +87,6 @@ async function init() {
     // Swipe gestures & pull-to-refresh
     setupSwipe();
     setupLongPress();
-    setupPullToRefresh();
-    setupOverviewPullToRefresh();
 
     // Window resize → re-render current month
     let resizeTimer;
@@ -375,15 +373,17 @@ function setupLongPress() {
 
 // ===== Pull-to-refresh =====
 function setupPullToRefresh() {
-    const threshold = 120; // px to pull before triggering
+    const threshold = 120;
     let startY = 0;
     let pulling = false;
-    let indicator = null;
 
-    // Create the pull indicator element
-    indicator = document.createElement('div');
+    const indicator = document.createElement('div');
     indicator.className = 'pull-to-refresh-indicator';
-    indicator.textContent = '새로고침';
+    indicator.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>`;
     monthViewCanvas.parentNode.insertBefore(indicator, monthViewCanvas);
 
     monthViewCanvas.addEventListener('touchstart', (e) => {
@@ -400,7 +400,7 @@ function setupPullToRefresh() {
             const progress = Math.min(dy / threshold, 1);
             indicator.style.opacity = progress;
             indicator.style.transform = `translateY(${Math.min(dy * 0.4, 60)}px)`;
-            indicator.textContent = progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침';
+            indicator.querySelector('svg').style.transform = `rotate(${progress * 180}deg)`;
         } else {
             indicator.style.opacity = 0;
             indicator.style.transform = 'translateY(0)';
@@ -414,24 +414,27 @@ function setupPullToRefresh() {
         indicator.style.opacity = 0;
         indicator.style.transform = 'translateY(0)';
         if (wasTriggered) {
-            indicator.textContent = '새로고침 중...';
             indicator.style.opacity = 1;
+            indicator.querySelector('svg').style.animation = 'ptr-spin 0.8s linear infinite';
             await refreshAfterUpload();
+            indicator.querySelector('svg').style.animation = '';
             indicator.style.opacity = 0;
         }
     });
 }
 
-// Also for overview
 function setupOverviewPullToRefresh() {
     const threshold = 120;
     let startY = 0;
     let pulling = false;
-    let indicator = null;
 
-    indicator = document.createElement('div');
+    const indicator = document.createElement('div');
     indicator.className = 'pull-to-refresh-indicator';
-    indicator.textContent = '새로고침';
+    indicator.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <polyline points="1 4 1 10 7 10"/>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+        </svg>`;
     monthsOverview.insertBefore(indicator, monthsOverview.firstChild);
 
     monthsOverview.addEventListener('touchstart', (e) => {
@@ -448,7 +451,7 @@ function setupOverviewPullToRefresh() {
             const progress = Math.min(dy / threshold, 1);
             indicator.style.opacity = progress;
             indicator.style.transform = `translateY(${Math.min(dy * 0.4, 60)}px)`;
-            indicator.textContent = progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침';
+            indicator.querySelector('svg').style.transform = `rotate(${progress * 180}deg)`;
         } else {
             indicator.style.opacity = 0;
             indicator.style.transform = 'translateY(0)';
@@ -462,8 +465,8 @@ function setupOverviewPullToRefresh() {
         indicator.style.opacity = 0;
         indicator.style.transform = 'translateY(0)';
         if (wasTriggered) {
-            indicator.textContent = '새로고침 중...';
             indicator.style.opacity = 1;
+            indicator.querySelector('svg').style.animation = 'ptr-spin 0.8s linear infinite';
             await refreshAfterUpload();
             if (state.mode === 'all-months') {
                 overviewGrid.innerHTML = '';
@@ -482,6 +485,7 @@ function setupOverviewPullToRefresh() {
                     overviewGrid.appendChild(card);
                 });
             }
+            indicator.querySelector('svg').style.animation = '';
             indicator.style.opacity = 0;
         }
     });
