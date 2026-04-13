@@ -22,12 +22,8 @@ export function computeMonthLayout(dateEntries, canvasWidth, canvasHeight) {
     const isMobile = window.innerWidth <= 768;
     const count = dateEntries.length;
 
-    // Adaptive bubble size: fewer dates → larger, more dates → smaller
-    let size;
-    if (count <= 2) size = isMobile ? 140 : 180;
-    else if (count <= 4) size = isMobile ? 120 : 155;
-    else if (count <= 6) size = isMobile ? 100 : 135;
-    else size = isMobile ? 90 : 115;
+    // Fixed bubble size — scroll for more, don't shrink
+    const size = isMobile ? 140 : 180;
 
     const gapX = size * 0.2;
     const gapY = size * 0.8;

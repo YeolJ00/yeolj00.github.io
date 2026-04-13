@@ -84,9 +84,11 @@ async function init() {
     // Overview button in nav bar
     document.getElementById('btn-overview').addEventListener('click', enterOverview);
 
-    // Swipe gestures
+    // Swipe gestures & pull-to-refresh
     setupSwipe();
     setupLongPress();
+    setupPullToRefresh();
+    setupOverviewPullToRefresh();
 
     // Window resize → re-render current month
     let resizeTimer;
@@ -369,6 +371,120 @@ function setupLongPress() {
     monthViewCanvas.addEventListener('touchmove', move, { passive: true });
     monthViewCanvas.addEventListener('touchend', end);
     monthViewCanvas.addEventListener('touchcancel', end);
+}
+
+// ===== Pull-to-refresh =====
+function setupPullToRefresh() {
+    const threshold = 120; // px to pull before triggering
+    let startY = 0;
+    let pulling = false;
+    let indicator = null;
+
+    // Create the pull indicator element
+    indicator = document.createElement('div');
+    indicator.className = 'pull-to-refresh-indicator';
+    indicator.textContent = '새로고침';
+    monthViewCanvas.parentNode.insertBefore(indicator, monthViewCanvas);
+
+    monthViewCanvas.addEventListener('touchstart', (e) => {
+        if (monthViewCanvas.scrollTop <= 0 && e.touches.length === 1) {
+            startY = e.touches[0].clientY;
+            pulling = true;
+        }
+    }, { passive: true });
+
+    monthViewCanvas.addEventListener('touchmove', (e) => {
+        if (!pulling) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0 && monthViewCanvas.scrollTop <= 0) {
+            const progress = Math.min(dy / threshold, 1);
+            indicator.style.opacity = progress;
+            indicator.style.transform = `translateY(${Math.min(dy * 0.4, 60)}px)`;
+            indicator.textContent = progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침';
+        } else {
+            indicator.style.opacity = 0;
+            indicator.style.transform = 'translateY(0)';
+        }
+    }, { passive: true });
+
+    monthViewCanvas.addEventListener('touchend', async () => {
+        if (!pulling) return;
+        pulling = false;
+        const wasTriggered = parseFloat(indicator.style.opacity) >= 1;
+        indicator.style.opacity = 0;
+        indicator.style.transform = 'translateY(0)';
+        if (wasTriggered) {
+            indicator.textContent = '새로고침 중...';
+            indicator.style.opacity = 1;
+            await refreshAfterUpload();
+            indicator.style.opacity = 0;
+        }
+    });
+}
+
+// Also for overview
+function setupOverviewPullToRefresh() {
+    const threshold = 120;
+    let startY = 0;
+    let pulling = false;
+    let indicator = null;
+
+    indicator = document.createElement('div');
+    indicator.className = 'pull-to-refresh-indicator';
+    indicator.textContent = '새로고침';
+    monthsOverview.insertBefore(indicator, monthsOverview.firstChild);
+
+    monthsOverview.addEventListener('touchstart', (e) => {
+        if (monthsOverview.scrollTop <= 0 && e.touches.length === 1) {
+            startY = e.touches[0].clientY;
+            pulling = true;
+        }
+    }, { passive: true });
+
+    monthsOverview.addEventListener('touchmove', (e) => {
+        if (!pulling) return;
+        const dy = e.touches[0].clientY - startY;
+        if (dy > 0 && monthsOverview.scrollTop <= 0) {
+            const progress = Math.min(dy / threshold, 1);
+            indicator.style.opacity = progress;
+            indicator.style.transform = `translateY(${Math.min(dy * 0.4, 60)}px)`;
+            indicator.textContent = progress >= 1 ? '놓으면 새로고침' : '당겨서 새로고침';
+        } else {
+            indicator.style.opacity = 0;
+            indicator.style.transform = 'translateY(0)';
+        }
+    }, { passive: true });
+
+    monthsOverview.addEventListener('touchend', async () => {
+        if (!pulling) return;
+        pulling = false;
+        const wasTriggered = parseFloat(indicator.style.opacity) >= 1;
+        indicator.style.opacity = 0;
+        indicator.style.transform = 'translateY(0)';
+        if (wasTriggered) {
+            indicator.textContent = '새로고침 중...';
+            indicator.style.opacity = 1;
+            await refreshAfterUpload();
+            if (state.mode === 'all-months') {
+                overviewGrid.innerHTML = '';
+                let currentYear = null;
+                state.months.forEach(monthKey => {
+                    const year = monthKey.split('-')[0];
+                    if (year !== currentYear) {
+                        currentYear = year;
+                        const yearHeader = document.createElement('div');
+                        yearHeader.className = 'overview-year-header';
+                        yearHeader.textContent = `${year}`;
+                        overviewGrid.appendChild(yearHeader);
+                    }
+                    const entries = getDatesByMonth(monthKey);
+                    const card = renderOverviewCard(monthKey, entries, exitOverview);
+                    overviewGrid.appendChild(card);
+                });
+            }
+            indicator.style.opacity = 0;
+        }
+    });
 }
 
 // ===== Refresh after upload/edit/delete =====
