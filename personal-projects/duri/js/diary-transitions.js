@@ -38,14 +38,14 @@ export async function transitionToOverview(monthViewEl, overviewEl) {
 
     // Animate overview cards in with stagger
     const cards = overviewEl.querySelectorAll('.overview-month-card');
-    anime.set(cards, { opacity: 0, translateY: 20 });
+    anime.set(cards, { opacity: 0, translateY: 18 });
 
     await anime({
         targets: cards,
         opacity: [0, 1],
-        translateY: [20, 0],
-        delay: anime.stagger(50),
-        duration: 400,
+        translateY: [18, 0],
+        delay: anime.stagger(45),
+        duration: 450,
         easing: 'easeOutCubic',
     }).finished;
 }

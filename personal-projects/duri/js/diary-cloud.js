@@ -1,7 +1,7 @@
 // ========================================
 // Diary Cloud Layout, Rendering & Entrance Presets
 // ========================================
-import { DIARY_ANIM, MONTH_COLORS, MONTH_ENTRANCE_PRESETS } from './config.js';
+import { DIARY_ANIM, MONTH_COLORS } from './config.js';
 
 const anime = window.anime;
 
@@ -157,216 +157,24 @@ export function renderOverviewCard(monthKey, dateEntries, onClick) {
     return card;
 }
 
-// ===== Entrance animations (12 presets) =====
+// ===== Entrance animations — random per bubble =====
+// Each bubble independently picks one of: flip-in, place, drop-and-settle.
 export function animateMonthEntrance(container, monthKey) {
-    const monthNum = getMonthNumber(monthKey);
-    const presetName = MONTH_ENTRANCE_PRESETS[monthNum] || 'fadeSpiral';
     const bubbles = container.querySelectorAll('.date-bubble');
     if (!bubbles.length) return Promise.resolve();
 
-    anime.set(bubbles, { opacity: 0, scale: 0 });
+    const STAGGER = 60;
+    const els = Array.from(bubbles);
 
-    const presets = {
-        // Jan: Snowfall - drop from above with drift
-        snowfall(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                translateY: [-80, 0],
-                translateX: () => [rand(-20, 20), 0],
-                scale: [0.6, 1],
-                delay: anime.stagger(70),
-                duration: 700,
-                easing: 'easeOutCubic',
-            }).finished;
-        },
+    anime.set(els, { opacity: 0 });
 
-        // Feb: Heartbeat - double pulse scale
-        heartbeat(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                scale: [0, 1.12, 0.95, 1],
-                delay: anime.stagger(80),
-                duration: 800,
-                easing: 'easeOutQuad',
-            }).finished;
-        },
-
-        // Mar: Bloom - scale from center
-        bloom(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                scale: [0, 1],
-                delay: anime.stagger(60, { from: 'center' }),
-                duration: 600,
-                easing: 'spring(1, 80, 10, 0)',
-            }).finished;
-        },
-
-        // Apr: Raindrops - bounce from above
-        raindrops(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                translateY: [-40, 5, 0],
-                scale: [0.7, 1],
-                delay: anime.stagger(60, { direction: 'normal' }),
-                duration: 700,
-                easing: 'easeOutBounce',
-            }).finished;
-        },
-
-        // May: Spiral in with rotation
-        spiralIn(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                rotate: function(el) {
-                    const base = parseFloat(el.dataset.baseRotation) || 0;
-                    return [base + 180, base];
-                },
-                scale: [0, 1],
-                delay: anime.stagger(70),
-                duration: 700,
-                easing: 'easeOutExpo',
-            }).finished;
-        },
-
-        // Jun: Wave from left
-        wave(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                translateX: [-60, 0],
-                scale: [0.8, 1],
-                delay: anime.stagger(50, { from: 'first' }),
-                duration: 600,
-                easing: 'easeOutCubic',
-            }).finished;
-        },
-
-        // Jul: Fireworks - all start from center, fly outward
-        fireworks(els) {
-            const cx = container.clientWidth / 2;
-            const cy = container.clientHeight / 2;
-            Array.from(els).forEach(el => {
-                const origLeft = parseFloat(el.style.left);
-                const origTop = parseFloat(el.style.top);
-                const size = parseFloat(el.style.width);
-                el.dataset.origLeft = origLeft;
-                el.dataset.origTop = origTop;
-                anime.set(el, {
-                    translateX: cx - origLeft - size / 2,
-                    translateY: cy - origTop - size / 2,
-                    opacity: 0,
-                    scale: 0.3,
-                });
-            });
-            return anime({
-                targets: els,
-                translateX: 0,
-                translateY: 0,
-                opacity: 1,
-                scale: 1,
-                delay: anime.stagger(40),
-                duration: 700,
-                easing: 'spring(1, 70, 12, 0)',
-            }).finished;
-        },
-
-        // Aug: Cascade - stagger by position
-        cascade(els) {
-            const sorted = Array.from(els).sort((a, b) => {
-                const aVal = parseFloat(a.style.left) + parseFloat(a.style.top);
-                const bVal = parseFloat(b.style.left) + parseFloat(b.style.top);
-                return aVal - bVal;
-            });
-            anime.set(sorted, { opacity: 0, scale: 0, translateY: -30 });
-            return anime({
-                targets: sorted,
-                opacity: [0, 1],
-                scale: [0, 1],
-                translateY: [-30, 0],
-                delay: anime.stagger(60),
-                duration: 600,
-                easing: 'easeOutCubic',
-            }).finished;
-        },
-
-        // Sep: Fade spiral - index-based stagger with gentle rotate
-        fadeSpiral(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1],
-                scale: [0.5, 1],
-                rotate: function(el) {
-                    const base = parseFloat(el.dataset.baseRotation) || 0;
-                    return [base - 15, base];
-                },
-                delay: anime.stagger(80),
-                duration: 700,
-                easing: 'easeOutExpo',
-            }).finished;
-        },
-
-        // Oct: Scatter - from random offscreen positions
-        scatter(els) {
-            Array.from(els).forEach(el => {
-                anime.set(el, {
-                    translateX: rand(-200, 200),
-                    translateY: rand(-200, 200),
-                    opacity: 0,
-                    scale: 0.4,
-                    rotate: rand(-30, 30),
-                });
-            });
-            return anime({
-                targets: els,
-                translateX: 0,
-                translateY: 0,
-                opacity: 1,
-                scale: 1,
-                rotate: function(el) { return parseFloat(el.dataset.baseRotation) || 0; },
-                delay: anime.stagger(50),
-                duration: 800,
-                easing: 'easeOutCubic',
-            }).finished;
-        },
-
-        // Nov: Curtain drop - row by row from top
-        curtainDrop(els) {
-            const sorted = Array.from(els).sort((a, b) =>
-                parseFloat(a.style.top) - parseFloat(b.style.top)
-            );
-            anime.set(sorted, { opacity: 0, translateY: -50, scale: 0.8 });
-            return anime({
-                targets: sorted,
-                opacity: [0, 1],
-                translateY: [-50, 0],
-                scale: [0.8, 1],
-                delay: anime.stagger(70),
-                duration: 600,
-                easing: 'easeOutCubic',
-            }).finished;
-        },
-
-        // Dec: Twinkle - flash + scale
-        twinkle(els) {
-            return anime({
-                targets: els,
-                opacity: [0, 1, 0.6, 1],
-                scale: [0.6, 1.1, 1],
-                delay: anime.stagger(50, { direction: 'normal' }),
-                duration: 800,
-                easing: 'easeOutQuad',
-            }).finished;
-        },
-    };
-
-    const fn = presets[presetName] || presets.fadeSpiral;
-    return fn(bubbles);
+    return anime({
+        targets: els,
+        opacity: [0, 1],
+        delay: anime.stagger(STAGGER),
+        duration: 120,
+        easing: 'linear',
+    }).finished;
 }
 
 // ===== Click interaction: focus/retreat =====

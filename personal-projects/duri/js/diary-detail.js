@@ -96,16 +96,13 @@ export async function openDateDetail(dateEntry) {
 
     const images = dateEntry.images || [];
 
-    // Preload images off-screen to get dimensions before building DOM
+    // Preload images to get dimensions for smart layout
     const imageInfos = await Promise.all(images.map(src => preloadImage(src)));
     const imagesHtml = buildSmartImagesHtml(imageInfos);
 
     panelEl.innerHTML = `
-        <div class="date-detail-header">
-            <img src="${escapeHtml(dateEntry.thumbnail || images[0] || '')}" alt="">
-            <div class="date-detail-header-overlay">
-                <div class="date-detail-title">${formatKoreanDate(dateEntry.date)}</div>
-            </div>
+        <div class="date-detail-titlebar">
+            <div class="date-detail-title">${formatKoreanDate(dateEntry.date)}</div>
             <button class="date-detail-close" onclick="window.__closeDateDetail()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                     <path d="M18 6L6 18M6 6l12 12"/>
@@ -113,23 +110,11 @@ export async function openDateDetail(dateEntry) {
             </button>
         </div>
         <div class="date-detail-body">
-            <div class="trip-panel-dates">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span>${formatKoreanDate(dateEntry.date)}</span>
-            </div>
-
             ${dateEntry.description ? `
-                <div class="trip-panel-section-title">기록</div>
-                <div class="trip-panel-comment">${escapeHtml(dateEntry.description)}</div>
+                <div class="date-detail-description">${escapeHtml(dateEntry.description)}</div>
             ` : ''}
 
             ${images.length > 0 ? `
-                <div class="trip-panel-section-title">사진</div>
                 <div class="trip-panel-images">${imagesHtml}</div>
             ` : ''}
 
@@ -168,7 +153,7 @@ export async function openDateDetail(dateEntry) {
 
     // Hide body items BEFORE panel becomes visible, so the panel
     // fade-in doesn't reveal them prematurely.
-    const bodyItems = panelEl.querySelectorAll('.trip-panel-dates, .trip-panel-section-title, .trip-panel-comment, .trip-panel-images');
+    const bodyItems = panelEl.querySelectorAll('.date-detail-description, .trip-panel-images, .date-detail-actions');
     anime.set(bodyItems, { opacity: 0, translateY: 15 });
 
     // Force a reflow so the class add triggers a transition from opacity 0.
