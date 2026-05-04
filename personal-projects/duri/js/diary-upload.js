@@ -165,13 +165,23 @@ export async function deleteEntry(entryId, onProgress = () => {}) {
     if (!entry) throw new Error(`Entry not found: ${entryId}`);
 
     onProgress({ phase: 'commit-start' });
-    await deleteEntryAssets({
-        entryId,
-        dateStr: entry.date,
-        imageUrls: entry.images || [],
-        thumbnailUrl: entry.thumbnail,
-        onProgress: (p) => onProgress(p),
-    });
+    // Asset cleanup is best-effort: if the entry's URLs reference files that
+    // were already removed by an earlier edit, the GitHub Tree API rejects
+    // the whole delete commit. The gist record is the source of truth for
+    // what's visible in the app, so always proceed to remove that even if
+    // the file cleanup fails. Orphan files remain in the repo but are not
+    // user-visible.
+    try {
+        await deleteEntryAssets({
+            entryId,
+            dateStr: entry.date,
+            imageUrls: entry.images || [],
+            thumbnailUrl: entry.thumbnail,
+            onProgress: (p) => onProgress(p),
+        });
+    } catch (err) {
+        console.warn(`Asset delete failed for ${entryId}, proceeding with gist update:`, err);
+    }
 
     onProgress({ phase: 'gist' });
     const next = all.filter(e => e.id !== entryId);
