@@ -90,6 +90,16 @@ async function getCommitTreeSha(commitSha) {
     return commit.tree.sha;
 }
 
+// Returns a Set of all blob paths present in the given tree (recursive).
+async function listTreePaths(treeSha) {
+    const tree = await gh(`${repoBase()}/git/trees/${treeSha}?recursive=1`);
+    const paths = new Set();
+    for (const item of tree.tree || []) {
+        if (item.type === 'blob') paths.add(item.path);
+    }
+    return paths;
+}
+
 // addEntries: [{ path, blob }]
 // deletePaths: [string]
 async function buildAtomicCommit({ addEntries = [], deletePaths = [], message, onProgress }) {
@@ -97,6 +107,23 @@ async function buildAtomicCommit({ addEntries = [], deletePaths = [], message, o
 
     const parentSha = await getCurrentRef();
     const baseTreeSha = await getCommitTreeSha(parentSha);
+
+    // Filter deletePaths against the actual base_tree contents. The GitHub
+    // Trees API rejects the whole commit (422 BadObjectState) if any path
+    // marked for deletion doesn't exist in base_tree — even if other paths
+    // are valid. This guards against gist/repo drift from prior partial
+    // failures: any missing target is silently skipped instead of poisoning
+    // the commit.
+    if (deletePaths.length > 0) {
+        const existing = await listTreePaths(baseTreeSha);
+        const filtered = deletePaths.filter(p => existing.has(p));
+        const skipped = deletePaths.filter(p => !existing.has(p));
+        if (skipped.length > 0) {
+            console.warn(`Skipping ${skipped.length} delete path(s) not present in tree:`, skipped);
+        }
+        deletePaths = filtered;
+        if (addEntries.length === 0 && deletePaths.length === 0) return null;
+    }
 
     // Upload blobs in parallel — they're independent API calls that each
     // return a SHA. Parallelising this is the single biggest speed win
