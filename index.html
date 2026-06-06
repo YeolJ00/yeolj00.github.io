@@ -10,7 +10,7 @@
     <meta property="og:description" content="Ph.D. candidate at KAIST. AI for graphic designers, image generation and editing.">
     <meta property="og:image" content="https://yeolj00.github.io/images/profile.jpg">
     <meta property="og:url" content="https://yeolj00.github.io/">
-    <link rel="icon" href="images/profile.jpg" type="image/jpeg">
+    <link rel="icon" href="images/favicon.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -156,38 +156,6 @@
             border-radius: 2px;
             background: var(--gradient-afterglow);
             margin: 0 0 24px;
-        }
-
-        /* ---------- Interests ---------- */
-        .interest-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-        }
-
-        .interest-card {
-            padding: 20px;
-            border: 1px solid var(--gray-200);
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--box-shadow-sm);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-
-        .interest-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--box-shadow);
-        }
-
-        .interest-card .emoji {
-            font-size: 1.6rem;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        .interest-card p {
-            margin: 0;
-            font-size: 0.95rem;
-            color: var(--gray-700);
         }
 
         /* ---------- Publications ---------- */
@@ -351,20 +319,10 @@
                 supervised by Prof. <a href="https://sites.google.com/site/jaegulchoo/">Jaegul Choo</a>.
                 My research focuses on:
             </p>
-            <div class="interest-grid">
-                <div class="interest-card">
-                    <span class="emoji">🎨</span>
-                    <p>AI for graphic designers</p>
-                </div>
-                <div class="interest-card">
-                    <span class="emoji">🖼️</span>
-                    <p>Image generation and editing</p>
-                </div>
-                <div class="interest-card">
-                    <span class="emoji">📷</span>
-                    <p>Enhancing the quality of everyday images taken by casual users</p>
-                </div>
-            </div>
+            <ul>
+                <li>AI for graphic designers</li>
+                <li>Generative modeling of design assets</li>
+            </ul>
         </section>
 
         <!-- Publications -->
@@ -385,9 +343,21 @@
                 </li>
 
                 <li class="pub-item">
+                    <span class="pub-venue">CVPR 2026</span>
+                    <p class="pub-title">Selectively Extracting and Injecting Visual Attributes into Text-to-Image Models</p>
+                    <p class="pub-authors">Seunghwan Choi, <span class="me">Jooyeol Yun</span>, Youngdo Lee, Jaegul Choo</p>
+                    <p class="pub-links">
+                        <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Choi_Selectively_Extracting_and_Injecting_Visual_Attributes_into_Text-to-Image_Models_CVPR_2026_paper.html">Paper</a>
+                    </p>
+                </li>
+
+                <li class="pub-item">
                     <span class="pub-venue">AAAI 2026 · Oral</span>
                     <p class="pub-title">SphereDiff: Tuning-free Omnidirectional Panoramic Image and Video Generation via Spherical Latent Representation</p>
                     <p class="pub-authors">Minho Park*, Taewoong Kang*, <span class="me">Jooyeol Yun</span>, Seongwon Hwang, Jaegul Choo</p>
+                    <p class="pub-links">
+                        <a href="https://pmh9960.github.io/SphereDiff/">Project</a>
+                    </p>
                 </li>
 
                 <li class="pub-item">
