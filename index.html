@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jooyeol Yun</title>
+    <meta name="description" content="Jooyeol Yun — Ph.D. candidate at KAIST. AI for graphic designers, image generation and editing.">
+    <meta property="og:title" content="Jooyeol Yun">
+    <meta property="og:description" content="Ph.D. candidate at KAIST. AI for graphic designers, image generation and editing.">
+    <meta property="og:image" content="https://yeolj00.github.io/images/profile.jpg">
+    <meta property="og:url" content="https://yeolj00.github.io/">
+    <link rel="icon" href="images/profile.jpg" type="image/jpeg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Afterglow palette (matches research project pages) */
+            --afterglow-pink: #FF6A8A;
+            --afterglow-blue: #5A78FF;
+            --afterglow-purple: #9D4FFF;
+            --primary: #FF6A8A;
+            --gradient-afterglow: linear-gradient(135deg, #FF6A8A 0%, #9D4FFF 100%);
+            --gray-100: #f8f9fa;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-900: #212529;
+            --border-radius-lg: 0.5rem;
+            --box-shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            --box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            --font-sans: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: var(--font-sans);
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--gray-900);
+            background-color: #ffffff;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.15s ease-in-out;
+        }
+
+        a:hover { color: var(--afterglow-purple); }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            text-align: center;
+            padding: 72px 0 48px;
+        }
+
+        .avatar-ring {
+            display: inline-block;
+            padding: 5px;
+            border-radius: 50%;
+            background: var(--gradient-afterglow);
+        }
+
+        .avatar {
+            display: block;
+            width: 168px;
+            height: 168px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #fff;
+        }
+
+        .hero h1 {
+            margin: 24px 0 8px;
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1.2;
+            background: var(--gradient-afterglow);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .tagline {
+            margin: 0 0 6px;
+            font-size: 1.2rem;
+            color: var(--gray-600);
+        }
+
+        .hero .affiliation {
+            font-size: 1rem;
+            color: var(--gray-600);
+        }
+
+        .contact-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .contact-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border: 1px solid var(--gray-300);
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            background: #fff;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .contact-btn:hover {
+            color: #fff;
+            background: var(--gradient-afterglow);
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 106, 138, 0.35);
+        }
+
+        .contact-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* ---------- Sections ---------- */
+        section { padding: 32px 0; }
+
+        h2.section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0 0 4px;
+        }
+
+        .section-rule {
+            width: 56px;
+            height: 4px;
+            border: 0;
+            border-radius: 2px;
+            background: var(--gradient-afterglow);
+            margin: 0 0 24px;
+        }
+
+        /* ---------- Interests ---------- */
+        .interest-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .interest-card {
+            padding: 20px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-sm);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .interest-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .interest-card .emoji {
+            font-size: 1.6rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .interest-card p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: var(--gray-700);
+        }
+
+        /* ---------- Publications ---------- */
+        .pub-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .pub-item {
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--box-shadow-sm);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .pub-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .pub-venue {
+            display: inline-block;
+            padding: 2px 12px;
+            margin-bottom: 8px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            color: #fff;
+            background: var(--gradient-afterglow);
+        }
+
+        .pub-venue.preprint { background: linear-gradient(135deg, #adb5bd 0%, #6c757d 100%); }
+
+        .pub-title {
+            margin: 0 0 4px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+
+        .pub-authors {
+            margin: 0 0 8px;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        .pub-authors .me { font-weight: 700; color: var(--gray-900); }
+
+        .pub-links { font-size: 0.85rem; }
+
+        .pub-links a {
+            display: inline-block;
+            margin-right: 6px;
+            padding: 3px 12px;
+            border: 1px solid var(--primary);
+            border-radius: 999px;
+            font-weight: 600;
+        }
+
+        .pub-links a:hover {
+            color: #fff;
+            background: var(--primary);
+        }
+
+        .equal-note {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        /* ---------- Education ---------- */
+        .edu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .edu-item:last-child { border-bottom: 0; }
+
+        .edu-degree { font-weight: 700; }
+
+        .edu-school {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+        }
+
+        .edu-years {
+            white-space: nowrap;
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            margin-top: 40px;
+            padding: 28px 0 36px;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--gray-500);
+        }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 640px) {
+            .hero { padding: 48px 0 32px; }
+            .hero h1 { font-size: 2.2rem; }
+            .interest-grid { grid-template-columns: 1fr; }
+            .edu-item { flex-direction: column; gap: 2px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Hero -->
+        <header class="hero">
+            <span class="avatar-ring">
+                <img class="avatar" src="images/profile.jpg" alt="Jooyeol Yun">
+            </span>
+            <h1>Jooyeol Yun</h1>
+            <p class="tagline">Ph.D. candidate in Artificial Intelligence</p>
+            <p class="affiliation">
+                <a href="http://gsai.kaist.ac.kr/">KAIST</a>, advised by
+                Prof. <a href="https://sites.google.com/site/jaegulchoo/">Jaegul Choo</a>
+            </p>
+            <div class="contact-row">
+                <a class="contact-btn" href="mailto:blizzard072@kaist.ac.kr">
+                    <svg viewBox="0 0 24 24"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.24-8 5-8-5V6.5l8 5 8-5v1.74z"/></svg>
+                    Email
+                </a>
+                <a class="contact-btn" href="https://scholar.google.com/citations?user=uFjBq8wAAAAJ&hl=ko">
+                    <svg viewBox="0 0 24 24"><path d="M12 3 1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/></svg>
+                    Scholar
+                </a>
+                <a class="contact-btn" href="https://github.com/YeolJ00">
+                    <svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg>
+                    GitHub
+                </a>
+                <a class="contact-btn" href="https://www.linkedin.com/in/jooyeol-yun-6a176a1b6/">
+                    <svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                    LinkedIn
+                </a>
+            </div>
+        </header>
+
+        <!-- About -->
+        <section>
+            <h2 class="section-title">About me</h2>
+            <hr class="section-rule">
+            <p>
+                Hi! I'm Jooyeol Yun, a Ph.D. candidate at the
+                <a href="http://gsai.kaist.ac.kr/">Kim Jaechul Graduate School of AI, KAIST</a>,
+                supervised by Prof. <a href="https://sites.google.com/site/jaegulchoo/">Jaegul Choo</a>.
+                My research focuses on:
+            </p>
+            <div class="interest-grid">
+                <div class="interest-card">
+                    <span class="emoji">🎨</span>
+                    <p>AI for graphic designers</p>
+                </div>
+                <div class="interest-card">
+                    <span class="emoji">🖼️</span>
+                    <p>Image generation and editing</p>
+                </div>
+                <div class="interest-card">
+                    <span class="emoji">📷</span>
+                    <p>Enhancing the quality of everyday images taken by casual users</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Publications -->
+        <section>
+            <h2 class="section-title">Publications</h2>
+            <hr class="section-rule">
+            <ul class="pub-list">
+
+                <li class="pub-item">
+                    <span class="pub-venue">CVPR 2026 · Highlight</span>
+                    <p class="pub-title">Vector Prism: Animating Vector Graphics by Stratifying Semantic Structure</p>
+                    <p class="pub-authors"><span class="me">Jooyeol Yun</span>, Jaegul Choo</p>
+                    <p class="pub-links">
+                        <a href="research/vector-prism/">Project</a>
+                        <a href="https://arxiv.org/abs/2512.14336">arXiv</a>
+                        <a href="https://github.com/YeolJ00/vector-prism">Code</a>
+                    </p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">AAAI 2026 · Oral</span>
+                    <p class="pub-title">SphereDiff: Tuning-free Omnidirectional Panoramic Image and Video Generation via Spherical Latent Representation</p>
+                    <p class="pub-authors">Minho Park*, Taewoong Kang*, <span class="me">Jooyeol Yun</span>, Seongwon Hwang, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue preprint">arXiv 2025</span>
+                    <p class="pub-title">DesignLab: Designing Slides Through Iterative Detection and Correction</p>
+                    <p class="pub-authors"><span class="me">Jooyeol Yun</span>, Heng Wang, Yotaro Shimose, Jaegul Choo, Shingo Takamatsu</p>
+                    <p class="pub-links">
+                        <a href="research/designlab/">Project</a>
+                        <a href="https://arxiv.org/abs/2507.17202">arXiv</a>
+                    </p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">CVPR 2025</span>
+                    <p class="pub-title">Devil is in the Detail: Towards Injecting Fine Details of Image Prompt in Image Generation via Conflict-free Guidance and Stratified Attention</p>
+                    <p class="pub-authors">Kyungmin Jo, <span class="me">Jooyeol Yun</span>, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">AAAI 2025</span>
+                    <p class="pub-title">Enabling Region-Specific Control via Lassos in Point-Based Colorization</p>
+                    <p class="pub-authors">Sanghyeon Lee, <span class="me">Jooyeol Yun</span>, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">WACV 2025</span>
+                    <p class="pub-title">Disentangling Subject-Irrelevant Elements against Subject in Personalized Text-to-Image Diffusion via Filtered Self-distillation</p>
+                    <p class="pub-authors">Seunghwan Choi, <span class="me">Jooyeol Yun</span>, Jeonghoon Park, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">ECCV 2024</span>
+                    <p class="pub-title">Scaling Up Personalized Image Aesthetic Assessment via Task Vector Customization</p>
+                    <p class="pub-authors"><span class="me">Jooyeol Yun</span>, Jaegul Choo</p>
+                    <p class="pub-links">
+                        <a href="research/personalized-aesthetics/">Project</a>
+                        <a href="https://arxiv.org/abs/2407.07176">arXiv</a>
+                        <a href="https://github.com/YeolJ00/Personalized-Aesthetics/">Code</a>
+                    </p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">ICCV 2023</span>
+                    <p class="pub-title">Learning to Generate Semantic Layouts for Higher Text-Image Correspondence in Text-to-Image Synthesis</p>
+                    <p class="pub-authors">Minho Park*, <span class="me">Jooyeol Yun</span>*, Seunghwan Choi, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">WACV 2023</span>
+                    <p class="pub-title">iColoriT: Towards Propagating Hints to the Right Region for Interactive Colorization via Leveraging Vision Transformer</p>
+                    <p class="pub-authors"><span class="me">Jooyeol Yun</span>*, Sanghyeon Lee*, Minho Park*, Jaegul Choo</p>
+                </li>
+
+                <li class="pub-item">
+                    <span class="pub-venue">BMVC 2021</span>
+                    <p class="pub-title">Improving Face Recognition with Large Age Gaps by Learning to Distinguish Children</p>
+                    <p class="pub-authors">Jungsoo Lee*, <span class="me">Jooyeol Yun</span>*, Sunghyun Park, Yonggyu Kim, Jaegul Choo</p>
+                </li>
+
+            </ul>
+            <p class="equal-note">* denotes equal contribution.</p>
+        </section>
+
+        <!-- Education -->
+        <section>
+            <h2 class="section-title">Education</h2>
+            <hr class="section-rule">
+            <div class="edu-item">
+                <div>
+                    <div class="edu-degree">Ph.D. in Artificial Intelligence</div>
+                    <div class="edu-school">Korea Advanced Institute of Science and Technology (KAIST)</div>
+                </div>
+                <div class="edu-years">2023 – Present</div>
+            </div>
+            <div class="edu-item">
+                <div>
+                    <div class="edu-degree">M.S. in Artificial Intelligence</div>
+                    <div class="edu-school">Korea Advanced Institute of Science and Technology (KAIST)</div>
+                </div>
+                <div class="edu-years">2021 – 2023</div>
+            </div>
+            <div class="edu-item">
+                <div>
+                    <div class="edu-degree">B.S. in Computer Science and Engineering</div>
+                    <div class="edu-school">Korea University</div>
+                </div>
+                <div class="edu-years">2017 – 2021</div>
+            </div>
+        </section>
+
+        <footer>
+            © 2026 Jooyeol Yun
+        </footer>
+
+    </div>
+</body>
+
+</html>
