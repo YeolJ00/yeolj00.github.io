@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Here We Go · Coupang Play → VLC</title>
+    <meta name="description" content="Watch Coupang Play football in VLC. Here We Go grabs the stream in one tap; Done Deal combines two stream URLs by hand.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Fraunces:ital,opsz,wght@0,9..144,500..700;1,9..144,500..700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="assets/firefox-5.svg" type="image/x-icon">
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="wrap topbar-inner">
+            <a class="brand" href="#grab">
+                <span class="brand-mark">⚽</span>
+                <span class="brand-name">Here We <span class="brand-accent">Go</span></span>
+            </a>
+            <p class="brand-tag">Coupang&nbsp;Play → VLC</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="wrap">
+                <p class="eyebrow">Live football, here we go</p>
+                <h1 class="hero-title">The little boy in me<br>was <span class="hl">Streaming</span> for haechook.</h1>
+                <p class="hero-sub">
+                    Coupang streams video and audio in pieces, listed in a hidden playlist file.
+                    These tools grab that playlist so you can play the match in VLC at the quality
+                    <em>you</em> choose. No 4K drain, no live-chat overhead.
+                </p>
+
+                <!-- Signature: the mechanism, at a glance -->
+                <ol class="flow" aria-label="How a stream gets to VLC">
+                    <li class="flow-node">
+                        <span class="flow-ic">📺</span>
+                        <span class="flow-h">You press play</span>
+                        <span class="flow-d">Coupang quietly loads the match</span>
+                    </li>
+                    <li class="flow-conn" aria-hidden="true"><span class="pulse"></span></li>
+                    <li class="flow-node accent">
+                        <span class="flow-ic">⚡</span>
+                        <span class="flow-h">Here we go!</span>
+                        <span class="flow-d">Finds the stream, you pick a quality</span>
+                    </li>
+                    <li class="flow-conn" aria-hidden="true"><span class="pulse"></span></li>
+                    <li class="flow-node">
+                        <span class="flow-ic">🎬</span>
+                        <span class="flow-h">VLC plays it</span>
+                        <span class="flow-d">Open the saved <code>.m3u8</code> file</span>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+        <div class="wrap">
+            <nav class="tabs" role="tablist" aria-label="Tools">
+                <button class="tab" role="tab" id="tab-grab" aria-controls="panel-grab" aria-selected="true" data-tab="grab">
+                    ⚡ Here We Go <span class="tab-note">recommended</span>
+                </button>
+                <button class="tab" role="tab" id="tab-merge" aria-controls="panel-merge" aria-selected="false" data-tab="merge">
+                    🤝 Done Deal <span class="tab-note">old version</span>
+                </button>
+                <button class="tab" role="tab" id="tab-how" aria-controls="panel-how" aria-selected="false" data-tab="how">
+                    🤔 Why Always Me? <span class="tab-note">how it works</span>
+                </button>
+            </nav>
+
+            <!-- ============================ GRAB ============================ -->
+            <section class="panel" id="panel-grab" role="tabpanel" aria-labelledby="tab-grab" tabindex="0">
+                <p class="lede">
+                    Here We Go is a <strong>bookmark that runs on the Coupang tab</strong>. Set it up once,
+                    then every match is two taps: run it, tap a quality. It works on phones and computers.
+                    <a class="inline-link" href="#how" data-tab="how">Why a bookmark? →</a>
+                </p>
+
+                <div class="card setup">
+                    <div class="card-head">
+                        <h2>Set up once</h2>
+                        <p>Save this as a bookmark named <code>Here We Go</code>.</p>
+                    </div>
+
+                    <div class="bookmarklet-box">
+                        <code id="bookmarkletCode" class="code-block" aria-label="Here We Go bookmarklet code"></code>
+                        <div class="bookmarklet-actions">
+                            <button type="button" id="copyBookmarklet" class="btn btn-accent">📋 Copy code</button>
+                            <span class="drag-hint">
+                                On a computer, drag&nbsp;→
+                                <a id="bookmarkletLink" class="chip" href="#">⚡ Here We Go</a>
+                                &nbsp;to your bookmarks bar (skips the steps below).
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="steps two-up">
+                        <div class="step-group">
+                            <h3 class="step-title">📱 Phone (Chrome, Android)</h3>
+                            <ol class="steps-list">
+                                <li>Tap <strong>Copy code</strong> above.</li>
+                                <li>Bookmark any page (Chrome menu → ☆).</li>
+                                <li>Open <strong>menu → Bookmarks</strong>, edit that bookmark: name it <code>Here We Go</code> and paste the code as the address.</li>
+                            </ol>
+                        </div>
+                        <div class="step-group">
+                            <h3 class="step-title">💻 Computer</h3>
+                            <ol class="steps-list">
+                                <li>Show the bookmarks bar (<kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>).</li>
+                                <li>Drag the <strong>⚡ Here We Go</strong> chip above onto it.</li>
+                                <li>That's it. No copy/paste needed.</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card use">
+                    <div class="card-head">
+                        <h2>Every match</h2>
+                        <p>Be logged in and watching the match in the same browser.</p>
+                    </div>
+                    <ol class="steps-list numbered-lg">
+                        <li>
+                            <strong>Open the match on coupangplay.com.</strong>
+                            On a phone, turn on <em>menu → Desktop site</em> first so it doesn't bounce you to the app.
+                        </li>
+                        <li>
+                            <strong>Run Here We Go.</strong>
+                            On a phone: tap the address bar, type <code>here we go</code>, tap the suggestion.
+                            On a computer: click the bookmark. A <span class="tag-strip">⚡ panel</span> appears.
+                        </li>
+                        <li>
+                            <strong>Pick a quality.</strong>
+                            The panel shows a <span class="tag-strip">🎬 Pick a quality</span> row
+                            (360p → 4K). Tap one and <code>coupang_stream.m3u8</code> downloads.
+                        </li>
+                        <li>
+                            <strong>Open it in VLC.</strong> 🎉 Tap <em>↺ Other quality</em> anytime to grab a different one.
+                        </li>
+                    </ol>
+                    <p class="callout warn">
+                        <strong>Some matches are locked.</strong> A few broadcasts are DRM-protected (delivered as DASH).
+                        No tool can save those to a file, and Here We Go will say so instead of downloading a broken one.
+                        Clear broadcasts like the Premier League work.
+                    </p>
+                </div>
+            </section>
+
+            <!-- ============================ MERGE =========================== -->
+            <section class="panel" id="panel-merge" role="tabpanel" aria-labelledby="tab-merge" tabindex="0" hidden>
+                <p class="lede">
+                    The manual way, for computers. If you already dug the two stream URLs out of DevTools
+                    (one video, one audio), paste them here and Done Deal combines them into one file for VLC.
+                    <a class="inline-link" href="#grab" data-tab="grab">Prefer one tap? Use Here We Go →</a>
+                </p>
+
+                <div class="card">
+                    <form id="streamForm" class="merge-form">
+                        <div class="field">
+                            <label for="url1">Stream URL 1</label>
+                            <input type="url" id="url1" name="url1" placeholder="https://live04.coupangstreaming.com/…" required>
+                        </div>
+                        <div class="field">
+                            <label for="url2">Stream URL 2</label>
+                            <input type="url" id="url2" name="url2" placeholder="https://live04.coupangstreaming.com/…" required>
+                        </div>
+                        <div class="merge-actions">
+                            <button type="submit" class="btn btn-accent" id="processBtn">
+                                <span id="btnText">⚡ Create stream file</span>
+                            </button>
+                            <button type="button" class="btn btn-ghost" onclick="clearForm()">Clear</button>
+                        </div>
+                    </form>
+                    <div id="status" class="status"></div>
+                </div>
+
+                <details class="card disclosure">
+                    <summary>How to find the two URLs (computer)</summary>
+                    <ol class="steps-list">
+                        <li>Open the match on coupangplay.com and start playing.</li>
+                        <li>Press <kbd>F12</kbd> → <strong>Network</strong> tab.</li>
+                        <li>Type <code>m3u8</code> in the filter box.</li>
+                        <li>Copy the two playlist URLs (one is video, one is audio) and paste them above.</li>
+                    </ol>
+                    <p class="muted">Tip: Here We Go does all of this for you in one tap, and also works on phones.</p>
+                </details>
+            </section>
+
+            <!-- ============================ HOW ============================= -->
+            <section class="panel" id="panel-how" role="tabpanel" aria-labelledby="tab-how" tabindex="0" hidden>
+                <p class="lede">The short version: your browser already downloads the match. We just catch the address of it.</p>
+
+                <div class="card explain">
+                    <h2>What's actually happening</h2>
+                    <p>
+                        Coupang Play never hands you a video file. When you watch a match, your browser downloads
+                        it in small chunks, following a <strong>playlist</strong>, a text file ending in
+                        <code>.m3u8</code> that lists where the video and audio pieces live. That playlist address
+                        is the one thing VLC needs, and it's the one thing Coupang keeps out of sight.
+                    </p>
+                    <p>
+                        On a computer you can dig it out of DevTools. On a phone there are no DevTools at all.
+                        Here We Go handles both by reading the playlist the page just loaded, then saving a tidy
+                        copy for VLC at the quality you pick.
+                    </p>
+                </div>
+
+                <div class="card explain">
+                    <h2>Why it's a bookmark, not a button here</h2>
+                    <div class="mech">
+                        <div class="mech-row good">
+                            <div class="mech-box">🌐<span>coupangplay.com<br><small>your logged-in match</small></span></div>
+                            <div class="mech-arrow">
+                                <span class="mech-arrow-label">runs inside →</span>
+                            </div>
+                            <div class="mech-box accent">⚡<span>Here We Go<br><small>sees the playlist, saves it</small></span></div>
+                            <div class="mech-arrow"><span class="mech-arrow-label">→</span></div>
+                            <div class="mech-box">🎬<span>VLC<br><small>plays your file</small></span></div>
+                        </div>
+                        <p class="mech-cap ok">✓ A bookmarklet is a bookmark whose address starts with <code>javascript:</code> instead of <code>https:</code>. Tapping it doesn't open a page. It runs our code <strong>on the tab you're already looking at</strong>. Running inside the Coupang page is what lets it see the stream.</p>
+
+                        <div class="mech-row bad">
+                            <div class="mech-box">🌐<span>Here We Go<br><small>as its own website</small></span></div>
+                            <div class="mech-arrow blocked"><span class="mech-arrow-label">can't look ✗</span></div>
+                            <div class="mech-box">🔒<span>coupangplay.com<br><small>separate tab</small></span></div>
+                        </div>
+                        <p class="mech-cap no">✗ A normal website can only see its <em>own</em> network activity, never another site's. Browsers enforce that wall on purpose. Otherwise, any page could spy on your email or bank tab. So a Here We Go website sitting in its own tab is blind to the Coupang tab beside it.</p>
+                    </div>
+                    <p class="muted">
+                        A browser extension could also do it, but Chrome on phones doesn't allow extensions,
+                        so the bookmark is the one method that works everywhere.
+                    </p>
+                </div>
+
+                <div class="card explain">
+                    <h2>Questions</h2>
+                    <dl class="faq">
+                        <dt>Why won't some matches save?</dt>
+                        <dd>They're DRM-protected (locked, and delivered as DASH). No tool can turn those into a plain file, so Here We Go tells you rather than saving something that won't play. Clear broadcasts like the Premier League work fine.</dd>
+
+                        <dt>Which quality should I pick?</dt>
+                        <dd>Lower is lighter and smoother on a weak connection. <strong>1080p</strong> is a good default; 4K is heavy. You choose per match, and can grab a different one anytime.</dd>
+
+                        <dt>What do I open the file with?</dt>
+                        <dd>VLC on desktop or mobile. Infuse (iOS) and MX Player (Android) work too. Anything that plays HLS.</dd>
+
+                        <dt>Does it need my Coupang login?</dt>
+                        <dd>Yes. You must be logged in and playing the match in the same browser. Here We Go only reads what your session already loaded; it never sees your password.</dd>
+                    </dl>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="wrap footer-inner">
+            <p>Built for lighter Coupang&nbsp;Play viewing. If it helped, buy the developer a coffee.</p>
+            <a href="https://buymeacoffee.com/jooyeol" target="_blank" rel="noopener" class="coffee">☕ Buy me a coffee</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
