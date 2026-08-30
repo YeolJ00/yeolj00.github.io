@@ -163,18 +163,19 @@ const clickQuality = (page, label) => page.evaluate(l => {
   }
   await page.close();
 
-  // === Scenario 5: DRM / DASH broadcast is refused cleanly =================
-  console.log('\nScenario 5: DRM/DASH broadcast');
+  // === Scenario 5: unsupported (DASH) broadcast is refused cleanly =========
+  console.log('\nScenario 5: unsupported broadcast');
   const dl5 = freshDir('dl5');
   page = await browser.newPage();
   const dls5 = await trackDownloads(page, dl5);
   await page.goto(BASE + '/fake.html');
   await page.evaluate(code);
   await page.click('#dash');
-  assert(await waitFor(async () => (await statusText(page)).includes('DRM'), 15000),
-    'shows a DRM/DASH "not supported" message');
+  assert(await waitFor(async () => (await statusText(page)).includes('be grabbed'), 15000),
+    'shows a neutral "can’t be grabbed" message (no DRM wording)');
+  assert(!(await statusText(page)).includes('DRM'), 'message does not mention DRM');
   await sleep(1000);
-  assert(dls5.completed === 0, 'no file downloaded for a DRM/DASH stream');
+  assert(dls5.completed === 0, 'no file downloaded for an unsupported stream');
   await page.close();
 
   await browser.close();

@@ -441,7 +441,7 @@ function rocketGrabAgent(SITE) {
             var out = '#EXTM3U\n#EXT-X-VERSION:6\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="Korean",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="ko",URI="' + a + '"\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,AUDIO="audio"\n' + v + '\n';
             save(out, '');
         } else if (latest('drm')) {
-            say('🔒 This broadcast is DRM-protected, so it can’t be saved for VLC.', '#7c2d12');
+            say('⚠️ This match can’t be grabbed. Try a different one.', '#7c2d12');
         }
     }
 
@@ -468,7 +468,7 @@ function rocketGrabAgent(SITE) {
         fallbackTimer = setTimeout(function () {
             if (hasDownloaded() || pickerFor) { return; }
             if (dashSeen && !order.length) {
-                say('🔒 This broadcast uses DRM-protected DASH. Here We Go can’t convert it. Try an HLS match (e.g. EPL).', '#7c2d12');
+                say('⚠️ This match can’t be grabbed. Try a different one (e.g. Premier League).', '#7c2d12');
                 return;
             }
             if (!order.length) { return; }
