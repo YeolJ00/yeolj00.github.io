@@ -67,6 +67,7 @@ const clickQuality = (page, label) => page.evaluate(l => {
   assert(!code.includes('\n'), 'bookmarklet is a single line (no comment breakage)');
   new Function(code);
   assert(true, 'bookmarklet is syntactically valid JS');
+  assert(bm.length < 500, 'bookmarklet is short (a loader, not the whole agent) so mobile bookmark editors do not truncate it');
   console.log('  bookmarklet length:', bm.length, 'chars');
   await page.close();
 
@@ -77,8 +78,8 @@ const clickQuality = (page, label) => page.evaluate(l => {
   const dls1 = await trackDownloads(page, dl1);
   await page.goto(BASE + '/fake.html');
   await page.evaluate(code);
-  await sleep(300);
-  assert((await statusText(page)).includes('Watching for streams'), 'overlay shows "Watching for streams"');
+  assert(await waitFor(async () => (await statusText(page)).includes('Watching for streams'), 5000),
+    'overlay shows "Watching for streams"');
 
   await page.click('#live');
   assert(await waitFor(async () => (await qualityButtons(page)).some(l => /p$|4K/.test(l)), 12000),
@@ -129,6 +130,8 @@ const clickQuality = (page, label) => page.evaluate(l => {
   await page.goto(BASE + '/fake.html');
   await page.evaluate(code);
   await page.evaluate(code);
+  await waitFor(async () => (await page.evaluate(() => document.querySelectorAll('#rocketgrab').length)) > 0, 5000);
+  await sleep(300);
   const overlays = await page.evaluate(() => document.querySelectorAll('#rocketgrab').length);
   assert(overlays === 1, 'only one overlay after running twice');
   await page.close();
