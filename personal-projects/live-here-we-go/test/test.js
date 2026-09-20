@@ -39,13 +39,13 @@ async function waitFor(fn, timeoutMs) {
   return false;
 }
 
-const qualityButtons = page => page.evaluate(() =>
+const buttons = page => page.evaluate(() =>
   Array.from(document.querySelectorAll('#rocketgrab button')).map(b => b.textContent));
 const statusText = page => page.evaluate(() => {
   const s = document.getElementById('rocketgrab');
   return s && s.firstChild ? s.firstChild.textContent : '';
 });
-const clickQuality = (page, label) => page.evaluate(l => {
+const clickButton = (page, label) => page.evaluate(l => {
   const b = Array.from(document.querySelectorAll('#rocketgrab button')).find(x => x.textContent === l);
   if (b) b.click();
 }, label);
@@ -71,8 +71,8 @@ const clickQuality = (page, label) => page.evaluate(l => {
   console.log('  bookmarklet length:', bm.length, 'chars');
   await page.close();
 
-  // === Scenario 1: arm first, tap broadcast, pick a quality =================
-  console.log('\nScenario 1: arm first -> pick quality');
+  // === Scenario 1: arm first, tap broadcast, master auto-downloads =========
+  console.log('\nScenario 1: arm first -> auto-download master, no picker');
   const dl1 = freshDir('dl1');
   page = await browser.newPage();
   const dls1 = await trackDownloads(page, dl1);
@@ -82,46 +82,36 @@ const clickQuality = (page, label) => page.evaluate(l => {
     'overlay shows "Watching for streams"');
 
   await page.click('#live');
-  assert(await waitFor(async () => (await qualityButtons(page)).some(l => /p$|4K/.test(l)), 12000),
-    'quality picker appears after opening a broadcast');
-  const labels = await qualityButtons(page);
-  console.log('  quality buttons:', JSON.stringify(labels));
-  assert(labels.join(',') === '4K,1080p,720p,360p', 'picker lists the master ladder, highest-first, deduped');
-  assert((await statusText(page)).includes('Pick a quality'), 'status says "Pick a quality"');
-
-  await clickQuality(page, '1080p');
-  assert(await waitFor(() => dls1.completed >= 1, 8000), '1080p download completes');
+  assert(await waitFor(() => dls1.completed >= 1, 12000), 'master playlist auto-downloads with no quality picker');
+  assert(!(await statusText(page)).includes('Pick a quality'), 'no quality picker is shown');
+  assert((await statusText(page)).includes('Playlist downloaded'), 'success message shown');
   const c1 = fs.readFileSync(path.join(dl1, dls1.begun[0]), 'utf8');
-  assert(c1.includes('RESOLUTION=1920x1080'), 'downloaded playlist is the 1080p rendition');
-  assert(c1.includes('video_2.m3u8'), 'references the 1080p video media playlist');
-  assert(/URI="[^"]*audio_ko\.m3u8"/.test(c1), 'Korean audio track is included as EXT-X-MEDIA');
-  assert(!c1.includes('audio_en'), 'English audio is not used (Korean preferred)');
-  assert((await statusText(page)).includes('1080p'), 'success message names the chosen quality');
-  const after = await qualityButtons(page);
-  assert(after.includes('\u21ba Other quality') && after.includes('\u2b07 Save again'),
-    'offers "Other quality" and "Save again" after download');
+  assert(c1.includes('RESOLUTION=3840x2160') && c1.includes('RESOLUTION=1920x1080') &&
+    c1.includes('RESOLUTION=1280x720') && c1.includes('RESOLUTION=640x360'),
+    'downloaded playlist keeps the full resolution ladder (no single quality picked)');
+  assert(c1.includes(BASE + '/streams/video_2.m3u8'), 'variant stream URIs are rewritten to absolute URLs');
+  assert(/URI="[^"]*audio_ko\.m3u8"/.test(c1) && c1.includes(BASE + '/streams/audio_ko.m3u8'),
+    'Korean audio URI is rewritten to an absolute URL');
+  assert(/URI="[^"]*audio_en\.m3u8"/.test(c1) && c1.includes(BASE + '/streams/audio_en.m3u8'),
+    'other audio tracks are kept as-is (not filtered down)');
+  const after1 = await buttons(page);
+  assert(after1.join(',') === '\u2b07 Save again', 'only offers "Save again" after download');
   await page.close();
 
-  // === Scenario 2: pick a DIFFERENT quality via "Other quality" ============
-  console.log('\nScenario 2: re-pick a different quality');
+  // === Scenario 2: "Save again" re-downloads the same playlist =============
+  console.log('\nScenario 2: Save again re-downloads');
   const dl2 = freshDir('dl2');
   page = await browser.newPage();
   const dls2 = await trackDownloads(page, dl2);
   await page.goto(BASE + '/fake.html');
   await page.evaluate(code);
   await page.click('#live');
-  await waitFor(async () => (await qualityButtons(page)).some(l => /p$|4K/.test(l)), 12000);
-  await clickQuality(page, '4K');
-  await waitFor(() => dls2.completed >= 1, 8000);
-  await clickQuality(page, '\u21ba Other quality');
-  assert(await waitFor(async () => (await qualityButtons(page)).includes('720p'), 5000),
-    'picker re-opens on "Other quality"');
-  await clickQuality(page, '720p');
-  assert(await waitFor(() => dls2.completed >= 2, 8000), 'second (720p) download completes');
+  await waitFor(() => dls2.completed >= 1, 12000);
+  await clickButton(page, '\u2b07 Save again');
+  assert(await waitFor(() => dls2.completed >= 2, 5000), 'second download completes on "Save again"');
   const files2 = fs.readdirSync(dl2).filter(f => !f.endsWith('.crdownload'));
   const contents2 = files2.map(f => fs.readFileSync(path.join(dl2, f), 'utf8'));
-  assert(contents2.some(c => c.includes('RESOLUTION=3840x2160')), 'first download was 4K');
-  assert(contents2.some(c => c.includes('RESOLUTION=1280x720')), 'second download was 720p');
+  assert(contents2.every(c => c.includes('RESOLUTION=3840x2160')), 'both downloads are the same full master playlist');
   await page.close();
 
   // === Scenario 3: double invocation is safe ===============================
@@ -137,33 +127,21 @@ const clickQuality = (page, label) => page.evaluate(l => {
   await page.close();
 
   // === Scenario 4: switching broadcasts ====================================
-  console.log('\nScenario 4: switch broadcast, pick again');
+  console.log('\nScenario 4: switch broadcast, auto-downloads again');
   const dl4 = freshDir('dl4');
   page = await browser.newPage();
   const dls4 = await trackDownloads(page, dl4);
   await page.goto(BASE + '/fake.html');
   await page.evaluate(code);
   await page.click('#live');
-  await waitFor(async () => (await qualityButtons(page)).some(l => /p$|4K/.test(l)), 12000);
-  await clickQuality(page, '1080p');
-  await waitFor(() => dls4.completed >= 1, 8000);
+  await waitFor(() => dls4.completed >= 1, 12000);
   await sleep(800);
   await page.click('#switch');
-  assert(await waitFor(async () => {
-    const b = await qualityButtons(page);
-    return b.includes('1080p') && (await statusText(page)).includes('Pick a quality');
-  }, 12000), 'quality picker auto-reopens for the new broadcast');
-  await clickQuality(page, '720p');
-  assert(await waitFor(() => dls4.completed >= 2, 10000), 'second (channel 2) download completes');
+  assert(await waitFor(() => dls4.completed >= 2, 12000), 'second (channel 2) download completes automatically');
   const files4 = fs.readdirSync(dl4).filter(f => !f.endsWith('.crdownload'));
   const contents4 = files4.map(f => fs.readFileSync(path.join(dl4, f), 'utf8'));
   assert(contents4.some(c => c.includes('/streams2/')), 'a download references the second channel');
-  for (const c of contents4) {
-    const ch = c.includes('/streams2/') ? '/streams2/' : '/streams/';
-    assert(c.includes(ch + 'video_') && c.includes(ch + 'audio_') &&
-      !(c.includes('/streams/video') && c.includes('/streams2/video')),
-      'download pairs video+audio from the same channel (' + ch + ')');
-  }
+  assert(contents4.some(c => c.includes('/streams/') && !c.includes('/streams2/')), 'a download references the first channel only');
   await page.close();
 
   // === Scenario 5: unsupported (DASH) broadcast is refused cleanly =========

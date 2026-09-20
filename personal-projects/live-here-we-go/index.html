@@ -31,8 +31,8 @@
                 <h1 class="hero-title">The little boy in me<br>was <span class="hl">Streaming</span> for haechook.</h1>
                 <p class="hero-sub">
                     Coupang streams video and audio in pieces, listed in a hidden playlist file.
-                    These tools grab that playlist so you can play the match in VLC at the quality
-                    <em>you</em> choose. No 4K drain, no live-chat overhead.
+                    These tools grab that playlist so you can play the match in VLC instead.
+                    No live-chat overhead, no app.
                 </p>
 
                 <!-- Signature: the mechanism, at a glance -->
@@ -46,7 +46,7 @@
                     <li class="flow-node accent">
                         <span class="flow-ic">⚡</span>
                         <span class="flow-h">Here we go!</span>
-                        <span class="flow-d">Finds the stream, you pick a quality</span>
+                        <span class="flow-d">Finds the stream, saves the playlist</span>
                     </li>
                     <li class="flow-conn" aria-hidden="true"><span class="pulse"></span></li>
                     <li class="flow-node">
@@ -75,7 +75,7 @@
             <section class="panel" id="panel-grab" role="tabpanel" aria-labelledby="tab-grab" tabindex="0">
                 <p class="lede">
                     Here We Go is a <strong>bookmark that runs on the Coupang tab</strong>. Set it up once,
-                    then every match is two taps: run it, tap a quality. It works on phones and computers.
+                    then every match is one tap: run it, and the playlist downloads. It works on phones and computers.
                     <a class="inline-link" href="#how" data-tab="how">Why a bookmark? →</a>
                 </p>
 
@@ -134,12 +134,11 @@
                             On a computer: click the bookmark. A <span class="tag-strip">⚡ panel</span> appears.
                         </li>
                         <li>
-                            <strong>Pick a quality.</strong>
-                            The panel shows a <span class="tag-strip">🎬 Pick a quality</span> row
-                            (360p → 4K). Tap one and <code>coupang_stream.m3u8</code> downloads.
+                            <strong>Wait a second.</strong>
+                            It finds the stream and <code>coupang_stream.m3u8</code> downloads automatically.
                         </li>
                         <li>
-                            <strong>Open it in VLC.</strong> 🎉 Tap <em>↺ Other quality</em> anytime to grab a different one.
+                            <strong>Open it in VLC.</strong> 🎉 Tap <em>⬇ Save again</em> anytime to re-download it.
                         </li>
                     </ol>
                     <p class="callout warn">
@@ -204,7 +203,7 @@
                     <p>
                         On a computer you can dig it out of DevTools. On a phone there are no DevTools at all.
                         Here We Go handles both by reading the playlist the page just loaded, then saving a tidy
-                        copy for VLC at the quality you pick.
+                        copy for VLC.
                     </p>
                 </div>
 
@@ -240,9 +239,6 @@
                     <dl class="faq">
                         <dt>Why won't some matches grab?</dt>
                         <dd>Not every broadcast is served in a form Here We Go can pick up. When that happens it tells you instead of saving something that won't play. Premier League matches work reliably.</dd>
-
-                        <dt>Which quality should I pick?</dt>
-                        <dd>Lower is lighter and smoother on a weak connection. <strong>1080p</strong> is a good default; 4K is heavy. You choose per match, and can grab a different one anytime.</dd>
 
                         <dt>What do I open the file with?</dt>
                         <dd>VLC on desktop or mobile. Infuse (iOS) and MX Player (Android) work too. Anything that plays HLS.</dd>

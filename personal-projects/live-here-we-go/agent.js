@@ -19,7 +19,7 @@
         var texts = {};
         var done = {};
         var dashSeen = false;
-        var pickerFor = null;
+        var lastMaster = null;
         var firstSeen = 0;
         var lastPlaylist = null;
         var ui, statusEl, btnRow, obs, fallbackTimer, checkTimer;
@@ -114,91 +114,22 @@
             try { return new URL(uri, base).href; } catch (e) { return uri; }
         }
 
-        function attr(line, name) {
-            var m = line.match(new RegExp(name + '="([^"]*)"'));
-            if (m) { return m[1]; }
-            m = line.match(new RegExp(name + '=([^,]*)'));
-            return m ? m[1] : '';
-        }
-
-        function parseMaster(url, text) {
+        function rewriteMaster(url, text) {
             var lines = text.split('\n');
-            var variants = [], audios = [], i, line, j, vuri, res, h;
+            var i, line, trimmed;
             for (i = 0; i < lines.length; i++) {
-                line = lines[i].trim();
-                if (line.indexOf('#EXT-X-MEDIA:') === 0 && line.indexOf('TYPE=AUDIO') > -1) {
-                    var auri = attr(line, 'URI');
-                    if (auri) {
-                        audios.push({
-                            url: abs(auri, url),
-                            lang: attr(line, 'LANGUAGE'),
-                            isDefault: /DEFAULT=YES/i.test(line)
-                        });
-                    }
-                } else if (line.indexOf('#EXT-X-STREAM-INF:') === 0) {
-                    res = attr(line, 'RESOLUTION');
-                    h = res ? parseInt(res.split('x')[1], 10) : 0;
-                    j = i + 1;
-                    while (j < lines.length && (!lines[j].trim() || lines[j].trim().indexOf('#') === 0)) { j++; }
-                    vuri = lines[j] ? lines[j].trim() : '';
-                    if (vuri) {
-                        variants.push({
-                            url: abs(vuri, url),
-                            resolution: res || '',
-                            height: h,
-                            bandwidth: attr(line, 'BANDWIDTH') || '2000000',
-                            codecs: attr(line, 'CODECS')
-                        });
-                    }
+                line = lines[i];
+                trimmed = line.trim();
+                if (trimmed.indexOf('#EXT-X-MEDIA:') === 0 && trimmed.indexOf('URI="') > -1) {
+                    line = line.replace(/URI="([^"]*)"/, function (m, u) {
+                        return 'URI="' + abs(u, url) + '"';
+                    });
+                } else if (trimmed && trimmed.indexOf('#') !== 0) {
+                    line = abs(trimmed, url);
                 }
+                lines[i] = line;
             }
-            var audio = null, k;
-            for (k = 0; k < audios.length; k++) { if (audios[k].lang === 'ko') { audio = audios[k]; break; } }
-            if (!audio) { for (k = 0; k < audios.length; k++) { if (audios[k].isDefault) { audio = audios[k]; break; } } }
-            if (!audio && audios.length) { audio = audios[0]; }
-            return { variants: variants, audio: audio };
-        }
-
-        function labelFor(v) {
-            if (v.height >= 2160) { return '4K'; }
-            if (v.height > 0) { return v.height + 'p'; }
-            return Math.round(parseInt(v.bandwidth, 10) / 1000) + 'k';
-        }
-
-        function buildFromVariant(v, audio) {
-            var out = '#EXTM3U\n#EXT-X-VERSION:7\n#EXT-X-INDEPENDENT-SEGMENTS\n';
-            var audioAttr = '';
-            if (audio) {
-                out += '#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="Korean",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="' + (audio.lang || 'ko') + '",URI="' + audio.url + '"\n';
-                audioAttr = ',AUDIO="audio"';
-            }
-            var codecs = v.codecs ? (',CODECS="' + v.codecs + '"') : '';
-            var res = v.resolution ? (',RESOLUTION=' + v.resolution) : '';
-            out += '#EXT-X-STREAM-INF:BANDWIDTH=' + v.bandwidth + res + codecs + audioAttr + '\n' + v.url + '\n';
-            return out;
-        }
-
-        function showPicker(masterUrl) {
-            var parsed = parseMaster(masterUrl, texts[masterUrl] || '');
-            if (!parsed.variants.length) { return false; }
-            pickerFor = masterUrl;
-            var byHeight = {}, uniq = [], v, i;
-            parsed.variants.sort(function (a, b) { return b.height - a.height; });
-            for (i = 0; i < parsed.variants.length; i++) {
-                v = parsed.variants[i];
-                var key = v.height || v.bandwidth;
-                if (byHeight[key]) { continue; }
-                byHeight[key] = 1;
-                uniq.push(v);
-            }
-            clearButtons();
-            say('🎬 Pick a quality:', '#1a202c');
-            uniq.forEach(function (variant) {
-                addButton(labelFor(variant), function () {
-                    save(buildFromVariant(variant, parsed.audio), labelFor(variant));
-                });
-            });
-            return true;
+            return lines.join('\n');
         }
 
         function trigger() {
@@ -213,15 +144,12 @@
             l.remove();
         }
 
-        function save(text, qualityLabel) {
+        function save(text) {
             lastPlaylist = text;
             trigger();
             clearButtons();
-            if (pickerFor) {
-                addButton('↺ Other quality', function () { showPicker(pickerFor); });
-            }
             addButton('⬇ Save again', trigger);
-            say('✅ ' + (qualityLabel ? (qualityLabel + ' ') : '') + 'playlist downloaded. Open coupang_stream.m3u8 with VLC', '#14532d');
+            say('✅ Playlist downloaded. Open coupang_stream.m3u8 with VLC', '#14532d');
         }
 
         function check() {
@@ -237,12 +165,14 @@
 
         function doCheck() {
             var m = latest('master');
-            if (m && texts[m] && m !== pickerFor) {
-                if (showPicker(m)) { return; }
+            if (m && texts[m] && m !== lastMaster) {
+                lastMaster = m;
+                done[keyOf(m)] = 1;
+                save(rewriteMaster(m, texts[m]));
+                return;
             }
-            if (pickerFor) { return; }
             if (hasDownloaded()) { return; }
-            if (!m && anyPending() && (Date.now() - firstSeen) < 8000) {
+            if (anyPending() && (Date.now() - firstSeen) < 8000) {
                 check();
                 return;
             }
@@ -251,7 +181,7 @@
             if (v && a) {
                 done[keyOf(v) + '|' + keyOf(a)] = 1;
                 var out = '#EXTM3U\n#EXT-X-VERSION:6\n#EXT-X-INDEPENDENT-SEGMENTS\n#EXT-X-MEDIA:TYPE=AUDIO,GROUP-ID="audio",NAME="Korean",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="ko",URI="' + a + '"\n#EXT-X-STREAM-INF:BANDWIDTH=3000000,AUDIO="audio"\n' + v + '\n';
-                save(out, '');
+                save(out);
             } else if (latest('drm')) {
                 say('⚠️ This match can’t be grabbed. Try a different one.', '#7c2d12');
             }
@@ -278,13 +208,13 @@
         function armFallback() {
             if (fallbackTimer) { return; }
             fallbackTimer = setTimeout(function () {
-                if (hasDownloaded() || pickerFor) { return; }
+                if (hasDownloaded()) { return; }
                 if (dashSeen && !order.length) {
                     say('⚠️ This match can’t be grabbed. Try a different one (e.g. Premier League).', '#7c2d12');
                     return;
                 }
                 if (!order.length) { return; }
-                say('⚠️ Could not auto-detect quality. Tap here to finish on Done Deal', '#7c2d12');
+                say('⚠️ Could not auto-detect the stream. Tap here to finish on Done Deal', '#7c2d12');
                 ui.style.cursor = 'pointer';
                 ui.onclick = function () {
                     location.href = SITE + '?streams=' + encodeURIComponent(order.slice(-8).join('|'));
@@ -300,7 +230,7 @@
             seen[k] = 1;
             if (!firstSeen) { firstSeen = Date.now(); }
             order.push(u);
-            if (!pickerFor && !hasDownloaded()) { say('Analyzing stream manifests…'); }
+            if (!hasDownloaded()) { say('Analyzing stream manifests…'); }
             armFallback();
             classify(u).then(check);
         }
