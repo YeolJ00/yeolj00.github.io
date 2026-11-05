@@ -140,6 +140,25 @@
             fill: currentColor;
         }
 
+        .mini-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            background: #fff;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .mini-btn:hover {
+            color: #fff;
+            background: var(--gradient-afterglow);
+            border-color: transparent;
+        }
+
         /* ---------- Sections ---------- */
         section { padding: 32px 0; }
 
@@ -312,7 +331,7 @@
         </header>
 
         <!-- About -->
-        <section>
+        <section id="aboutme">
             <h2 class="section-title">About me</h2>
             <hr class="section-rule">
             <p>
@@ -325,6 +344,10 @@
                 <li>AI for graphic designers</li>
                 <li>Generative modeling of design assets</li>
             </ul>
+            <p>
+                Outside of research, I do security research as a side hustle. You can find that work on my
+                other GitHub account: <a class="mini-btn" href="https://github.com/OV-0-VO">OV-0-VO</a>
+            </p>
         </section>
 
         <!-- Publications -->
